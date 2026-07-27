@@ -1,0 +1,6 @@
+{
+  "name": "BTP SmartTools AI",
+  "description": "Sistema Inteligente de Controle de Ferramentas Operacionais para Terminais Portuários",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

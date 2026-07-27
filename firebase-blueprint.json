@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "users": {
+      "title": "Users",
+      "description": "User profiles and credentials registered in Firebase",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "provider": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "berth_turn_updates": {
+      "title": "Berth Turn Updates",
+      "description": "Daily shift and berth updates recording vessel, gangs, tools allocation and observations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "turn": { "type": "string" },
+        "berth": { "type": "string" },
+        "shipName": { "type": "string" },
+        "numTernos": { "type": "number" },
+        "totalMaterials": { "type": "number" },
+        "observations": { "type": "string" },
+        "updatedBy": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["date", "turn", "berth"]
+    }
+  },
+  "firestore": {
+    "/berth_turn_updates/{updateId}": {
+      "schema": "berth_turn_updates",
+      "description": "Stores turn and berth updates separated by date and shift turn"
+    }
+  }
+}
