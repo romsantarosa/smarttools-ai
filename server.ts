@@ -215,14 +215,14 @@ async function startServer() {
     });
     app.use(vite.middlewares);
 } else {
-  app.get("/", (_req, res) => {
-    res.send("SmartTools AI Backend Online 🚀");
-  });
-}
-
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[BTP SmartTools AI] Server running on http://0.0.0.0:${PORT}`);
-  });
+app.get("/", (_req, res) => {
+  try {
+    res.status(200).send("OK");
+  } catch (e) {
+    console.error(e);
+    res.status(500).send(String(e));
+  }
+});
 }
 
 startServer();
