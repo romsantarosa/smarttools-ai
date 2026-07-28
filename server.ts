@@ -215,7 +215,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
 } else {
-app.get("/", (_req, res) => {
+  app.get("/", (_req, res) => {
   try {
     res.status(200).send("OK");
   } catch (e) {
@@ -223,6 +223,10 @@ app.get("/", (_req, res) => {
     res.status(500).send(String(e));
   }
 });
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[BTP SmartTools AI] Server running on http://0.0.0.0:${PORT}`);
+  });
 }
 
 startServer();
