@@ -153,9 +153,12 @@ function somenteBTP(lista: MovimentoPortal[]) {
 export async function scrapePortal(): Promise<PortalData> {
 
   const browser = await chromium.launch({
-    headless: false,
-    slowMo: 300,
-  });
+  headless: true,
+  args: [
+    "--no-sandbox",
+    "--disable-setuid-sandbox"
+  ]
+});
 
   try {
 
