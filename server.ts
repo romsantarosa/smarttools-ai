@@ -214,13 +214,11 @@ async function startServer() {
       appType: 'spa',
     });
     app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
+} else {
+  app.get("/", (_req, res) => {
+    res.send("SmartTools AI Backend Online 🚀");
+  });
+}
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[BTP SmartTools AI] Server running on http://0.0.0.0:${PORT}`);
