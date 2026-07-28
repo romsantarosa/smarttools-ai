@@ -223,9 +223,17 @@ async function startServer() {
 
   } else {
 
-    // <<< COLE SOMENTE ISSO AQUI >>>
-    app.get("/", (_req, res) => {
-      res.status(200).send("OK");
+    // Em produção o server.cjs já roda dentro de dist/, então os arquivos
+    // gerados pelo `vite build` (index.html, assets/) são irmãos deste arquivo.
+    // __dirname funciona aqui porque o esbuild empacota este arquivo em CommonJS.
+    const distPath = __dirname;
+
+    app.use(express.static(distPath));
+
+    // Fallback de SPA: qualquer rota GET que não bateu em /api ou /btp
+    // recebe o index.html para o React Router assumir no client.
+    app.get(/^(?!\/api|\/btp).*/, (_req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
     });
 
   }
