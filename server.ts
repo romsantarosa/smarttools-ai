@@ -11,6 +11,11 @@ console.log("GEMINI_API_KEY existe?", !!process.env.GEMINI_API_KEY);
 console.log("Primeiros 8 caracteres:", process.env.GEMINI_API_KEY?.substring(0, 8));
 
 const app = express();
+
+app.use((req, res, next) => {
+  console.log("➡️", req.method, req.url);
+  next();
+});
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
@@ -225,6 +230,10 @@ async function startServer() {
 
   }
 
+  app.use((err: any, req: any, res: any, next: any) => {
+  console.error("ERRO EXPRESS:", err);
+  res.status(500).send(err?.stack || err?.message || String(err));
+});
   // ESTE app.listen FICA FORA DO if/else
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[BTP SmartTools AI] Server running on http://0.0.0.0:${PORT}`);
