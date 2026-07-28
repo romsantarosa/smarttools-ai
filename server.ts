@@ -213,17 +213,19 @@ async function startServer() {
       server: { middlewareMode: true },
       appType: 'spa',
     });
-    app.use(vite.middlewares);
-} else {
-  app.get("/", (_req, res) => {
-  try {
-    res.status(200).send("OK");
-  } catch (e) {
-    console.error(e);
-    res.status(500).send(String(e));
-  }
-});
 
+    app.use(vite.middlewares);
+
+  } else {
+
+    // <<< COLE SOMENTE ISSO AQUI >>>
+    app.get("/", (_req, res) => {
+      res.status(200).send("OK");
+    });
+
+  }
+
+  // ESTE app.listen FICA FORA DO if/else
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[BTP SmartTools AI] Server running on http://0.0.0.0:${PORT}`);
   });
