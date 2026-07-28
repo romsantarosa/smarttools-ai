@@ -7,8 +7,11 @@ import { getBtpData, getCacheTimeRemainingSeconds, setCustomBtpData, parseSppilo
 
 dotenv.config();
 
+console.log("GEMINI_API_KEY existe?", !!process.env.GEMINI_API_KEY);
+console.log("Primeiros 8 caracteres:", process.env.GEMINI_API_KEY?.substring(0, 8));
+
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
