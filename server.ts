@@ -78,6 +78,14 @@ const handleBtpRoute = async (req: express.Request, res: express.Response, type:
 });
 
 // Initialize Gemini SDK with User-Agent header as specified in skill guidelines
+
+dotenv.config();
+
+console.log("==================================");
+console.log("GEMINI_API_KEY existe?", !!process.env.GEMINI_API_KEY);
+console.log("Primeiros caracteres:", process.env.GEMINI_API_KEY?.substring(0, 8));
+console.log("==================================");
+
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY || '',
   httpOptions: {
