@@ -1,0 +1,6 @@
+[phases.setup]
+nixPkgs = [
+  "nodejs",
+  "playwright-driver",
+  "chromium"
+]
