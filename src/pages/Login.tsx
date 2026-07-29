@@ -74,7 +74,12 @@ export const Login: React.FC = () => {
   const [email, setEmail] = useState('carlos.santos@btp.com.br');
   const [password, setPassword] = useState('123456');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState<'Supervisor' | 'Operador'>('Supervisor');
+  const [role, setRole] = useState<'Supervisor' | 'Operador'>(() => {
+  return (
+    (localStorage.getItem('btp-role') as 'Supervisor' | 'Operador') ||
+    'Supervisor'
+  );
+});
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -381,7 +386,10 @@ export const Login: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => setRole('Supervisor')}
+                onClick={() => {
+                  setRole('Supervisor');
+                  localStorage.setItem('btp-role', 'Supervisor');
+                  }}
                 className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                   role === 'Supervisor'
                     ? 'bg-blue-50 dark:bg-blue-950 border-blue-600 text-blue-700 dark:text-blue-300'
@@ -392,7 +400,10 @@ export const Login: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setRole('Operador')}
+                onClick={() => {
+                  setRole('Operador');
+                  localStorage.setItem('btp-role', 'Operador');
+                    }}
                 className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                   role === 'Operador'
                     ? 'bg-blue-50 dark:bg-blue-950 border-blue-600 text-blue-700 dark:text-blue-300'
