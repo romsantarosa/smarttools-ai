@@ -151,7 +151,7 @@ function somenteBTP(lista: MovimentoPortal[]) {
 }
 
 export async function scrapePortal(): Promise<PortalData> {
-
+console.log("SCRAPER INICIOU");
   const browser = await chromium.launch({
   headless: true,
   args: [
@@ -159,12 +159,17 @@ export async function scrapePortal(): Promise<PortalData> {
     "--disable-setuid-sandbox"
   ]
 });
+console.log("CHROMIUM ABRIU");
 
   try {
 
     const page = await browser.newPage();
 
+    console.log("PAGINA CRIADA");
+
     await login(page);
+    
+    console.log("LOGIN OK");
 
     // ============================
     // NAVIOS ATRACADOS

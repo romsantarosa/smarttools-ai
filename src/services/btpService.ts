@@ -127,10 +127,12 @@ function mapShip(item: any): BtpShipJson {
 
 }
 export async function getBtpData(
+  
   forceRefresh = false
 ): Promise<CacheStore> {
 
   const now = Date.now();
+  console.log("===== getBtpData() =====");
 
   if (
     !forceRefresh &&
@@ -153,11 +155,11 @@ export async function getBtpData(
 
   try {
 
-    const portalData = await scrapePortal();
+  console.log("ANTES DO scrapePortal");
 
-    console.log("========== PORTAL ==========");
-    console.log(portalData);
-    console.log("============================");
+  const portalData = await scrapePortal();
+
+  console.log("DEPOIS DO scrapePortal");
 
     const atracados = portalData.atracados
   .filter(item => {
