@@ -9,6 +9,14 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+interface JtableResponse {
+  Result: string;
+  Records?: Array<Record<string, any>>;
+  TotalRecordCount?: number;
+  Error?: string;
+  Message?: string;
+}
+
 export interface BtpScheduleRecord {
   navio: string;
   viagem: string;
@@ -38,7 +46,8 @@ export interface BtpScheduleResponse {
 }
 
 const BTP_PORTAL_URL = 'https://portaldocliente.btp.com.br/sistemas/processos-logisticos/ConsultasLivres/listaatracacaoindex';
-const DEFAULT_TIMEOUT = 30000;
+const BTP_LIST_ACTION_URL = 'https://novo-tas.btp.com.br/ConsultasLivres/ListaAtracacao';
+const DEFAULT_TIMEOUT = 45000;
 
 /**
  * Extrai dados de uma célula, removendo espaços e quebras de linha
@@ -52,24 +61,62 @@ function cleanText(text: string | null | undefined): string {
     .trim();
 }
 
-/**
- * Converte string de data (DD/MM/YYYY) para objeto Date
- */
-function parseDate(dateStr: string): Date | null {
-  if (!dateStr) return null;
-  const parts = dateStr.split('/');
-  if (parts.length !== 3) return null;
-  return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+function splitDateTime(value: string): { data: string; hora: string } {
+  const cleaned = cleanText(value);
+  if (!cleaned) return { data: '', hora: '' };
+
+  const match = cleaned.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return { data: cleaned, hora: '' };
+
+  return {
+    data: `${match[1]}/${match[2]}/${match[3]}`,
+    hora: `${match[4]}:${match[5]}`,
+  };
 }
 
-/**
- * Converte string de hora (HH:MM) para número de minutos desde meia-noite
- */
-function parseTime(timeStr: string): number {
-  if (!timeStr) return 0;
-  const parts = timeStr.split(':');
-  if (parts.length !== 2) return 0;
-  return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+export function parseBtpScheduleRows(rows: string[][]): BtpScheduleRecord[] {
+  const records: BtpScheduleRecord[] = [];
+
+  rows.forEach((cells) => {
+    const normalizedCells = cells.map((cell) => cleanText(cell));
+    const hasData = normalizedCells.some((cell) => cell.length > 0);
+    if (!hasData) return;
+
+    const isHeader = normalizedCells.some((cell) => /navio|viagem|agência|serviço|rap/i.test(cell));
+    if (isHeader) return;
+
+    const [rap, navio, viagem, armador, eta, chegada, etb, atracacao, etd, saida, gateDry, gateReefer, deadline, servico] = normalizedCells;
+    if (!navio || navio.toLowerCase().includes('navio')) return;
+
+    const chegadaParts = splitDateTime(chegada);
+    const atracacaoParts = splitDateTime(atracacao);
+    const saidaParts = splitDateTime(saida);
+
+    records.push({
+      navio,
+      viagem,
+      armador,
+      berco: '',
+      status: 'Previsto',
+      eta: eta || '',
+      etb: etb || '',
+      etd: etd || '',
+      datachegada: chegadaParts.data,
+      horachegada: chegadaParts.hora,
+      dataatracacao: atracacaoParts.data,
+      horaatracacao: atracacaoParts.hora,
+      datasaida: saidaParts.data,
+      horasaida: saidaParts.hora,
+      operacao: servico || '',
+      terminal: '',
+      rap: rap || '',
+      gateDry: gateDry || '',
+      gateReefer: gateReefer || '',
+      deadline: deadline || '',
+    });
+  });
+
+  return records;
 }
 
 /**
@@ -103,104 +150,35 @@ async function scrapeBtpPortal(): Promise<BtpScheduleRecord[]> {
 
     page = await context.newPage();
 
-    console.log(`[BtpScheduleService] Acessando portal: ${BTP_PORTAL_URL}`);
-    await page.goto(BTP_PORTAL_URL, {
-      waitUntil: 'networkidle',
+    const iframeUrl = 'https://novo-tas.btp.com.br/ConsultasLivres/listaatracacaoindex?accessToken=undefined&authenticationType=undefined';
+    console.log(`[BtpScheduleService] Acessando iframe BTP: ${iframeUrl}`);
+    await page.goto(iframeUrl, {
+      waitUntil: 'domcontentloaded',
       timeout: DEFAULT_TIMEOUT,
     });
 
-    // Aguardar carregamento da tabela
-    console.log('[BtpScheduleService] Aguardando carregamento da tabela...');
-    
-    // Tentar diferentes seletores de tabela (comum, tbody, datatable, etc)
-    const tableSelectors = [
-      'table',
-      '.table',
-      '[role="table"]',
-      '.data-table',
-      '.grid',
-      '#gridview',
-      '.schedule-table',
-    ];
+    await page.waitForSelector('table tr', { timeout: DEFAULT_TIMEOUT });
+    await page.waitForTimeout(3000);
 
-    let tableFound = false;
-    for (const selector of tableSelectors) {
-      try {
-        await page.waitForSelector(selector, { timeout: 5000 }).catch(() => null);
-        if ((await page.locator(selector).count()) > 0) {
-          console.log(`[BtpScheduleService] Tabela encontrada com seletor: ${selector}`);
-          tableFound = true;
-          break;
-        }
-      } catch (e) {
-        // Continuar tentando próximo seletor
-      }
-    }
-
-    if (!tableFound) {
-      console.warn('[BtpScheduleService] Nenhuma tabela encontrada. Aguardando conteúdo dinâmico...');
-      await page.waitForTimeout(3000);
-    }
-
-    // Extrair dados da tabela
-    console.log('[BtpScheduleService] Extraindo dados da tabela...');
-
-    const records = await page.evaluate(() => {
-      const results: BtpScheduleRecord[] = [];
-
-      // Tentar múltiplas estratégias de extração
-      const rows = document.querySelectorAll('table tbody tr, .data-table tbody tr, [role="table"] [role="row"]');
-
-      rows.forEach((row) => {
-        const cells = row.querySelectorAll('td, [role="gridcell"]');
-        if (cells.length === 0) return;
-
-        // Extrair texto de cada célula
-        const cellTexts = Array.from(cells).map((cell) =>
-          cell.textContent?.trim().replace(/\n/g, ' ').replace(/\s+/g, ' ') || ''
+    const rows = await page.evaluate(() => {
+      const tables = Array.from(document.querySelectorAll('table'));
+      for (const table of tables) {
+        const normalizedRows = Array.from(table.querySelectorAll('tr')).map((row) =>
+          Array.from(row.querySelectorAll('th, td')).map((cell) => cell.textContent?.replace(/\s+/g, ' ').trim() || '')
         );
 
-        // Mapear para campos conhecidos (adaptável conforme estrutura real)
-        // Assumindo ordem comum: navio, viagem, armador, berço, status, eta, etb, etd, ...
-        if (cellTexts.length >= 5) {
-          const record: BtpScheduleRecord = {
-            navio: cellTexts[0] || '',
-            viagem: cellTexts[1] || '',
-            armador: cellTexts[2] || '',
-            berco: cellTexts[3] || '',
-            status: cellTexts[4] || '',
-            eta: cellTexts[5] || '',
-            etb: cellTexts[6] || '',
-            etd: cellTexts[7] || '',
-            datachegada: cellTexts[8] || '',
-            horachegada: cellTexts[9] || '',
-            dataatracacao: cellTexts[10] || '',
-            horaatracacao: cellTexts[11] || '',
-            datasaida: cellTexts[12] || '',
-            horasaida: cellTexts[13] || '',
-            operacao: cellTexts[14] || '',
-            terminal: cellTexts[15] || '',
-          };
-
-          // Adicionar campos extras se existirem
-          for (let i = 16; i < cellTexts.length; i++) {
-            record[`extra_${i}`] = cellTexts[i];
-          }
-
-          results.push(record);
+        const hasHeader = normalizedRows.some((row) => row.some((cell) => /navio|viagem|agência|serviço|rap/i.test(cell)));
+        if (normalizedRows.length > 2 && hasHeader) {
+          return normalizedRows;
         }
-      });
+      }
 
-      return results;
+      return [] as string[][];
     });
 
-    console.log(`[BtpScheduleService] ${records.length} registros extraídos com sucesso`);
-
-    // Filtrar registros vazios
-    const filteredRecords = records.filter(
-      (r) => r.navio && r.navio.trim().length > 0
-    );
-
+    const parsedRecords = parseBtpScheduleRows(rows);
+    const filteredRecords = parsedRecords.filter((record) => record.navio && record.navio.trim().length > 0);
+    console.log(`[BtpScheduleService] ${filteredRecords.length} registros extraídos do iframe BTP`);
     return filteredRecords;
   } catch (error) {
     console.error('[BtpScheduleService] Erro ao fazer scraping:', error);
