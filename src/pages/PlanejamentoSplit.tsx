@@ -1,9 +1,27 @@
 import React, { useState, useRef } from 'react';
-import { Box, Button, Typography, Paper, LinearProgress, TextField, IconButton, Chip } from '@mui/material';
+import {
+  Box,
+  Button,
+  Typography,
+  Paper,
+  LinearProgress,
+  TextField,
+  IconButton,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert,
+  Divider,
+} from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SearchIcon from '@mui/icons-material/Search';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import GetAppIcon from '@mui/icons-material/GetApp';
+import InfoIcon from '@mui/icons-material/Info';
 import { motion } from 'framer-motion';
-import { parsePDF } from '../services/pdfService';
+import { processPdf } from '../services/pdfService';
 import { analyzeSplit } from '../services/aiService';
 
 function displayValue(value: any, sourceLabel?: string) {
@@ -20,6 +38,14 @@ export const PlanejamentoSplit: React.FC = () => {
   const [summary, setSummary] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  // Novos estados para OCR e visualização de texto
+  const [extractedText, setExtractedText] = useState<string | null>(null);
+  const [extractionMethod, setExtractionMethod] = useState<'native' | 'ocr' | null>(null);
+  const [extractionErrors, setExtractionErrors] = useState<string[]>([]);
+  const [showTextViewer, setShowTextViewer] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState<{ current: number; total: number } | null>(null);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   const onDrop = async (e: React.DragEvent) => {
     e.preventDefault();
@@ -42,29 +68,59 @@ export const PlanejamentoSplit: React.FC = () => {
     setProgress(10);
     setErrorMessage(null);
     setSummary(null);
+    setExtractedText(null);
+    setExtractedText(null);
+    setExtractionErrors([]);
+    setOcrProgress(null);
+    setCopySuccess(false);
 
-    console.log('[PlanejamentoSplit] Iniciando análise do PDF:', file.name);
+    console.log('[PlanejamentoSplit] Iniciando processamento do PDF:', file.name);
 
     try {
-      const parsed = await parsePDF(file, (pct) => setProgress(pct));
+      // Processar PDF (detecção automática de texto vs OCR)
+      const pdfResult = await processPdf(
+        file,
+        (pct) => setProgress(pct),
+        (current, total) => setOcrProgress({ current, total })
+      );
 
-      // Log temporário de depuração — remova depois de validar com PDFs reais
+      // Armazenar resultado da extração
+      setExtractedText(pdfResult.text);
+      setExtractionMethod(pdfResult.extractionMethod);
+      if (pdfResult.errors.length > 0) {
+        setExtractionErrors(pdfResult.errors);
+      }
+
+      console.log('[PlanejamentoSplit] Extração de PDF concluída.');
+      console.log(`[PlanejamentoSplit] Método: ${pdfResult.extractionMethod === 'native' ? 'Texto Nativo' : 'OCR com Gemini'}`);
+
+      // Preparar dados para análise
+      const parsed = {
+        pages: pdfResult.pages,
+        lines: pdfResult.pages.map((pageText) => pageText.split('\n')),
+        text: pdfResult.text,
+      };
+
+      // Log temporário de depuração
       console.log('--- TEXTO EXTRAÍDO DO PDF (depuração) ---');
-      console.log(parsed.text);
+      console.log(parsed.text.substring(0, 500) + '...');
 
-      console.log('[PlanejamentoSplit] Leitura do PDF concluída. Iniciando análise...');
-      setProgress(50);
+      console.log('[PlanejamentoSplit] Iniciando análise com IA...');
+      setProgress(85);
 
       const analysis = await analyzeSplit(parsed);
       setSummary(analysis);
       setProgress(100);
+      setShowTextViewer(false); // Fechar visualizador se estava aberto
+
       console.log('[PlanejamentoSplit] Análise finalizada com sucesso.');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro inesperado ao analisar o Split.';
-      console.error('[PlanejamentoSplit] Falha na análise:', err);
+      const message = err instanceof Error ? err.message : 'Erro inesperado ao processar o PDF.';
+      console.error('[PlanejamentoSplit] Falha no processamento:', err);
       setErrorMessage(message);
     } finally {
       setParsing(false);
+      setOcrProgress(null);
       setTimeout(() => setProgress(0), 800);
     }
   };
@@ -73,6 +129,43 @@ export const PlanejamentoSplit: React.FC = () => {
     if (!search || !summary) return setSearchResult(null);
     const found = (summary.bays || []).find((b: any) => b.id === search.padStart(2, '0'));
     setSearchResult(found ?? { message: 'Bay não encontrada nas tabelas de alerta' });
+  };
+
+  // Funções auxiliares para texto extraído
+  const handleCopyText = async () => {
+    if (!extractedText) return;
+    try {
+      await navigator.clipboard.writeText(extractedText);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Erro ao copiar:', err);
+      setErrorMessage('Erro ao copiar texto para a área de transferência');
+    }
+  };
+
+  const handleExportJson = () => {
+    if (!extractedText) return;
+    const data = {
+      fileName: file?.name || 'unknown.pdf',
+      extractionMethod: extractionMethod,
+      extractionTime: new Date().toISOString(),
+      text: extractedText,
+      errors: extractionErrors,
+      analysis: summary || null,
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `split-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleViewExtractedText = () => {
+    setShowTextViewer(!showTextViewer);
   };
 
   return (
@@ -95,13 +188,103 @@ export const PlanejamentoSplit: React.FC = () => {
         <Box sx={{ mb: 2 }}>
           <LinearProgress variant="determinate" value={progress} />
           <Typography variant="caption">Processando... {progress}%</Typography>
+
+          {ocrProgress && (
+            <Box sx={{ mt: 1, p: 1, bgcolor: '#e3f2fd', borderRadius: 1 }}>
+              <Typography variant="body2">
+                OCR com Gemini Vision: {ocrProgress.current}/{ocrProgress.total} páginas
+              </Typography>
+            </Box>
+          )}
         </Box>
       )}
 
       {errorMessage && (
         <Paper sx={{ p: 2, mb: 2, border: '1px solid #f44336' }}>
-          <Typography color="error">Erro: {errorMessage}</Typography>
+          <Typography color="error">❌ Erro: {errorMessage}</Typography>
         </Paper>
+      )}
+
+      {extractionErrors.length > 0 && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          <Typography variant="body2">⚠️ {extractionErrors.length} erro(s) durante a extração:</Typography>
+          {extractionErrors.map((err, idx) => (
+            <Typography key={idx} variant="caption" sx={{ display: 'block' }}>
+              • {err}
+            </Typography>
+          ))}
+        </Alert>
+      )}
+
+      {extractedText && extractionMethod && (
+        <Paper sx={{ p: 2, mb: 2, bgcolor: extractionMethod === 'ocr' ? '#fff3cd' : '#e8f5e9' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <InfoIcon fontSize="small" />
+              <Typography variant="body2">
+                {extractionMethod === 'ocr' ? '🔍 OCR com Gemini Vision' : '📄 Texto Nativo (PDF)'}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                size="small"
+                startIcon={<ContentCopyIcon />}
+                onClick={handleCopyText}
+                variant="outlined"
+              >
+                {copySuccess ? '✓ Copiado!' : 'Copiar Texto'}
+              </Button>
+              <Button
+                size="small"
+                startIcon={<GetAppIcon />}
+                onClick={handleExportJson}
+                variant="outlined"
+              >
+                Exportar JSON
+              </Button>
+              <Button
+                size="small"
+                onClick={handleViewExtractedText}
+                variant="outlined"
+              >
+                {showTextViewer ? 'Ocultar' : 'Ver Texto'}
+              </Button>
+            </Box>
+          </Box>
+        </Paper>
+      )}
+
+      {showTextViewer && extractedText && (
+        <Dialog open={showTextViewer} onClose={() => setShowTextViewer(false)} maxWidth="md" fullWidth>
+          <DialogTitle>
+            Texto Extraído do PDF
+            <Typography variant="caption" sx={{ display: 'block' }}>
+              {extractionMethod === 'ocr' ? 'Extraído via OCR (Gemini Vision)' : 'Texto Nativo'}
+            </Typography>
+          </DialogTitle>
+          <DialogContent>
+            <Paper
+              sx={{
+                p: 2,
+                bgcolor: '#f5f5f5',
+                maxHeight: 400,
+                overflow: 'auto',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                fontFamily: 'monospace',
+                fontSize: '0.85rem',
+              }}
+            >
+              {extractedText}
+            </Paper>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCopyText} startIcon={<ContentCopyIcon />}>
+              {copySuccess ? '✓ Copiado!' : 'Copiar'}
+            </Button>
+            <Button onClick={() => setShowTextViewer(false)}>Fechar</Button>
+          </DialogActions>
+        </Dialog>
       )}
 
       {summary && (
