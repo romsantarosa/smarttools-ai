@@ -150,31 +150,66 @@ async function scrapeBtpPortal(): Promise<BtpScheduleRecord[]> {
 
     page = await context.newPage();
 
-    const iframeUrl = 'https://novo-tas.btp.com.br/ConsultasLivres/listaatracacaoindex?accessToken=undefined&authenticationType=undefined';
-    console.log(`[BtpScheduleService] Acessando iframe BTP: ${iframeUrl}`);
-    await page.goto(iframeUrl, {
-      waitUntil: 'domcontentloaded',
-      timeout: DEFAULT_TIMEOUT,
-    });
+    const candidateUrls = [
+      'https://novo-tas.btp.com.br/ConsultasLivres/listaatracacaoindex?accessToken=undefined&authenticationType=undefined',
+      'https://novo-tas.btp.com.br/ConsultasLivres/listaatracacaoindex',
+      'https://portaldocliente.btp.com.br/sistemas/processos-logisticos/ConsultasLivres/listaatracacaoindex',
+    ];
 
-    await page.waitForSelector('table tr', { timeout: DEFAULT_TIMEOUT });
-    await page.waitForTimeout(3000);
+    let rows: string[][] = [];
 
-    const rows = await page.evaluate(() => {
-      const tables = Array.from(document.querySelectorAll('table'));
-      for (const table of tables) {
-        const normalizedRows = Array.from(table.querySelectorAll('tr')).map((row) =>
-          Array.from(row.querySelectorAll('th, td')).map((cell) => cell.textContent?.replace(/\s+/g, ' ').trim() || '')
+    for (const candidateUrl of candidateUrls) {
+      try {
+        console.log(`[BtpScheduleService] Tentando acessar: ${candidateUrl}`);
+        await page.goto(candidateUrl, {
+          waitUntil: 'domcontentloaded',
+          timeout: 20000,
+        });
+
+        await page.waitForTimeout(4000);
+
+        const bodyText = await page.locator('body').innerText().catch(() => '');
+        const hasKnownContent = ['programação de atracação', 'navio', 'viagem', 'agência', 'serviço'].some((token) =>
+          bodyText.toLowerCase().includes(token)
         );
 
-        const hasHeader = normalizedRows.some((row) => row.some((cell) => /navio|viagem|agência|serviço|rap/i.test(cell)));
-        if (normalizedRows.length > 2 && hasHeader) {
-          return normalizedRows;
+        if (!hasKnownContent) {
+          const iframeSrc = await page.locator('iframe').getAttribute('src').catch(() => null);
+          if (iframeSrc) {
+            const resolvedIframeUrl = iframeSrc.startsWith('http') ? iframeSrc : new URL(iframeSrc, candidateUrl).toString();
+            console.log(`[BtpScheduleService] Encontrado iframe, tentando: ${resolvedIframeUrl}`);
+            await page.goto(resolvedIframeUrl, {
+              waitUntil: 'domcontentloaded',
+              timeout: 20000,
+            });
+            await page.waitForTimeout(4000);
+          }
         }
-      }
 
-      return [] as string[][];
-    });
+        const tableCount = await page.locator('table tr').count().catch(() => 0);
+        if (tableCount >= 3) {
+          rows = await page.evaluate(() => {
+            const tables = Array.from(document.querySelectorAll('table'));
+            for (const table of tables) {
+              const normalizedRows = Array.from(table.querySelectorAll('tr')).map((row) =>
+                Array.from(row.querySelectorAll('th, td')).map((cell) => cell.textContent?.replace(/\s+/g, ' ').trim() || '')
+              );
+              const hasHeader = normalizedRows.some((row) => row.some((cell) => /navio|viagem|agência|serviço|rap/i.test(cell)));
+              if (normalizedRows.length > 2 && hasHeader) {
+                return normalizedRows;
+              }
+            }
+            return [] as string[][];
+          });
+
+          if (rows.length > 2) {
+            break;
+          }
+        }
+      } catch (error) {
+        console.warn(`[BtpScheduleService] Falha ao acessar ${candidateUrl}:`, error);
+      }
+    }
 
     const parsedRecords = parseBtpScheduleRows(rows);
     const filteredRecords = parsedRecords.filter((record) => record.navio && record.navio.trim().length > 0);
