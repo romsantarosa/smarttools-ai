@@ -33,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const menuItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
     { label: 'Escala BTP', path: '/escala', icon: Calendar },
+    { label: 'Programação BTP', path: '/programacao-btp', icon: Ship },
     { label: 'Atracação/Saída Navios', path: '/atracacao-saida', icon: Navigation, badge: 'API' },
     { label: 'Planejamento Split', path: '/planejamento-split', icon: PictureAsPdf },
     { label: 'Guia de Navios', path: '/navios', icon: Ship, badge: ships ? `${ships.length}` : '97' },

@@ -4,6 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
 import { getBtpData, getCacheTimeRemainingSeconds, setCustomBtpData, parseSppilotsRawText } from './src/services/btpService.js';
+import { fetchBtpSchedule } from './src/services/btpScheduleService.js';
 
 dotenv.config();
 
@@ -80,6 +81,24 @@ const handleBtpRoute = async (req: express.Request, res: express.Response, type:
 
   app.get(`/btp/${route}`, handler);
   app.get(`/api/btp/${route}`, handler);
+});
+
+// BTP Schedule Endpoint - Programação BTP
+app.get('/api/btp-schedule', async (req: express.Request, res: express.Response) => {
+  try {
+    console.log('[Server] Buscando dados de programação BTP...');
+    const result = await fetchBtpSchedule();
+    return res.json(result);
+  } catch (err: any) {
+    console.error('[Server] Erro ao buscar schedule BTP:', err);
+    return res.status(500).json({
+      success: false,
+      data: [],
+      totalRecords: 0,
+      lastUpdate: new Date().toISOString(),
+      error: err?.message || 'Erro ao buscar dados de programação BTP',
+    });
+  }
 });
 
 // Initialize Gemini SDK with User-Agent header as specified in skill guidelines

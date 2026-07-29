@@ -16,6 +16,7 @@ import { Perfil } from './pages/Perfil';
 import { Escala } from './pages/Escala';
 import { AtracacaoSaida } from './pages/AtracacaoSaida';
 import { PlanejamentoSplit } from './pages/PlanejamentoSplit';
+import { ProgramacaoBtp } from './pages/ProgramacaoBtp';
 
 // Guarded Route component
 const ProtectedRoutes: React.FC = () => {
@@ -40,6 +41,7 @@ export default function App() {
           <Route element={<ProtectedRoutes />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/escala" element={<Escala />} />
+            <Route path="/programacao-btp" element={<ProgramacaoBtp />} />
             <Route path="/atracacao-saida" element={<AtracacaoSaida />} />
             <Route path="/navios" element={<Navios />} />
             <Route path="/ferramentas" element={<Ferramentas />} />
