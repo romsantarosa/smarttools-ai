@@ -18,6 +18,7 @@ import {
   Calendar,
   Navigation,
 } from 'lucide-react';
+import PictureAsPdf from '@mui/icons-material/PictureAsPdf';
 import { useApp } from '../../context/AppContext';
 
 interface SidebarProps {
@@ -33,6 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
     { label: 'Escala BTP', path: '/escala', icon: Calendar },
     { label: 'Atracação/Saída Navios', path: '/atracacao-saida', icon: Navigation, badge: 'API' },
+    { label: 'Planejamento Split', path: '/planejamento-split', icon: PictureAsPdf },
     { label: 'Guia de Navios', path: '/navios', icon: Ship, badge: ships ? `${ships.length}` : '97' },
     { label: 'Ferramentas Operacionais', path: '/ferramentas', icon: Wrench, badge: lowStock > 0 ? lowStock : null },
     { label: 'Manutenção', path: '/manutencao', icon: Cog },

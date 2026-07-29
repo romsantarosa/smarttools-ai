@@ -1,16 +1,24 @@
 import React, { useState, useRef } from 'react';
-import { Box, Button, Typography, Paper, LinearProgress, TextField, IconButton, Input } from '@mui/material';
+import { Box, Button, Typography, Paper, LinearProgress, TextField, IconButton, Chip } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SearchIcon from '@mui/icons-material/Search';
 import { motion } from 'framer-motion';
 import { parsePDF } from '../services/pdfService';
 import { analyzeSplit } from '../services/aiService';
 
+function displayValue(value: any, sourceLabel?: string) {
+  if (value === null || value === undefined || value === '') {
+    return <>— <small style={{ opacity: 0.6 }}>{sourceLabel === 'not_available_in_document' ? '(não consta no documento)' : ''}</small></>;
+  }
+  return <>{value} {sourceLabel ? <small style={{ opacity: 0.8 }}>{sourceLabel === 'extracted' ? '(extraído do PDF)' : ''}</small> : null}</>;
+}
+
 export const PlanejamentoSplit: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
   const [parsing, setParsing] = useState(false);
   const [summary, setSummary] = useState<any>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const onDrop = async (e: React.DragEvent) => {
@@ -29,16 +37,32 @@ export const PlanejamentoSplit: React.FC = () => {
 
   const onAnalyze = async () => {
     if (!file) return;
+
     setParsing(true);
     setProgress(10);
+    setErrorMessage(null);
+    setSummary(null);
+
+    console.log('[PlanejamentoSplit] Iniciando análise do PDF:', file.name);
+
     try {
-      const parsed = await parsePDF(file);
+      const parsed = await parsePDF(file, (pct) => setProgress(pct));
+
+      // Log temporário de depuração — remova depois de validar com PDFs reais
+      console.log('--- TEXTO EXTRAÍDO DO PDF (depuração) ---');
+      console.log(parsed.text);
+
+      console.log('[PlanejamentoSplit] Leitura do PDF concluída. Iniciando análise...');
       setProgress(50);
+
       const analysis = await analyzeSplit(parsed);
       setSummary(analysis);
       setProgress(100);
+      console.log('[PlanejamentoSplit] Análise finalizada com sucesso.');
     } catch (err) {
-      console.error(err);
+      const message = err instanceof Error ? err.message : 'Erro inesperado ao analisar o Split.';
+      console.error('[PlanejamentoSplit] Falha na análise:', err);
+      setErrorMessage(message);
     } finally {
       setParsing(false);
       setTimeout(() => setProgress(0), 800);
@@ -48,7 +72,7 @@ export const PlanejamentoSplit: React.FC = () => {
   const onSearch = () => {
     if (!search || !summary) return setSearchResult(null);
     const found = (summary.bays || []).find((b: any) => b.id === search.padStart(2, '0'));
-    setSearchResult(found ?? { message: 'Bay não encontrada' });
+    setSearchResult(found ?? { message: 'Bay não encontrada nas tabelas de alerta' });
   };
 
   return (
@@ -74,47 +98,39 @@ export const PlanejamentoSplit: React.FC = () => {
         </Box>
       )}
 
+      {errorMessage && (
+        <Paper sx={{ p: 2, mb: 2, border: '1px solid #f44336' }}>
+          <Typography color="error">Erro: {errorMessage}</Typography>
+        </Paper>
+      )}
+
       {summary && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <Paper sx={{ p: 2, mb: 2 }}>
             <Typography variant="h6">Resumo do Navio</Typography>
-            <Typography>
-              Nome: {summary.shipName ?? '—'} {' - '}
-              <small style={{ opacity: 0.8 }}>{summary.shipNameSource ?? 'estimated'}</small>
-            </Typography>
-            <Typography>
-              Viagem: {summary.voyage ?? '—'} {' - '}
-              <small style={{ opacity: 0.8 }}>{summary.voyageSource ?? 'estimated'}</small>
-            </Typography>
-            <Typography>
-              Operador: {summary.operator ?? '—'} {' - '}
-              <small style={{ opacity: 0.8 }}>{summary.operatorSource ?? 'estimated'}</small>
-            </Typography>
-            <Typography>
-              ETA: {summary.eta ?? '—'} {' - '}
-              <small style={{ opacity: 0.8 }}>{summary.etaSource ?? 'estimated'}</small>
-            </Typography>
-            <Typography>
-              ETB: {summary.etb ?? '—'} {' - '}
-              <small style={{ opacity: 0.8 }}>{summary.etbSource ?? 'estimated'}</small>
-            </Typography>
-            <Typography>
-              Berço: {summary.berth ?? '—'} {' - '}
-              <small style={{ opacity: 0.8 }}>{summary.berthSource ?? 'estimated'}</small>
-            </Typography>
+            <Typography>Nome: {displayValue(summary.shipName, summary.shipNameSource)}</Typography>
+            <Typography>Viagem: {displayValue(summary.voyage, summary.voyageSource)}</Typography>
+            <Typography>Operador: {displayValue(summary.operator, summary.operatorSource)}</Typography>
+            <Typography>ETA: {displayValue(summary.eta, summary.etaSource)}</Typography>
+            <Typography>ETB: {displayValue(summary.etb, summary.etbSource)}</Typography>
+            <Typography>Berço: {displayValue(summary.berth, summary.berthSource)}</Typography>
           </Paper>
 
           <Paper sx={{ p: 2, mb: 2 }}>
             <Typography variant="h6">Resumo da operação</Typography>
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 1 }}>
-              <Typography>Descarga: {summary.discharge ?? 0}</Typography>
-              <Typography>Embarque: {summary.load ?? 0}</Typography>
+              <Typography>Descarga (total): {displayValue(summary.discharge, summary.dischargeSource)}</Typography>
+              <Typography>Descarga (restante): {summary.dischargeRemaining ?? '—'}</Typography>
+              <Typography>Embarque (total): {displayValue(summary.load, summary.loadSource)}</Typography>
+              <Typography>Embarque (restante): {summary.loadRemaining ?? '—'}</Typography>
               <Typography>Reefers Positivos: {summary.reefersPositive ?? 0}</Typography>
               <Typography>Reefers Negativos: {summary.reefersNegative ?? 0}</Typography>
               <Typography>IMO: {summary.imo ?? 0}</Typography>
               <Typography>OOG: {summary.oog ?? 0}</Typography>
               <Typography>Direct Delivery: {summary.directDelivery ?? 0}</Typography>
-              <Typography>Total de movimentos: {summary.total ?? 0}</Typography>
+              <Typography>
+                Total geral (descarga+embarque): {summary.dischargeSource === 'extracted' || summary.loadSource === 'extracted' ? summary.total : displayValue(null, 'not_available_in_document')}
+              </Typography>
             </Box>
           </Paper>
 
@@ -123,61 +139,65 @@ export const PlanejamentoSplit: React.FC = () => {
               <Typography variant="h6">Alertas</Typography>
               <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
                 {summary.alerts.map((a: string) => (
-                  <Paper key={a} sx={{ p: 1, bgcolor: '#fff3cd' }}>{a}</Paper>
+                  <Chip key={a} label={a} sx={{ bgcolor: '#fff3cd' }} />
                 ))}
               </Box>
             </Paper>
           )}
 
-          <Paper sx={{ p: 2, mb: 2 }}>
-            <Typography variant="h6">Divisão por turno</Typography>
-            {summary.shifts?.map((s: any, idx: number) => (
-              <Box key={idx} sx={{ my: 1 }}>
-                <Typography>🕐 Turno {s.range}</Typography>
-                <Typography>Seu Terno: {s.team ?? '—'}</Typography>
-                <Typography>Resumo do turno — Bays previstas:</Typography>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>{(s.bays ?? []).map((b: string) => <Paper key={b} sx={{ p: 1 }}>{b}</Paper>)}</Box>
+          {summary.cranePlanSource === 'extracted' ? (
+            <Paper sx={{ p: 2, mb: 2 }}>
+              <Typography variant="h6">Plano de Guindastes (QC Plan)</Typography>
+              <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                {summary.cranePlan.map((c: any) => (
+                  <Paper key={c.crane} sx={{ p: 1 }}>
+                    <Typography variant="subtitle2">{c.crane}</Typography>
+                    <Typography variant="caption">Total: {c.total} | Restante: {c.remaining}</Typography>
+                  </Paper>
+                ))}
               </Box>
-            ))}
-          </Paper>
+            </Paper>
+          ) : (
+            <Paper sx={{ p: 2, mb: 2, opacity: 0.7 }}>
+              <Typography variant="h6">Plano de Guindastes (QC Plan)</Typography>
+              <Typography variant="body2">
+                Não disponível neste PDF — essa informação está apenas na imagem da página 1 (captura de tela do sistema), sem texto extraível.
+              </Typography>
+            </Paper>
+          )}
 
           <Paper sx={{ p: 2, mb: 2 }}>
-            <Typography variant="h6">Bays detalhadas</Typography>
+            <Typography variant="h6">Bays com contêineres em alerta</Typography>
+            <Typography variant="caption" sx={{ opacity: 0.7 }}>
+              Somente bays citadas nas tabelas de alerta do PDF (dados reais). Os mapas de bay do
+              relatório são gráficos visuais e não contêm contagem de movimentos em texto.
+            </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+              {(!summary.bays || summary.bays.length === 0) && (
+                <Typography sx={{ opacity: 0.7 }}>Nenhuma bay com contêineres de alerta foi encontrada.</Typography>
+              )}
               {summary.bays?.map((b: any) => (
                 <Paper key={b.id} sx={{ p: 2 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="subtitle1">BAY {b.id}</Typography>
-                    <Typography>{b.movements} movimentos</Typography>
+                    <Typography>{b.containerCount} contêiner(es)</Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 1, mt: 1, alignItems: 'center' }}>
-                    {b.operations.map((op: string) => <Paper key={op} sx={{ p: 0.5 }}>{op}</Paper>)}
+                  <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                    {b.sections.map((s: string) => <Chip key={s} size="small" label={s} />)}
                   </Box>
-                  <Box sx={{ mt: 1 }}>
-                    <LinearProgress variant="determinate" value={b.progressPct ?? 0} />
-                    <Typography variant="caption">{b.progressPct ?? 0}%</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-                    <Typography>Classificação: {b.classification}</Typography>
-                    <Typography>Reefers: {b.reefers}</Typography>
-                    <Typography>IMO: {b.imo}</Typography>
-                    <Typography>OOG: {b.oog}</Typography>
+                  <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    {b.containers.map((c: any) => (
+                      <Typography key={c.cntrNo ?? c.stowage} variant="body2">
+                        {c.stowage} — {c.cntrNo ?? 's/ ID'} {c.iso ? `(${c.iso})` : ''}
+                        {c.imdgClasses ? ` | IMDG: ${c.imdgClasses}` : ''}
+                        {c.oog ? ` | OOG: ${c.oog}` : ''}
+                        {c.weight ? ` | ${c.weight}t` : ''}
+                      </Typography>
+                    ))}
                   </Box>
                 </Paper>
               ))}
             </Box>
-          </Paper>
-
-          <Paper sx={{ p: 2, mb: 2 }}>
-            <Typography variant="h6">Divisão por turno</Typography>
-            {summary.shifts?.map((s: any, idx: number) => (
-              <Box key={idx} sx={{ my: 1 }}>
-                <Typography>🕐 Turno {s.range}</Typography>
-                <Typography>Seu Terno: {s.team ?? '—'}</Typography>
-                <Typography>Resumo do turno — Bays previstas:</Typography>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>{(s.bays ?? []).map((b: string) => <Paper key={b} sx={{ p: 1 }}>{b}</Paper>)}</Box>
-              </Box>
-            ))}
           </Paper>
 
           <Paper sx={{ p: 2 }}>
@@ -199,8 +219,8 @@ export const PlanejamentoSplit: React.FC = () => {
             ) : (
               <Box>
                 <Typography>BAY {searchResult.id}</Typography>
-                <Typography>Movimentos: {searchResult.movements}</Typography>
-                <Typography>Operações: {searchResult.operations.join(', ')}</Typography>
+                <Typography>Contêineres: {searchResult.containerCount}</Typography>
+                <Typography>Seções: {searchResult.sections.join(', ')}</Typography>
               </Box>
             )}
           </Paper>
