@@ -17,6 +17,13 @@ interface JtableResponse {
   Message?: string;
 }
 
+interface RapDetailResponse {
+  Result: string;
+  Records?: Record<string, any>;
+  Error?: string;
+  Message?: string;
+}
+
 export interface BtpScheduleRecord {
   navio: string;
   viagem: string;
@@ -72,6 +79,135 @@ function splitDateTime(value: string): { data: string; hora: string } {
     data: `${match[1]}/${match[2]}/${match[3]}`,
     hora: `${match[4]}:${match[5]}`,
   };
+}
+
+function normalizeRap(rap: string): string {
+  return cleanText(rap).replace(/\s+/g, ' ').trim();
+}
+
+function toRapRequestValue(rap: string): string {
+  const normalized = normalizeRap(rap);
+  if (!normalized) return '';
+
+  const match = normalized.match(/^(\d+)\s+(\d{4})$/);
+  if (match) {
+    // O endpoint DetalhesViagem espera o mesmo formato visual do portal: "NNNNN  AAAA".
+    return `${match[1]}  ${match[2]}`;
+  }
+
+  return normalized;
+}
+
+function toRapKey(rap: string): string {
+  return toRapRequestValue(rap).replace(/\s+/g, '');
+}
+
+function mapRapDetailsToRecord(record: BtpScheduleRecord, details: Record<string, any>): BtpScheduleRecord {
+  const get = (key: string) => cleanText(String(details[key] ?? ''));
+
+  const previsaoChegada = get('PrevisaoChegada');
+  const atracacao = get('Atracacao');
+  const previsaoSaida = get('PrevisaoSaida');
+  const inicioOperacao = get('InicioOperacao');
+  const fimOperacao = get('FimOperacao');
+  const saida = get('Saida');
+  const deadline = get('Deadline');
+
+  const previsaoChegadaParts = splitDateTime(previsaoChegada);
+  const atracacaoParts = splitDateTime(atracacao);
+  const previsaoSaidaParts = splitDateTime(previsaoSaida);
+  const saidaParts = splitDateTime(saida);
+
+  return {
+    ...record,
+    navio: get('Navio') || record.navio,
+    viagem: get('Viagem') || record.viagem,
+    operacao: get('Servico') || record.operacao,
+    berco: get('Berco') || record.berco,
+    eta: previsaoChegada || record.eta,
+    etb: atracacao || record.etb,
+    etd: previsaoSaida || record.etd,
+    datachegada: previsaoChegadaParts.data || record.datachegada,
+    horachegada: previsaoChegadaParts.hora || record.horachegada,
+    dataatracacao: atracacaoParts.data || record.dataatracacao,
+    horaatracacao: atracacaoParts.hora || record.horaatracacao,
+    datasaida: saidaParts.data || record.datasaida,
+    horasaida: saidaParts.hora || record.horasaida,
+    chegadaPrevista: previsaoChegada,
+    atracacao,
+    saidaPrevista: previsaoSaida,
+    comprimentoNavio: get('Comprimento'),
+    codigoCodesp: get('CodigoCodesp'),
+    pontoAtracacao: get('Berco'),
+    numeroViagemDescarga: get('ViagemDescarga'),
+    inicioOperacao,
+    fimOperacao,
+    saida,
+    tipoOperacao: get('TipoOperacao'),
+    deadLine: deadline || record.deadline || '',
+    direcaoAtracacao: get('DirecaoAtracacao'),
+    numeroViagemEmbarque: get('ViagemEmbarque'),
+  };
+}
+
+async function fetchRapDetailsMap(page: Page, records: BtpScheduleRecord[]): Promise<Map<string, Record<string, any>>> {
+  const detailMap = new Map<string, Record<string, any>>();
+
+  const verificationToken = await page.evaluate(() => {
+    const input = document.querySelector('input[name="__RequestVerificationToken"]') as HTMLInputElement | null;
+    return input?.value || '';
+  });
+
+  if (!verificationToken) {
+    console.warn('[BtpScheduleService] Token de verificação não encontrado; seguindo sem detalhes de RAP.');
+    return detailMap;
+  }
+
+  const uniqueRaps = Array.from(
+    new Set(
+      records
+        .map((record) => toRapRequestValue(record.rap || ''))
+        .filter((rap) => rap.length > 0)
+    )
+  );
+
+  if (uniqueRaps.length === 0) return detailMap;
+
+  const concurrency = 5;
+  let index = 0;
+
+  const worker = async () => {
+    while (index < uniqueRaps.length) {
+      const currentIndex = index;
+      index += 1;
+      const rap = uniqueRaps[currentIndex];
+      const rapKey = toRapKey(rap);
+
+      try {
+        const response = await page.request.post('https://novo-tas.btp.com.br/ConsultasLivres/DetalhesViagem', {
+          form: { rap },
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            '__RequestVerificationToken': verificationToken,
+          },
+          timeout: 15000,
+        });
+
+        if (!response.ok()) continue;
+
+        const json = (await response.json()) as RapDetailResponse;
+        if (json.Result !== 'OK' || !json.Records) continue;
+
+        detailMap.set(rapKey, json.Records);
+      } catch (error) {
+        console.warn(`[BtpScheduleService] Falha ao buscar detalhes do RAP ${rap}:`, error);
+      }
+    }
+  };
+
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+
+  return detailMap;
 }
 
 export function parseBtpScheduleRows(rows: string[][]): BtpScheduleRecord[] {
@@ -213,8 +349,17 @@ async function scrapeBtpPortal(): Promise<BtpScheduleRecord[]> {
 
     const parsedRecords = parseBtpScheduleRows(rows);
     const filteredRecords = parsedRecords.filter((record) => record.navio && record.navio.trim().length > 0);
+    const rapDetailsMap = await fetchRapDetailsMap(page, filteredRecords);
+
+    const enrichedRecords = filteredRecords.map((record) => {
+      const rapKey = toRapKey(record.rap || '');
+      const details = rapDetailsMap.get(rapKey);
+      if (!details) return record;
+      return mapRapDetailsToRecord(record, details);
+    });
+
     console.log(`[BtpScheduleService] ${filteredRecords.length} registros extraídos do iframe BTP`);
-    return filteredRecords;
+    return enrichedRecords;
   } catch (error) {
     console.error('[BtpScheduleService] Erro ao fazer scraping:', error);
     throw error;
