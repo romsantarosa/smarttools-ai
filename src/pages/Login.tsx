@@ -71,8 +71,8 @@ export const Login: React.FC = () => {
   }
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState('carlos.santos@btp.com.br');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<'Supervisor' | 'Operador'>(() => {
   return (
@@ -171,10 +171,10 @@ export const Login: React.FC = () => {
     }
   };
 
-  // Quick Demo Access
-  const handleQuickLogin = (demoRole: 'Supervisor' | 'Operador') => {
-    const demoEmail = demoRole === 'Supervisor' ? 'supervisor@btp.com.br' : 'operador@btp.com.br';
-    login(demoEmail, demoRole);
+  // Local access fallback for the installed environment
+  const handleLocalLogin = (role: 'Supervisor' | 'Operador') => {
+    const localEmail = role === 'Supervisor' ? 'supervisor@terminal.local' : 'operador@terminal.local';
+    login(localEmail, role);
     navigate('/');
   };
 
@@ -284,14 +284,11 @@ export const Login: React.FC = () => {
               <div>{errorMsg}</div>
               <button
                 type="button"
-                onClick={() => {
-                  login(email || 'usuario@btp.com.br', role);
-                  navigate('/');
-                }}
+                onClick={() => handleLocalLogin('Supervisor')}
                 className="mt-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[11px] rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-all"
               >
                 <LogIn className="w-3.5 h-3.5" />
-                <span>Entrar como {role} (Modo Rápido / Local)</span>
+                <span>Entrar como Supervisor (Modo Rápido / Local)</span>
               </button>
             </div>
           </div>
@@ -319,7 +316,7 @@ export const Login: React.FC = () => {
                   required
                   value={fullName}
                   onChange={e => setFullName(e.target.value)}
-                  placeholder="Carlos Eduardo Santos"
+                  placeholder="Nome do colaborador"
                   className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-600 focus:outline-hidden transition-all"
                 />
               </div>
@@ -338,7 +335,7 @@ export const Login: React.FC = () => {
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="carlos.santos@btp.com.br"
+                placeholder="operador@empresa.com"
                 className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-600 focus:outline-hidden transition-all"
               />
             </div>
@@ -471,21 +468,21 @@ export const Login: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Demo Access Bar */}
+        {/* Local access helper */}
         <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
           <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-wider mb-2">
-            Acesso Rápido de Demonstração
+            Acesso Local da Instalação
           </p>
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => handleQuickLogin('Supervisor')}
+              onClick={() => handleLocalLogin('Supervisor')}
               className="px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Shield className="w-3.5 h-3.5 text-blue-600" />
               Supervisor
             </button>
             <button
-              onClick={() => handleQuickLogin('Operador')}
+              onClick={() => handleLocalLogin('Operador')}
               className="px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <KeyRound className="w-3.5 h-3.5 text-emerald-600" />

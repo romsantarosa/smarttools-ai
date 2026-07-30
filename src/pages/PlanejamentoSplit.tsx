@@ -1,34 +1,35 @@
 import React, { useState, useRef } from 'react';
 import {
-  Box,
-  Button,
-  Typography,
-  Paper,
-  LinearProgress,
-  TextField,
-  IconButton,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Alert,
-  Divider,
-} from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import SearchIcon from '@mui/icons-material/Search';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import GetAppIcon from '@mui/icons-material/GetApp';
-import InfoIcon from '@mui/icons-material/Info';
+  UploadCloud,
+  Search,
+  Copy,
+  Download,
+  Info,
+  FileText,
+  AlertTriangle,
+  X,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { processPdf } from '../services/pdfService';
 import { analyzeSplit } from '../services/aiService';
 
 function displayValue(value: any, sourceLabel?: string) {
   if (value === null || value === undefined || value === '') {
-    return <>— <small style={{ opacity: 0.6 }}>{sourceLabel === 'not_available_in_document' ? '(não consta no documento)' : ''}</small></>;
+    return (
+      <>
+        - <span className="text-[10px] text-slate-400">{sourceLabel === 'not_available_in_document' ? '(nao consta no documento)' : ''}</span>
+      </>
+    );
   }
-  return <>{value} {sourceLabel ? <small style={{ opacity: 0.8 }}>{sourceLabel === 'extracted' ? '(extraído do PDF)' : ''}</small> : null}</>;
+
+  return (
+    <>
+      {value}{' '}
+      {sourceLabel ? (
+        <span className="text-[10px] text-slate-400">{sourceLabel === 'extracted' ? '(extraido do PDF)' : ''}</span>
+      ) : null}
+    </>
+  );
 }
 
 export const PlanejamentoSplit: React.FC = () => {
@@ -39,13 +40,15 @@ export const PlanejamentoSplit: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  // Novos estados para OCR e visualização de texto
   const [extractedText, setExtractedText] = useState<string | null>(null);
   const [extractionMethod, setExtractionMethod] = useState<'native' | 'ocr' | null>(null);
   const [extractionErrors, setExtractionErrors] = useState<string[]>([]);
   const [showTextViewer, setShowTextViewer] = useState(false);
   const [ocrProgress, setOcrProgress] = useState<{ current: number; total: number } | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
+
+  const [search, setSearch] = useState('');
+  const [searchResult, setSearchResult] = useState<any>(null);
 
   const onDrop = async (e: React.DragEvent) => {
     e.preventDefault();
@@ -58,9 +61,6 @@ export const PlanejamentoSplit: React.FC = () => {
     if (fileToUse) setFile(fileToUse);
   };
 
-  const [search, setSearch] = useState('');
-  const [searchResult, setSearchResult] = useState<any>(null);
-
   const onAnalyze = async () => {
     if (!file) return;
 
@@ -69,54 +69,36 @@ export const PlanejamentoSplit: React.FC = () => {
     setErrorMessage(null);
     setSummary(null);
     setExtractedText(null);
-    setExtractedText(null);
     setExtractionErrors([]);
     setOcrProgress(null);
     setCopySuccess(false);
 
-    console.log('[PlanejamentoSplit] Iniciando processamento do PDF:', file.name);
-
     try {
-      // Processar PDF (detecção automática de texto vs OCR)
       const pdfResult = await processPdf(
         file,
         (pct) => setProgress(pct),
         (current, total) => setOcrProgress({ current, total })
       );
 
-      // Armazenar resultado da extração
       setExtractedText(pdfResult.text);
       setExtractionMethod(pdfResult.extractionMethod);
       if (pdfResult.errors.length > 0) {
         setExtractionErrors(pdfResult.errors);
       }
 
-      console.log('[PlanejamentoSplit] Extração de PDF concluída.');
-      console.log(`[PlanejamentoSplit] Método: ${pdfResult.extractionMethod === 'native' ? 'Texto Nativo' : 'OCR com Gemini'}`);
-
-      // Preparar dados para análise
       const parsed = {
         pages: pdfResult.pages,
         lines: pdfResult.pages.map((pageText) => pageText.split('\n')),
         text: pdfResult.text,
       };
 
-      // Log temporário de depuração
-      console.log('--- TEXTO EXTRAÍDO DO PDF (depuração) ---');
-      console.log(parsed.text.substring(0, 500) + '...');
-
-      console.log('[PlanejamentoSplit] Iniciando análise com IA...');
       setProgress(85);
-
       const analysis = await analyzeSplit(parsed);
       setSummary(analysis);
       setProgress(100);
-      setShowTextViewer(false); // Fechar visualizador se estava aberto
-
-      console.log('[PlanejamentoSplit] Análise finalizada com sucesso.');
+      setShowTextViewer(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro inesperado ao processar o PDF.';
-      console.error('[PlanejamentoSplit] Falha no processamento:', err);
       setErrorMessage(message);
     } finally {
       setParsing(false);
@@ -126,21 +108,22 @@ export const PlanejamentoSplit: React.FC = () => {
   };
 
   const onSearch = () => {
-    if (!search || !summary) return setSearchResult(null);
+    if (!search || !summary) {
+      setSearchResult(null);
+      return;
+    }
     const found = (summary.bays || []).find((b: any) => b.id === search.padStart(2, '0'));
-    setSearchResult(found ?? { message: 'Bay não encontrada nas tabelas de alerta' });
+    setSearchResult(found ?? { message: 'Bay nao encontrada nas tabelas de alerta' });
   };
 
-  // Funções auxiliares para texto extraído
   const handleCopyText = async () => {
     if (!extractedText) return;
     try {
       await navigator.clipboard.writeText(extractedText);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
-    } catch (err) {
-      console.error('Erro ao copiar:', err);
-      setErrorMessage('Erro ao copiar texto para a área de transferência');
+    } catch {
+      setErrorMessage('Erro ao copiar texto para a area de transferencia');
     }
   };
 
@@ -148,7 +131,7 @@ export const PlanejamentoSplit: React.FC = () => {
     if (!extractedText) return;
     const data = {
       fileName: file?.name || 'unknown.pdf',
-      extractionMethod: extractionMethod,
+      extractionMethod,
       extractionTime: new Date().toISOString(),
       text: extractedText,
       errors: extractionErrors,
@@ -164,252 +147,279 @@ export const PlanejamentoSplit: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleViewExtractedText = () => {
-    setShowTextViewer(!showTextViewer);
-  };
-
   return (
-    <Box sx={{ p: 2 }}>
-      <Typography variant="h5" gutterBottom>PLANEJAMENTO SPLIT</Typography>
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-slate-800">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-bold uppercase tracking-wider">
+            <FileText className="w-3.5 h-3.5" />
+            Analise de Planejamento Split
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Planejamento Split</h1>
+          <p className="text-xs sm:text-sm text-slate-300 font-medium">
+            Envie o PDF, extraia os dados do planejamento e gere o resumo operacional padronizado.
+          </p>
+        </div>
+      </div>
 
-      <Paper sx={{ p: 2, mb: 2 }} onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-          <CloudUploadIcon sx={{ fontSize: 48, opacity: 0.8 }} />
-          <Typography>Arraste o Split (.PDF)</Typography>
-          <Typography>ou</Typography>
-          <Button variant="contained" onClick={() => fileRef.current?.click()}>Selecionar Arquivo</Button>
-          <input ref={fileRef} type="file" accept="application/pdf" style={{ display: 'none' }} onChange={() => onSelectFile()} />
-          {file && <Typography variant="body2">Arquivo: {file.name}</Typography>}
-          <Button variant="outlined" disabled={!file || parsing} onClick={onAnalyze}>Analisar Split</Button>
-        </Box>
-      </Paper>
+      <div
+        className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={onDrop}
+      >
+        <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-8 text-center space-y-4">
+          <UploadCloud className="w-12 h-12 text-blue-600 mx-auto" />
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Arraste o arquivo Split (.PDF) aqui</p>
+          <p className="text-xs text-slate-400">ou</p>
+
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-xl transition-all"
+            >
+              Selecionar Arquivo
+            </button>
+            <button
+              disabled={!file || parsing}
+              onClick={onAnalyze}
+              className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-black text-xs rounded-xl transition-all"
+            >
+              {parsing ? 'Analisando...' : 'Analisar Split'}
+            </button>
+          </div>
+
+          <input
+            ref={fileRef}
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={() => onSelectFile()}
+          />
+
+          {file && <p className="text-xs font-semibold text-slate-500">Arquivo selecionado: {file.name}</p>}
+        </div>
+      </div>
 
       {parsing && (
-        <Box sx={{ mb: 2 }}>
-          <LinearProgress variant="determinate" value={progress} />
-          <Typography variant="caption">Processando... {progress}%</Typography>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 space-y-2">
+          <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+            <div className="h-full bg-blue-600 transition-all" style={{ width: `${progress}%` }} />
+          </div>
+          <p className="text-xs font-bold text-slate-500">Processando... {progress}%</p>
 
           {ocrProgress && (
-            <Box sx={{ mt: 1, p: 1, bgcolor: '#e3f2fd', borderRadius: 1 }}>
-              <Typography variant="body2">
-                OCR com Gemini Vision: {ocrProgress.current}/{ocrProgress.total} páginas
-              </Typography>
-            </Box>
+            <div className="p-3 rounded-xl bg-sky-50 border border-sky-200 text-sky-700 text-xs font-bold">
+              OCR com Gemini Vision: {ocrProgress.current}/{ocrProgress.total} paginas
+            </div>
           )}
-        </Box>
+        </div>
       )}
 
       {errorMessage && (
-        <Paper sx={{ p: 2, mb: 2, border: '1px solid #f44336' }}>
-          <Typography color="error">❌ Erro: {errorMessage}</Typography>
-        </Paper>
+        <div className="p-3 rounded-xl border border-rose-300 bg-rose-50 text-rose-700 text-xs font-bold">
+          Erro: {errorMessage}
+        </div>
       )}
 
       {extractionErrors.length > 0 && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          <Typography variant="body2">⚠️ {extractionErrors.length} erro(s) durante a extração:</Typography>
+        <div className="p-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-700 text-xs font-bold space-y-1">
+          <p>{extractionErrors.length} erro(s) durante a extracao:</p>
           {extractionErrors.map((err, idx) => (
-            <Typography key={idx} variant="caption" sx={{ display: 'block' }}>
-              • {err}
-            </Typography>
+            <p key={`${err}-${idx}`} className="text-[11px]">- {err}</p>
           ))}
-        </Alert>
+        </div>
       )}
 
       {extractedText && extractionMethod && (
-        <Paper sx={{ p: 2, mb: 2, bgcolor: extractionMethod === 'ocr' ? '#fff3cd' : '#e8f5e9' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <InfoIcon fontSize="small" />
-              <Typography variant="body2">
-                {extractionMethod === 'ocr' ? '🔍 OCR com Gemini Vision' : '📄 Texto Nativo (PDF)'}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                size="small"
-                startIcon={<ContentCopyIcon />}
+        <div className={`rounded-2xl p-4 border ${extractionMethod === 'ocr' ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+              <Info className="w-4 h-4" />
+              {extractionMethod === 'ocr' ? 'OCR com Gemini Vision' : 'Texto nativo do PDF'}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
                 onClick={handleCopyText}
-                variant="outlined"
+                className="px-3 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1.5"
               >
-                {copySuccess ? '✓ Copiado!' : 'Copiar Texto'}
-              </Button>
-              <Button
-                size="small"
-                startIcon={<GetAppIcon />}
+                <Copy className="w-3.5 h-3.5" /> {copySuccess ? 'Copiado' : 'Copiar Texto'}
+              </button>
+              <button
                 onClick={handleExportJson}
-                variant="outlined"
+                className="px-3 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1.5"
               >
-                Exportar JSON
-              </Button>
-              <Button
-                size="small"
-                onClick={handleViewExtractedText}
-                variant="outlined"
+                <Download className="w-3.5 h-3.5" /> Exportar JSON
+              </button>
+              <button
+                onClick={() => setShowTextViewer(!showTextViewer)}
+                className="px-3 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold"
               >
-                {showTextViewer ? 'Ocultar' : 'Ver Texto'}
-              </Button>
-            </Box>
-          </Box>
-        </Paper>
+                {showTextViewer ? 'Ocultar Texto' : 'Ver Texto'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showTextViewer && extractedText && (
-        <Dialog open={showTextViewer} onClose={() => setShowTextViewer(false)} maxWidth="md" fullWidth>
-          <DialogTitle>
-            Texto Extraído do PDF
-            <Typography variant="caption" sx={{ display: 'block' }}>
-              {extractionMethod === 'ocr' ? 'Extraído via OCR (Gemini Vision)' : 'Texto Nativo'}
-            </Typography>
-          </DialogTitle>
-          <DialogContent>
-            <Paper
-              sx={{
-                p: 2,
-                bgcolor: '#f5f5f5',
-                maxHeight: 400,
-                overflow: 'auto',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                fontFamily: 'monospace',
-                fontSize: '0.85rem',
-              }}
-            >
-              {extractedText}
-            </Paper>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCopyText} startIcon={<ContentCopyIcon />}>
-              {copySuccess ? '✓ Copiado!' : 'Copiar'}
-            </Button>
-            <Button onClick={() => setShowTextViewer(false)}>Fechar</Button>
-          </DialogActions>
-        </Dialog>
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs p-4 flex items-center justify-center">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <div>
+                <h3 className="font-black text-slate-900 dark:text-white text-sm">Texto extraido do PDF</h3>
+                <p className="text-[11px] text-slate-400">
+                  {extractionMethod === 'ocr' ? 'Extraido via OCR (Gemini Vision)' : 'Texto nativo'}
+                </p>
+              </div>
+              <button onClick={() => setShowTextViewer(false)} className="text-slate-500 hover:text-slate-700">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 overflow-auto max-h-[60vh]">
+              <pre className="text-[11px] whitespace-pre-wrap break-words bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
+                {extractedText}
+              </pre>
+            </div>
+
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2">
+              <button
+                onClick={handleCopyText}
+                className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold"
+              >
+                {copySuccess ? 'Copiado' : 'Copiar'}
+              </button>
+              <button
+                onClick={() => setShowTextViewer(false)}
+                className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {summary && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <Paper sx={{ p: 2, mb: 2 }}>
-            <Typography variant="h6">Resumo do Navio</Typography>
-            <Typography>Nome: {displayValue(summary.shipName, summary.shipNameSource)}</Typography>
-            <Typography>Viagem: {displayValue(summary.voyage, summary.voyageSource)}</Typography>
-            <Typography>Operador: {displayValue(summary.operator, summary.operatorSource)}</Typography>
-            <Typography>ETA: {displayValue(summary.eta, summary.etaSource)}</Typography>
-            <Typography>ETB: {displayValue(summary.etb, summary.etbSource)}</Typography>
-            <Typography>Berço: {displayValue(summary.berth, summary.berthSource)}</Typography>
-          </Paper>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+            <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Resumo do Navio</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <p><span className="text-slate-400">Nome:</span> {displayValue(summary.shipName, summary.shipNameSource)}</p>
+              <p><span className="text-slate-400">Viagem:</span> {displayValue(summary.voyage, summary.voyageSource)}</p>
+              <p><span className="text-slate-400">Operador:</span> {displayValue(summary.operator, summary.operatorSource)}</p>
+              <p><span className="text-slate-400">ETA:</span> {displayValue(summary.eta, summary.etaSource)}</p>
+              <p><span className="text-slate-400">ETB:</span> {displayValue(summary.etb, summary.etbSource)}</p>
+              <p><span className="text-slate-400">Berco:</span> {displayValue(summary.berth, summary.berthSource)}</p>
+            </div>
+          </div>
 
-          <Paper sx={{ p: 2, mb: 2 }}>
-            <Typography variant="h6">Resumo da operação</Typography>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 1 }}>
-              <Typography>Descarga (total): {displayValue(summary.discharge, summary.dischargeSource)}</Typography>
-              <Typography>Descarga (restante): {summary.dischargeRemaining ?? '—'}</Typography>
-              <Typography>Embarque (total): {displayValue(summary.load, summary.loadSource)}</Typography>
-              <Typography>Embarque (restante): {summary.loadRemaining ?? '—'}</Typography>
-              <Typography>Reefers Positivos: {summary.reefersPositive ?? 0}</Typography>
-              <Typography>Reefers Negativos: {summary.reefersNegative ?? 0}</Typography>
-              <Typography>IMO: {summary.imo ?? 0}</Typography>
-              <Typography>OOG: {summary.oog ?? 0}</Typography>
-              <Typography>Direct Delivery: {summary.directDelivery ?? 0}</Typography>
-              <Typography>
-                Total geral (descarga+embarque): {summary.dischargeSource === 'extracted' || summary.loadSource === 'extracted' ? summary.total : displayValue(null, 'not_available_in_document')}
-              </Typography>
-            </Box>
-          </Paper>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+            <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Resumo da Operacao</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <p><span className="text-slate-400">Descarga total:</span> {displayValue(summary.discharge, summary.dischargeSource)}</p>
+              <p><span className="text-slate-400">Descarga restante:</span> {summary.dischargeRemaining ?? '-'}</p>
+              <p><span className="text-slate-400">Embarque total:</span> {displayValue(summary.load, summary.loadSource)}</p>
+              <p><span className="text-slate-400">Embarque restante:</span> {summary.loadRemaining ?? '-'}</p>
+              <p><span className="text-slate-400">Reefers positivos:</span> {summary.reefersPositive ?? 0}</p>
+              <p><span className="text-slate-400">Reefers negativos:</span> {summary.reefersNegative ?? 0}</p>
+              <p><span className="text-slate-400">IMO:</span> {summary.imo ?? 0}</p>
+              <p><span className="text-slate-400">OOG:</span> {summary.oog ?? 0}</p>
+              <p><span className="text-slate-400">Direct Delivery:</span> {summary.directDelivery ?? 0}</p>
+            </div>
+          </div>
 
           {summary.alerts?.length > 0 && (
-            <Paper sx={{ p: 2, mb: 2 }}>
-              <Typography variant="h6">Alertas</Typography>
-              <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Alertas</h3>
+              <div className="flex flex-wrap gap-2">
                 {summary.alerts.map((a: string) => (
-                  <Chip key={a} label={a} sx={{ bgcolor: '#fff3cd' }} />
+                  <span key={a} className="px-2.5 py-1 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 text-[11px] font-black">
+                    {a}
+                  </span>
                 ))}
-              </Box>
-            </Paper>
+              </div>
+            </div>
           )}
 
-          {summary.cranePlanSource === 'extracted' ? (
-            <Paper sx={{ p: 2, mb: 2 }}>
-              <Typography variant="h6">Plano de Guindastes (QC Plan)</Typography>
-              <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
-                {summary.cranePlan.map((c: any) => (
-                  <Paper key={c.crane} sx={{ p: 1 }}>
-                    <Typography variant="subtitle2">{c.crane}</Typography>
-                    <Typography variant="caption">Total: {c.total} | Restante: {c.remaining}</Typography>
-                  </Paper>
-                ))}
-              </Box>
-            </Paper>
-          ) : (
-            <Paper sx={{ p: 2, mb: 2, opacity: 0.7 }}>
-              <Typography variant="h6">Plano de Guindastes (QC Plan)</Typography>
-              <Typography variant="body2">
-                Não disponível neste PDF — essa informação está apenas na imagem da página 1 (captura de tela do sistema), sem texto extraível.
-              </Typography>
-            </Paper>
-          )}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+            <h3 className="text-sm font-black text-slate-900 dark:text-white mb-2">Bays com conteineres em alerta</h3>
+            <p className="text-[11px] text-slate-400 mb-3">
+              Somente bays citadas nas tabelas de alerta do PDF (dados reais).
+            </p>
 
-          <Paper sx={{ p: 2, mb: 2 }}>
-            <Typography variant="h6">Bays com contêineres em alerta</Typography>
-            <Typography variant="caption" sx={{ opacity: 0.7 }}>
-              Somente bays citadas nas tabelas de alerta do PDF (dados reais). Os mapas de bay do
-              relatório são gráficos visuais e não contêm contagem de movimentos em texto.
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-              {(!summary.bays || summary.bays.length === 0) && (
-                <Typography sx={{ opacity: 0.7 }}>Nenhuma bay com contêineres de alerta foi encontrada.</Typography>
-              )}
+            {(!summary.bays || summary.bays.length === 0) && (
+              <p className="text-xs text-slate-500 font-semibold">Nenhuma bay com conteineres de alerta foi encontrada.</p>
+            )}
+
+            <div className="space-y-3">
               {summary.bays?.map((b: any) => (
-                <Paper key={b.id} sx={{ p: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="subtitle1">BAY {b.id}</Typography>
-                    <Typography>{b.containerCount} contêiner(es)</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
-                    {b.sections.map((s: string) => <Chip key={s} size="small" label={s} />)}
-                  </Box>
-                  <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <div key={b.id} className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-black text-xs">BAY {b.id}</h4>
+                    <span className="text-xs font-bold text-slate-500">{b.containerCount} conteiner(es)</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {b.sections.map((s: string) => (
+                      <span key={s} className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-bold">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     {b.containers.map((c: any) => (
-                      <Typography key={c.cntrNo ?? c.stowage} variant="body2">
-                        {c.stowage} — {c.cntrNo ?? 's/ ID'} {c.iso ? `(${c.iso})` : ''}
+                      <p key={c.cntrNo ?? c.stowage}>
+                        {c.stowage} - {c.cntrNo ?? 's/ ID'} {c.iso ? `(${c.iso})` : ''}
                         {c.imdgClasses ? ` | IMDG: ${c.imdgClasses}` : ''}
                         {c.oog ? ` | OOG: ${c.oog}` : ''}
                         {c.weight ? ` | ${c.weight}t` : ''}
-                      </Typography>
+                      </p>
                     ))}
-                  </Box>
-                </Paper>
+                  </div>
+                </div>
               ))}
-            </Box>
-          </Paper>
+            </div>
+          </div>
 
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6">Resumo Inteligente</Typography>
-            <Typography>{summary.smartSummary}</Typography>
-          </Paper>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+            <h3 className="text-sm font-black text-slate-900 dark:text-white mb-2">Resumo Inteligente</h3>
+            <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">{summary.smartSummary}</p>
+          </div>
         </motion.div>
       )}
 
-      <Box sx={{ position: 'fixed', right: 16, bottom: 16, width: 320 }}>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <TextField size="small" placeholder="Pesquisar Bay" value={search} onChange={(e) => setSearch(e.target.value)} />
-          <IconButton onClick={onSearch} sx={{ bgcolor: 'background.paper' }}><SearchIcon /></IconButton>
-        </Box>
+      <div className="fixed right-4 bottom-4 w-[320px] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl p-3 space-y-2">
+        <div className="flex gap-2">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Pesquisar bay"
+            className="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-semibold"
+          />
+          <button
+            onClick={onSearch}
+            className="px-2.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white"
+          >
+            <Search className="w-4 h-4" />
+          </button>
+        </div>
+
         {searchResult && (
-          <Paper sx={{ mt: 1, p: 1 }}>
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-2 text-xs">
             {searchResult.message ? (
-              <Typography>{searchResult.message}</Typography>
+              <p className="font-semibold text-slate-600 dark:text-slate-300">{searchResult.message}</p>
             ) : (
-              <Box>
-                <Typography>BAY {searchResult.id}</Typography>
-                <Typography>Contêineres: {searchResult.containerCount}</Typography>
-                <Typography>Seções: {searchResult.sections.join(', ')}</Typography>
-              </Box>
+              <div className="space-y-1 text-slate-700 dark:text-slate-200 font-semibold">
+                <p>BAY {searchResult.id}</p>
+                <p>Conteineres: {searchResult.containerCount}</p>
+                <p>Secoes: {searchResult.sections.join(', ')}</p>
+              </div>
             )}
-          </Paper>
+          </div>
         )}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };
 

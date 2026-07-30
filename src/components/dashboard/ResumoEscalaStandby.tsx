@@ -101,8 +101,24 @@ export const ResumoEscalaStandby: React.FC = () => {
       !safeUnavailable.includes(op.mat) && !assignedMats.includes(op.mat)
     );
 
+    if (operantes.length === 0) {
+      return {
+        isFallback: false,
+        dataAtual: selectedScale.dataAtual,
+        turno: selectedScale.turno,
+        b1Ternos: selectedScale.b1 || 0,
+        b2Ternos: selectedScale.b2 || 0,
+        b3Ternos: selectedScale.b3 || 0,
+        bercos: [],
+        standby: [],
+        absent: [],
+        unavailable: [],
+        ships: selectedScale.navios || {}
+      };
+    }
+
     const originalStartOp = OPERADORES_INICIAIS[selectedScale.indexInicio || 0] || OPERADORES_INICIAIS[0];
-    let newIndexInicio = operantes.findIndex(op => op.mat === originalStartOp.mat);
+    let newIndexInicio = originalStartOp ? operantes.findIndex(op => op.mat === originalStartOp.mat) : 0;
     if (newIndexInicio === -1) newIndexInicio = 0;
 
     const listaTrabalho = [

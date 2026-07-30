@@ -205,6 +205,10 @@ export async function loginWithGoogleFirebase(): Promise<User> {
       console.warn('Firebase Auth: Login Google não ativado no Firebase Console. Alternando para login local Google.');
       return buildAppUser('google_local_' + Date.now(), 'usuario.google@btp.com.br', 'Usuário Google (Local)', 'Supervisor');
     }
+    if (err?.code === 'auth/unauthorized-domain') {
+      console.warn('Firebase Auth: Domínio não autorizado para Google Sign-In. Alternando para login local Google.');
+      return buildAppUser('google_local_' + Date.now(), 'usuario.google@btp.com.br', 'Usuário Google (Local)', 'Supervisor');
+    }
     throw err;
   }
 }
@@ -230,6 +234,10 @@ export async function loginWithFacebookFirebase(): Promise<User> {
   } catch (err: any) {
     if (err?.code === 'auth/operation-not-allowed') {
       console.warn('Firebase Auth: Login Facebook não ativado no Firebase Console. Alternando para login local Facebook.');
+      return buildAppUser('facebook_local_' + Date.now(), 'usuario.facebook@btp.com.br', 'Usuário Facebook (Local)', 'Operador');
+    }
+    if (err?.code === 'auth/unauthorized-domain') {
+      console.warn('Firebase Auth: Domínio não autorizado para Facebook Sign-In. Alternando para login local Facebook.');
       return buildAppUser('facebook_local_' + Date.now(), 'usuario.facebook@btp.com.br', 'Usuário Facebook (Local)', 'Operador');
     }
     throw err;
@@ -288,9 +296,9 @@ export function getFirebaseErrorMessage(error: any): string {
     case 'auth/cancelled-popup-request':
       return 'Solicitação de login popup cancelada.';
     case 'auth/operation-not-allowed':
-      return 'O método de autenticação (E-mail/Senha, Google ou Facebook) precisa ser ativado no Firebase Console em "Authentication > Sign-in method". Você também pode usar o botão abaixo para entrar em Modo Local de Demonstração.';
+      return 'O método de autenticação (E-mail/Senha, Google ou Facebook) precisa ser ativado no Firebase Console em "Authentication > Sign-in method". Você também pode usar o acesso local da instalação para continuar.';
     case 'auth/unauthorized-domain':
-      return 'Este domínio não está autorizado no Console do Firebase (Authentication > Settings > Authorized Domains).';
+      return 'Este domínio não está autorizado no Console do Firebase (Authentication > Settings > Authorized Domains). Enquanto isso, use "Entrar como Supervisor (Modo Rápido / Local)".';
     case 'auth/requires-recent-login':
       return 'Por segurança, faça login novamente no sistema antes de alterar sua senha.';
     default:

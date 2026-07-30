@@ -1,36 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Box,
-  Button,
-  Typography,
-  Paper,
-  TextField,
-  CircularProgress,
-  Alert,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TableSortLabel,
-  Chip,
-  IconButton,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-} from '@mui/material';
-import {
   RefreshCw,
   Download,
   Copy,
   ChevronDown,
   ChevronUp,
-  AlertCircle,
+  AlertTriangle,
+  Ship,
+  Search,
+  Filter,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 interface BtpScheduleRecord {
   navio: string;
@@ -54,18 +33,16 @@ interface BtpScheduleRecord {
 
 type SortDirection = 'asc' | 'desc';
 
-const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutos
+const REFRESH_INTERVAL = 5 * 60 * 1000;
 
-const statusColors: Record<string, 'default' | 'primary' | 'secondary' | 'error' | 'warning' | 'info' | 'success'> = {
-  'Atracado': 'success',
-  'Fundeado': 'info',
-  'Previsto': 'primary',
-  'Em Operação': 'warning',
-  'Saído': 'default',
-};
-
-function getStatusColor(status: string): 'default' | 'primary' | 'secondary' | 'error' | 'warning' | 'info' | 'success' {
-  return statusColors[status] || 'default';
+function getStatusClass(status: string): string {
+  const key = status.toLowerCase();
+  if (key.includes('atracado')) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  if (key.includes('fundeado')) return 'bg-sky-50 text-sky-700 border-sky-200';
+  if (key.includes('previsto')) return 'bg-blue-50 text-blue-700 border-blue-200';
+  if (key.includes('opera')) return 'bg-amber-50 text-amber-700 border-amber-200';
+  if (key.includes('sa')) return 'bg-slate-100 text-slate-700 border-slate-200';
+  return 'bg-slate-100 text-slate-700 border-slate-200';
 }
 
 export const ProgramacaoBtp: React.FC = () => {
@@ -80,18 +57,13 @@ export const ProgramacaoBtp: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<BtpScheduleRecord | null>(null);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Buscar dados do servidor
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      console.log('[ProgramacaoBtp] Buscando dados de programação BTP...');
-
       const response = await fetch('/api/btp-schedule', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
@@ -104,27 +76,30 @@ export const ProgramacaoBtp: React.FC = () => {
       const result = await response.json();
 
       if (result.success) {
-        setData(result.data || []);
+        const records = result.data || [];
+        setData(records);
         setLastUpdate(new Date());
-        console.log(`[ProgramacaoBtp] ${result.data?.length || 0} registros carregados`);
+
+        if (records.length === 0) {
+          setError('Nenhuma programação disponível.');
+        } else {
+          setError(null);
+        }
       } else {
         throw new Error(result.error || 'Falha ao buscar dados');
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao buscar dados';
-      console.error('[ProgramacaoBtp] Erro:', errorMessage);
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Carregar dados na montagem
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // Configurar auto-refresh a cada 5 minutos
   useEffect(() => {
     refreshIntervalRef.current = setInterval(fetchData, REFRESH_INTERVAL);
     return () => {
@@ -134,19 +109,18 @@ export const ProgramacaoBtp: React.FC = () => {
     };
   }, [fetchData]);
 
-  // Filtrar dados
   const filteredData = data.filter((record) => {
-    const navioMatch = record.navio.toLowerCase().includes(searchNavio.toLowerCase());
-    const bercoMatch = record.berco.toLowerCase().includes(searchBerco.toLowerCase());
-    const dataMatch = !searchData || 
-      record.datachegada.includes(searchData) || 
-      record.dataatracacao.includes(searchData) ||
-      record.datasaida.includes(searchData);
+    const navioMatch = (record.navio || '').toLowerCase().includes(searchNavio.toLowerCase());
+    const bercoMatch = (record.berco || '').toLowerCase().includes(searchBerco.toLowerCase());
+    const dataMatch =
+      !searchData ||
+      (record.datachegada || '').includes(searchData) ||
+      (record.dataatracacao || '').includes(searchData) ||
+      (record.datasaida || '').includes(searchData);
 
     return navioMatch && bercoMatch && dataMatch;
   });
 
-  // Ordenar dados
   const sortedData = [...filteredData].sort((a, b) => {
     const aValue = (a[sortBy] || '').toString().toLowerCase();
     const bValue = (b[sortBy] || '').toString().toLowerCase();
@@ -156,7 +130,6 @@ export const ProgramacaoBtp: React.FC = () => {
     return 0;
   });
 
-  // Manipuladores
   const handleSort = (column: string) => {
     if (sortBy === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -164,10 +137,6 @@ export const ProgramacaoBtp: React.FC = () => {
       setSortBy(column);
       setSortDirection('asc');
     }
-  };
-
-  const handleRefresh = () => {
-    fetchData();
   };
 
   const handleCopyTable = async () => {
@@ -191,8 +160,7 @@ export const ProgramacaoBtp: React.FC = () => {
       await navigator.clipboard.writeText(tableText);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
-    } catch (err) {
-      console.error('Erro ao copiar:', err);
+    } catch {
       setError('Erro ao copiar tabela para a área de transferência');
     }
   };
@@ -237,7 +205,7 @@ export const ProgramacaoBtp: React.FC = () => {
         record.terminal,
       ]);
 
-      const csv = [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n');
+      const csv = [headers, ...rows].map((row) => row.map((cell) => `"${cell || ''}"`).join(',')).join('\n');
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
@@ -245,8 +213,7 @@ export const ProgramacaoBtp: React.FC = () => {
       link.setAttribute('href', url);
       link.setAttribute('download', `programacao-btp-${new Date().toISOString().split('T')[0]}.csv`);
       link.click();
-    } catch (err) {
-      console.error('Erro ao exportar CSV:', err);
+    } catch {
       setError('Erro ao exportar CSV');
     }
   };
@@ -278,22 +245,22 @@ export const ProgramacaoBtp: React.FC = () => {
 
       sortedData.forEach((record) => {
         html += '<tr>';
-        html += `<td>${record.navio}</td>`;
-        html += `<td>${record.viagem}</td>`;
-        html += `<td>${record.armador}</td>`;
-        html += `<td>${record.berco}</td>`;
-        html += `<td>${record.status}</td>`;
-        html += `<td>${record.eta}</td>`;
-        html += `<td>${record.etb}</td>`;
-        html += `<td>${record.etd}</td>`;
-        html += `<td>${record.datachegada}</td>`;
-        html += `<td>${record.horachegada}</td>`;
-        html += `<td>${record.dataatracacao}</td>`;
-        html += `<td>${record.horaatracacao}</td>`;
-        html += `<td>${record.datasaida}</td>`;
-        html += `<td>${record.horasaida}</td>`;
-        html += `<td>${record.operacao}</td>`;
-        html += `<td>${record.terminal}</td>`;
+        html += `<td>${record.navio || ''}</td>`;
+        html += `<td>${record.viagem || ''}</td>`;
+        html += `<td>${record.armador || ''}</td>`;
+        html += `<td>${record.berco || ''}</td>`;
+        html += `<td>${record.status || ''}</td>`;
+        html += `<td>${record.eta || ''}</td>`;
+        html += `<td>${record.etb || ''}</td>`;
+        html += `<td>${record.etd || ''}</td>`;
+        html += `<td>${record.datachegada || ''}</td>`;
+        html += `<td>${record.horachegada || ''}</td>`;
+        html += `<td>${record.dataatracacao || ''}</td>`;
+        html += `<td>${record.horaatracacao || ''}</td>`;
+        html += `<td>${record.datasaida || ''}</td>`;
+        html += `<td>${record.horasaida || ''}</td>`;
+        html += `<td>${record.operacao || ''}</td>`;
+        html += `<td>${record.terminal || ''}</td>`;
         html += '</tr>';
       });
 
@@ -305,303 +272,233 @@ export const ProgramacaoBtp: React.FC = () => {
       link.setAttribute('href', url);
       link.setAttribute('download', `programacao-btp-${new Date().toISOString().split('T')[0]}.xls`);
       link.click();
-    } catch (err) {
-      console.error('Erro ao exportar Excel:', err);
+    } catch {
       setError('Erro ao exportar Excel');
     }
   };
 
-  const handleViewDetails = (record: BtpScheduleRecord) => {
-    setSelectedRecord(record);
-    setDetailsOpen(true);
-  };
-
   const columns = [
-    { key: 'navio', label: 'Navio', width: '200px' },
-    { key: 'viagem', label: 'Viagem', width: '120px' },
-    { key: 'berco', label: 'Berço', width: '80px' },
-    { key: 'status', label: 'Status', width: '120px' },
-    { key: 'eta', label: 'ETA', width: '100px' },
-    { key: 'etb', label: 'ETB', width: '100px' },
-    { key: 'etd', label: 'ETD', width: '100px' },
-    { key: 'operacao', label: 'Operação', width: '120px' },
+    { key: 'navio', label: 'Navio' },
+    { key: 'viagem', label: 'Viagem' },
+    { key: 'berco', label: 'Berço' },
+    { key: 'status', label: 'Status' },
+    { key: 'eta', label: 'ETA' },
+    { key: 'etb', label: 'ETB' },
+    { key: 'etd', label: 'ETD' },
+    { key: 'operacao', label: 'Operação' },
   ];
 
   return (
-    <Box sx={{ p: 2 }}>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
-          📋 PROGRAMAÇÃO BTP
-          {loading && <CircularProgress size={24} />}
-        </Typography>
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-slate-800">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-bold uppercase tracking-wider">
+              <Ship className="w-3.5 h-3.5" />
+              Programação Operacional BTP
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Programação BTP</h1>
+            <p className="text-xs sm:text-sm text-slate-300 font-medium">
+              Consulta em tempo real da fila operacional de navios com filtros, ordenação e exportação.
+            </p>
+          </div>
 
-        {/* Info Bar */}
-        <Paper sx={{ p: 2, mb: 2, bgcolor: '#f5f5f5', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <Typography variant="body2">
-              Total de registros: <strong>{sortedData.length}</strong>
-            </Typography>
-            {lastUpdate && (
-              <Typography variant="body2" sx={{ color: 'gray' }}>
-                Atualizado: {lastUpdate.toLocaleTimeString('pt-BR')}
-              </Typography>
-            )}
-          </Box>
-          <Button
-            startIcon={<RefreshCw size={18} />}
-            onClick={handleRefresh}
+          <button
+            onClick={fetchData}
             disabled={loading}
-            variant="contained"
-            size="small"
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2"
           >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Atualizar
-          </Button>
-        </Paper>
+          </button>
+        </div>
+      </div>
 
-        {/* Error Alert */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Registros</p>
+          <p className="text-xl font-black text-slate-900 dark:text-white">{sortedData.length}</p>
+        </div>
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Atualização</p>
+          <p className="text-sm font-black text-slate-900 dark:text-white">
+            {lastUpdate ? lastUpdate.toLocaleTimeString('pt-BR') : '--:--:--'}
+          </p>
+        </div>
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Auto Refresh</p>
+          <p className="text-sm font-black text-slate-900 dark:text-white">A cada 5 minutos</p>
+        </div>
+      </div>
 
-        {copySuccess && (
-          <Alert severity="success" sx={{ mb: 2 }} onClose={() => setCopySuccess(false)}>
-            ✓ Tabela copiada para a área de transferência!
-          </Alert>
-        )}
+      {error && (
+        <div className="p-3 rounded-xl border border-rose-300 bg-rose-50 text-rose-700 text-xs font-bold flex items-center justify-between gap-3">
+          <span className="flex items-center gap-2"><AlertTriangle className="w-4 h-4" />{error}</span>
+          <button onClick={() => setError(null)} className="text-rose-700 hover:underline">Fechar</button>
+        </div>
+      )}
 
-        {/* Filters */}
-        <Paper sx={{ p: 2, mb: 2 }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2, mb: 2 }}>
-            <TextField
-              label="Pesquisar Navio"
+      {copySuccess && (
+        <div className="p-3 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-700 text-xs font-bold">
+          Tabela copiada para a área de transferência.
+        </div>
+      )}
+
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 space-y-4">
+        <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+          <Filter className="w-4 h-4" />
+          <span className="text-xs font-black uppercase tracking-wider">Filtros</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
               value={searchNavio}
               onChange={(e) => setSearchNavio(e.target.value)}
-              size="small"
-              placeholder="Ex: MAERSK"
+              placeholder="Pesquisar navio"
+              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-semibold"
             />
-            <TextField
-              label="Pesquisar Berço"
-              value={searchBerco}
-              onChange={(e) => setSearchBerco(e.target.value)}
-              size="small"
-              placeholder="Ex: BTP-1"
-            />
-            <TextField
-              label="Pesquisar Data"
-              value={searchData}
-              onChange={(e) => setSearchData(e.target.value)}
-              size="small"
-              placeholder="DD/MM/YYYY"
-              type="text"
-            />
-          </Box>
+          </div>
+          <input
+            value={searchBerco}
+            onChange={(e) => setSearchBerco(e.target.value)}
+            placeholder="Pesquisar berço"
+            className="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-semibold"
+          />
+          <input
+            value={searchData}
+            onChange={(e) => setSearchData(e.target.value)}
+            placeholder="Pesquisar data"
+            className="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-semibold"
+          />
+        </div>
 
-          {/* Action Buttons */}
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Tooltip title="Copiar tabela para área de transferência">
-              <Button
-                startIcon={<Copy size={18} />}
-                onClick={handleCopyTable}
-                size="small"
-                variant="outlined"
-              >
-                Copiar
-              </Button>
-            </Tooltip>
-            <Tooltip title="Exportar como CSV">
-              <Button
-                startIcon={<Download size={18} />}
-                onClick={handleExportCSV}
-                size="small"
-                variant="outlined"
-              >
-                CSV
-              </Button>
-            </Tooltip>
-            <Tooltip title="Exportar como Excel">
-              <Button
-                startIcon={<Download size={18} />}
-                onClick={handleExportExcel}
-                size="small"
-                variant="outlined"
-              >
-                Excel
-              </Button>
-            </Tooltip>
-          </Box>
-        </Paper>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleCopyTable}
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5"
+          >
+            <Copy className="w-3.5 h-3.5" /> Copiar
+          </button>
+          <button
+            onClick={handleExportCSV}
+            className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5"
+          >
+            <Download className="w-3.5 h-3.5" /> CSV
+          </button>
+          <button
+            onClick={handleExportExcel}
+            className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5"
+          >
+            <Download className="w-3.5 h-3.5" /> Excel
+          </button>
+        </div>
+      </div>
 
-        {/* Loading State */}
-        {loading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
-          </Box>
-        )}
+      {loading && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-10 border border-slate-200 dark:border-slate-800 text-center">
+          <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-xs font-bold text-slate-500">Carregando programação...</p>
+        </div>
+      )}
 
-        {/* Table */}
-        {!loading && sortedData.length > 0 && (
-          <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 400px)', overflow: 'auto' }}>
-            <Table size="small" stickyHeader>
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#1976d2' }}>
-                  <TableCell sx={{ width: '40px', bgcolor: '#1976d2', color: 'white' }} />
+      {!loading && sortedData.length > 0 && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 uppercase tracking-wide">
+                <tr>
+                  <th className="p-3 w-12" />
                   {columns.map((column) => (
-                    <TableCell
-                      key={column.key}
-                      sx={{ width: column.width, bgcolor: '#1976d2', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}
-                      onClick={() => handleSort(column.key)}
-                    >
-                      <TableSortLabel
-                        active={sortBy === column.key}
-                        direction={sortDirection}
-                        sx={{ color: 'white !important' }}
+                    <th key={column.key} className="p-3 text-left whitespace-nowrap">
+                      <button
+                        onClick={() => handleSort(column.key)}
+                        className="inline-flex items-center gap-1 font-black hover:text-blue-600"
                       >
                         {column.label}
-                      </TableSortLabel>
-                    </TableCell>
+                        {sortBy === column.key ? (
+                          sortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
+                        ) : (
+                          <ChevronDown className="w-3.5 h-3.5 opacity-30" />
+                        )}
+                      </button>
+                    </th>
                   ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-800 dark:text-slate-200 font-medium">
                 {sortedData.map((record, index) => (
-                  <React.Fragment key={index}>
-                    <TableRow sx={{ '&:hover': { bgcolor: '#f5f5f5' } }}>
-                      <TableCell sx={{ width: '40px' }}>
-                        <IconButton
-                          size="small"
+                  <React.Fragment key={`${record.navio}-${record.viagem}-${index}`}>
+                    <tr className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="p-2 text-center">
+                        <button
                           onClick={() => setExpandedRow(expandedRow === index ? null : index)}
+                          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
                         >
-                          {expandedRow === index ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                        </IconButton>
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>{record.navio}</TableCell>
-                      <TableCell>{record.viagem}</TableCell>
-                      <TableCell>{record.berco}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={record.status}
-                          size="small"
-                          color={getStatusColor(record.status)}
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell>{record.eta}</TableCell>
-                      <TableCell>{record.etb}</TableCell>
-                      <TableCell>{record.etd}</TableCell>
-                      <TableCell>{record.operacao}</TableCell>
-                    </TableRow>
+                          {expandedRow === index ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
+                      </td>
+                      <td className="p-3 font-black text-slate-900 dark:text-white">{record.navio || '-'}</td>
+                      <td className="p-3">{record.viagem || '-'}</td>
+                      <td className="p-3">{record.berco || '-'}</td>
+                      <td className="p-3">
+                        <span className={`px-2.5 py-1 rounded-lg border text-[11px] font-black ${getStatusClass(record.status || '')}`}>
+                          {record.status || '-'}
+                        </span>
+                      </td>
+                      <td className="p-3">{record.eta || '-'}</td>
+                      <td className="p-3">{record.etb || '-'}</td>
+                      <td className="p-3">{record.etd || '-'}</td>
+                      <td className="p-3">{record.operacao || '-'}</td>
+                    </tr>
 
-                    {/* Expandable Row */}
                     {expandedRow === index && (
-                      <TableRow sx={{ bgcolor: '#f9f9f9' }}>
-                        <TableCell colSpan={9}>
-                          <Box sx={{ p: 2 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                              Detalhes Completos
-                            </Typography>
-                            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-                              <Box>
-                                <Typography variant="caption" sx={{ display: 'block', color: 'gray' }}>
-                                  Armador
-                                </Typography>
-                                <Typography variant="body2">{record.armador}</Typography>
-                              </Box>
-                              <Box>
-                                <Typography variant="caption" sx={{ display: 'block', color: 'gray' }}>
-                                  Terminal
-                                </Typography>
-                                <Typography variant="body2">{record.terminal}</Typography>
-                              </Box>
-                              <Box>
-                                <Typography variant="caption" sx={{ display: 'block', color: 'gray' }}>
-                                  Data/Hora de Chegada
-                                </Typography>
-                                <Typography variant="body2">
-                                  {record.datachegada} {record.horachegada}
-                                </Typography>
-                              </Box>
-                              <Box>
-                                <Typography variant="caption" sx={{ display: 'block', color: 'gray' }}>
-                                  Data/Hora de Atracação
-                                </Typography>
-                                <Typography variant="body2">
-                                  {record.dataatracacao} {record.horaatracacao}
-                                </Typography>
-                              </Box>
-                              <Box>
-                                <Typography variant="caption" sx={{ display: 'block', color: 'gray' }}>
-                                  Data/Hora de Saída
-                                </Typography>
-                                <Typography variant="body2">
-                                  {record.datasaida} {record.horasaida}
-                                </Typography>
-                              </Box>
-                            </Box>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
+                      <tr className="bg-slate-50 dark:bg-slate-800/40">
+                        <td colSpan={9} className="p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                            <div>
+                              <p className="text-slate-400 font-bold uppercase tracking-wider">Armador</p>
+                              <p className="font-semibold">{record.armador || '-'}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-400 font-bold uppercase tracking-wider">Terminal</p>
+                              <p className="font-semibold">{record.terminal || '-'}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-400 font-bold uppercase tracking-wider">Data/Hora Chegada</p>
+                              <p className="font-semibold">{record.datachegada || '-'} {record.horachegada || ''}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-400 font-bold uppercase tracking-wider">Data/Hora Atracação</p>
+                              <p className="font-semibold">{record.dataatracacao || '-'} {record.horaatracacao || ''}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-400 font-bold uppercase tracking-wider">Data/Hora Saída</p>
+                              <p className="font-semibold">{record.datasaida || '-'} {record.horasaida || ''}</p>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
                     )}
                   </React.Fragment>
                 ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-        {/* Empty State */}
-        {!loading && sortedData.length === 0 && !error && (
-          <Paper sx={{ p: 4, textAlign: 'center', bgcolor: '#f9f9f9' }}>
-            <AlertCircle size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
-            <Typography color="textSecondary">Nenhum registro encontrado com os filtros aplicados.</Typography>
-          </Paper>
-        )}
-
-        {/* No Data State */}
-        {!loading && data.length === 0 && !error && (
-          <Paper sx={{ p: 4, textAlign: 'center', bgcolor: '#f9f9f9' }}>
-            <AlertCircle size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
-            <Typography color="textSecondary">Nenhum dado disponível. Clique em Atualizar para carregar.</Typography>
-          </Paper>
-        )}
-      </motion.div>
-
-      {/* Details Dialog */}
-      <Dialog open={detailsOpen} onClose={() => setDetailsOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Detalhes do Navio</DialogTitle>
-        <DialogContent>
-          {selectedRecord && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-              <Typography>
-                <strong>Navio:</strong> {selectedRecord.navio}
-              </Typography>
-              <Typography>
-                <strong>Viagem:</strong> {selectedRecord.viagem}
-              </Typography>
-              <Typography>
-                <strong>Armador:</strong> {selectedRecord.armador}
-              </Typography>
-              <Typography>
-                <strong>Berço:</strong> {selectedRecord.berco}
-              </Typography>
-              <Typography>
-                <strong>Status:</strong> {selectedRecord.status}
-              </Typography>
-              <Typography>
-                <strong>Operação:</strong> {selectedRecord.operacao}
-              </Typography>
-              <Typography>
-                <strong>Terminal:</strong> {selectedRecord.terminal}
-              </Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDetailsOpen(false)}>Fechar</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      {!loading && sortedData.length === 0 && (
+        <div className="p-10 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+          <AlertTriangle className="w-12 h-12 text-slate-300 mx-auto" />
+          <h4 className="font-bold text-slate-700 dark:text-slate-300 text-base">Nenhuma programação disponível.</h4>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">
+            Faça uma atualização para buscar novos registros do portal BTP.
+          </p>
+        </div>
+      )}
+    </div>
   );
 };
 

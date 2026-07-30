@@ -61,7 +61,7 @@ let cacheStore: CacheStore = {
 
   lastUpdate: 0,
 
-  isMockData: true
+  isMockData: false
 
 };
 
@@ -290,17 +290,17 @@ export async function getBtpData(
     );
 
     console.log(
-      "[BTP SMARTTOOLS API] Usando dados simulados."
+      "[BTP SMARTTOOLS API] Retornando estado vazio até a próxima sincronização."
     );
 
-    cacheStore = generateBtpData();
+    cacheStore = buildEmptyBtpData();
 
     return cacheStore;
 
   }
 
 }
-function generateBtpData(): CacheStore {
+function buildEmptyBtpData(): CacheStore {
 
   return {
 
@@ -320,7 +320,7 @@ function generateBtpData(): CacheStore {
 
     lastUpdate: Date.now(),
 
-    isMockData: true
+    isMockData: false
 
   };
 

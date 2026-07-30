@@ -43,8 +43,8 @@ export async function iniciarBrowser(): Promise<{ browser: Browser; context: Bro
 
 export async function loginPraticagem(): Promise<Page> {
   try {
-    const user = process.env.SPP_USER || '25076341890';
-    const password = process.env.SPP_PASSWORD || 'omelete$22';
+    const user = process.env.SPP_USER || '';
+    const password = process.env.SPP_PASSWORD || '';
 
     if (!user || !password) {
       throw new Error('Variáveis de ambiente SPP_USER e SPP_PASSWORD não configuradas.');

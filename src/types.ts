@@ -137,6 +137,7 @@ export interface CompanyConfig {
 export interface ShipInfo {
   id: string;
   name: string;
+  company?: string;
   castanha: string;
   macaco: string;
   peacao: string;

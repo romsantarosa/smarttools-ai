@@ -57,9 +57,9 @@ export const AtracacaoSaida: React.FC = () => {
   const [rawPastedText, setRawPastedText] = useState<string>('');
   const [parsingLoading, setParsingLoading] = useState<boolean>(false);
 
-  // Credentials State (Defaulting to user's provided SPPilots login)
-  const [sppUser, setSppUser] = useState<string>(localStorage.getItem('SPP_USER') || '25076341890');
-  const [sppPassword, setSppPassword] = useState<string>(localStorage.getItem('SPP_PASSWORD') || 'omelete$22');
+  // Credentials State
+  const [sppUser, setSppUser] = useState<string>(localStorage.getItem('SPP_USER') || '');
+  const [sppPassword, setSppPassword] = useState<string>(localStorage.getItem('SPP_PASSWORD') || '');
 
   // Manual Ship Form State
   const [manualShip, setManualShip] = useState<Partial<BtpShipRecord>>({
@@ -116,7 +116,7 @@ json.fundeados = normalize(json.fundeados);
           });
         } catch {
           console.log("ATRACADOS:", json.atracados.length);
-console.log("PREVISTOS:", json.previstas.length);
+console.log("PREVISTAS:", json.previstas.length);
 console.log("MOVIMENTOS:", json.movimentos.length);
           setData(json);
         }
@@ -263,7 +263,7 @@ console.log("MOVIMENTOS:", json.movimentos.length);
   const handleResetData = async () => {
     localStorage.removeItem('BTP_CUSTOM_REAL_DATA');
     await fetchBtpData(true);
-    setNotification('Dados redefinidos para a carga padrão!');
+    setNotification('Dados redefinidos para estado vazio.');
     setTimeout(() => setNotification(null), 3000);
   };
 
@@ -367,13 +367,9 @@ const matchBerth =
                 <Server className="w-3.5 h-3.5" />
                 SMARTTOOLS API v2.0 • SPPilots
               </span>
-              <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 border ${
-                data?.isMockData === false
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                  : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-              }`}>
-                <span className={`w-2 h-2 rounded-full ${data?.isMockData === false ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`} />
-                {data?.isMockData === false ? 'Sincronizado com SPPilots Real' : 'Modo Demonstração'}
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 border bg-emerald-500/20 text-emerald-300 border-emerald-500/30">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                Sincronização operacional ativa
               </span>
             </div>
 
@@ -414,24 +410,6 @@ const matchBerth =
             </button>
           </div>
         </div>
-
-        {/* Sync Alert Banner if mock data */}
-        {data?.isMockData !== false && (
-          <div className="mt-4 p-3.5 bg-amber-500/15 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-200">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>
-                <strong>Atenção:</strong> Os dados em exibição são demonstrativos. Para exibir exatamente as posições do site da SPPilots, cole a tabela ou insira os dados do portal.
-              </span>
-            </div>
-            <button
-              onClick={() => setIsSyncModalOpen(true)}
-              className="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-lg text-[11px] shrink-0 transition-all cursor-pointer"
-            >
-              Colar Tabela SPPilots Agora
-            </button>
-          </div>
-        )}
 
         {/* Notification Toast */}
         {notification && (
@@ -529,10 +507,10 @@ const matchBerth =
               ))}
             </div>
 
-            {data?.isMockData === false && (
+            {data && (
               <button
                 onClick={handleResetData}
-                title="Redefinir para dados padrão"
+                title="Redefinir para estado vazio"
                 className="px-3 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950 text-slate-700 dark:text-slate-300 hover:text-rose-600 rounded-xl text-xs font-bold transition-all cursor-pointer"
               >
                 Resetar

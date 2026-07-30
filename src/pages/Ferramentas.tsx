@@ -32,12 +32,12 @@ export const Ferramentas: React.FC = () => {
 
   // Shift registration form state
   const [showShiftModal, setShowShiftModal] = useState(false);
-  const [operator, setOperator] = useState(config.operatorsList[0] || 'Marcos Vinícius Lima');
-  const [supervisor, setSupervisor] = useState(user?.name || config.supervisorsList[0] || 'Carlos Eduardo Santos');
+  const [operator, setOperator] = useState(config.operatorsList[0] || '');
+  const [supervisor, setSupervisor] = useState(user?.name || config.supervisorsList[0] || '');
   const [turn, setTurn] = useState<ShiftTurn>('07-13');
-  const [shipName, setShipName] = useState('MSC Barbara');
-  const [voyage, setVoyage] = useState('BTP-2026-092');
-  const [berth, setBerth] = useState(config.activeBerths[0] || 'Berço 1 (Sul)');
+  const [shipName, setShipName] = useState('');
+  const [voyage, setVoyage] = useState('');
+  const [berth, setBerth] = useState(config.activeBerths[0] || '');
   const [observations, setObservations] = useState('');
   const [shiftSuccessMsg, setShiftSuccessMsg] = useState('');
 
@@ -45,9 +45,9 @@ export const Ferramentas: React.FC = () => {
   const [showToolModal, setShowToolModal] = useState(false);
   const [editingTool, setEditingTool] = useState<ToolItem | null>(null);
   const [toolName, setToolName] = useState('');
-  const [toolAvailable, setToolAvailable] = useState<number | ''>(10);
+  const [toolAvailable, setToolAvailable] = useState<number | ''>('');
   const [toolInMaint, setToolInMaint] = useState<number | ''>(0);
-  const [toolMinStock, setToolMinStock] = useState<number | ''>(5);
+  const [toolMinStock, setToolMinStock] = useState<number | ''>('');
   const [toolCategory, setToolCategory] = useState<ToolItem['category']>('Varas de Destravamento');
 
   // QR Code Readiness Modal State
@@ -57,9 +57,9 @@ export const Ferramentas: React.FC = () => {
   const handleOpenNewToolModal = () => {
     setEditingTool(null);
     setToolName('');
-    setToolAvailable(10);
+    setToolAvailable('');
     setToolInMaint(0);
-    setToolMinStock(5);
+    setToolMinStock('');
     setToolCategory('Varas de Destravamento');
     setShowToolModal(true);
   };
@@ -119,8 +119,8 @@ export const Ferramentas: React.FC = () => {
       movements: tools.map(t => ({
         toolId: t.id,
         toolName: t.name,
-        quantityOut: 2,
-        quantityIn: 2,
+        quantityOut: 0,
+        quantityIn: 0,
       })),
       status: 'Finalizado',
     });
@@ -227,7 +227,12 @@ export const Ferramentas: React.FC = () => {
         {/* MODE 1: GRID CARDS (Default - Fits 100% screen without horizontal scroll) */}
         {viewMode === 'grid' ? (
           <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-slate-50/30 dark:bg-slate-950/20">
-            {tools.map(tool => (
+            {tools.length === 0 ? (
+              <div className="md:col-span-2 lg:col-span-3 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 text-center">
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Nenhuma ferramenta cadastrada.</p>
+              </div>
+            ) : (
+              tools.map(tool => (
               <div
                 key={tool.id}
                 className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-blue-400 dark:hover:border-blue-600 transition-all space-y-4"
@@ -339,7 +344,8 @@ export const Ferramentas: React.FC = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </div>
         ) : (
           /* MODE 2: COMPACT RESPONSIVE TABLE (No horizontal scroll) */
@@ -356,7 +362,14 @@ export const Ferramentas: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-800 dark:text-slate-200 font-medium">
-                {tools.map(tool => (
+                {tools.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-6 text-center font-bold text-slate-500">
+                      Nenhuma ferramenta cadastrada.
+                    </td>
+                  </tr>
+                ) : (
+                  tools.map(tool => (
                   <tr
                     key={tool.id}
                     className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
@@ -445,7 +458,8 @@ export const Ferramentas: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -508,11 +522,15 @@ export const Ferramentas: React.FC = () => {
                       onChange={e => setOperator(e.target.value)}
                       className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium"
                     >
-                      {config.operatorsList.map(op => (
+                      {config.operatorsList.length === 0 ? (
+                        <option value="">Nenhum operador cadastrado</option>
+                      ) : (
+                        config.operatorsList.map(op => (
                         <option key={op} value={op}>
                           {op}
                         </option>
-                      ))}
+                        ))
+                      )}
                     </select>
                   </div>
 
@@ -526,11 +544,15 @@ export const Ferramentas: React.FC = () => {
                       onChange={e => setSupervisor(e.target.value)}
                       className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium"
                     >
-                      {config.supervisorsList.map(sup => (
+                      {config.supervisorsList.length === 0 ? (
+                        <option value="">Nenhum supervisor cadastrado</option>
+                      ) : (
+                        config.supervisorsList.map(sup => (
                         <option key={sup} value={sup}>
                           {sup}
                         </option>
-                      ))}
+                        ))
+                      )}
                     </select>
                   </div>
 
@@ -561,11 +583,15 @@ export const Ferramentas: React.FC = () => {
                       onChange={e => setBerth(e.target.value)}
                       className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium"
                     >
-                      {config.activeBerths.map(b => (
+                      {config.activeBerths.length === 0 ? (
+                        <option value="">Nenhum berço configurado</option>
+                      ) : (
+                        config.activeBerths.map(b => (
                         <option key={b} value={b}>
                           {b}
                         </option>
-                      ))}
+                        ))
+                      )}
                     </select>
                   </div>
 
@@ -594,7 +620,7 @@ export const Ferramentas: React.FC = () => {
                       required
                       value={voyage}
                       onChange={e => setVoyage(e.target.value)}
-                      placeholder="Ex: BTP-2026-092"
+                      placeholder="Ex: COD-OPERACAO"
                       className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
                     />
                   </div>

@@ -44,9 +44,9 @@ export const Relatorios: React.FC = () => {
   const [selectedTurn, setSelectedTurn] = useState<ShiftTurn>('07-13');
   const [selectedBerth, setSelectedBerth] = useState<string>('Ponto 1');
   const [selectedTurma, setSelectedTurma] = useState<'Turma A' | 'Turma B' | 'Turma C' | 'Turma D' | 'Turma E'>('Turma A');
-  const [selectedFacilitador, setSelectedFacilitador] = useState<string>('Bolacha');
-  const [selectedShip, setSelectedShip] = useState<string>('Cap San Augustin');
-  const [supervisorName, setSupervisorName] = useState<string>('Carlos Eduardo Santos');
+  const [selectedFacilitador, setSelectedFacilitador] = useState<string>('');
+  const [selectedShip, setSelectedShip] = useState<string>('');
+  const [supervisorName, setSupervisorName] = useState<string>('');
   const [shareCopied, setShareCopied] = useState(false);
 
   // Approval Status for Report 2
@@ -99,11 +99,11 @@ export const Relatorios: React.FC = () => {
 
   // Turma to Facilitador Mapping
   const turmaOptions: { turma: 'Turma A' | 'Turma B' | 'Turma C' | 'Turma D' | 'Turma E'; name: string }[] = [
-    { turma: 'Turma A', name: 'Bolacha' },
-    { turma: 'Turma B', name: 'Thiago' },
-    { turma: 'Turma C', name: 'Conde' },
-    { turma: 'Turma D', name: 'Gasolina' },
-    { turma: 'Turma E', name: 'XTudo' },
+    { turma: 'Turma A', name: 'Facilitador A' },
+    { turma: 'Turma B', name: 'Facilitador B' },
+    { turma: 'Turma C', name: 'Facilitador C' },
+    { turma: 'Turma D', name: 'Facilitador D' },
+    { turma: 'Turma E', name: 'Facilitador E' },
   ];
 
   const handleTurmaChange = (turmaStr: string) => {
@@ -175,13 +175,19 @@ export const Relatorios: React.FC = () => {
       numTernos: 0,
       gangs: [],
       totalMaterials: 0,
-      observations: 'Nenhuma atualização cadastrada no Dashboard para este turno/data.',
+      observations: 'Nenhuma atualização cadastrada no Painel Operacional para este turno/data.',
       updatedAt: '',
       updatedBy: '-',
     };
   });
 
-  const latestAIOpinion = aiLogs[0]?.opinion || 'O estoque atual atende com estabilidade a demanda das operações nos pontos do terminal.';
+  const latestAIOpinion = aiLogs[0]?.opinion || 'Nenhum resumo de IA disponível no momento.';
+
+  const hasReportBaseData =
+    tools.length > 0 ||
+    maintenances.length > 0 ||
+    purchases.length > 0 ||
+    berthTurnUpdates.length > 0;
 
   // Format Date to Brazilian Format DD/MM/YYYY
   const formatDateBR = (dateStr: string) => {
@@ -254,7 +260,7 @@ export const Relatorios: React.FC = () => {
       const metaData = [
         [`Data do Serviço: ${currentDate}`, `Hora da Emissão: ${currentTime}`, `Turno: ${selectedTurn}`],
         [`Turma: ${selectedTurma}`, `Facilitador: ${selectedFacilitador}`, `Ponto Operacional: ${selectedBerth}`],
-        [`Navio em Operação: ${shipNameDisplay}`, `Viagem: BTP-2026-092`, `CNPJ: ${config.cnpj}`],
+        [`Navio em Operação: ${shipNameDisplay}`, `Viagem: -`, `CNPJ: ${config.cnpj}`],
       ];
 
       autoTable(doc, {
@@ -621,6 +627,15 @@ export const Relatorios: React.FC = () => {
       </div>
 
       {/* Report Type Tabs */}
+      {!hasReportBaseData && (
+        <M3Card className="print:hidden border border-dashed border-slate-300 dark:border-slate-700 text-center">
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Nenhum relatório disponível.</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Cadastre dados operacionais para habilitar a geração de relatórios.
+          </p>
+        </M3Card>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 print:hidden">
         <button
           onClick={() => setReportType('ship_equipments')}
@@ -746,11 +761,12 @@ export const Relatorios: React.FC = () => {
               onChange={e => handleFacilitadorChange(e.target.value)}
               className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-extrabold text-emerald-700 dark:text-emerald-300"
             >
-              <option value="Bolacha">Bolacha (Turma A)</option>
-              <option value="Thiago">Thiago (Turma B)</option>
-              <option value="Conde">Conde (Turma C)</option>
-              <option value="Gasolina">Gasolina (Turma D)</option>
-              <option value="XTudo">XTudo (Turma E)</option>
+              <option value="">Selecione</option>
+              <option value="Facilitador A">Facilitador A (Turma A)</option>
+              <option value="Facilitador B">Facilitador B (Turma B)</option>
+              <option value="Facilitador C">Facilitador C (Turma C)</option>
+              <option value="Facilitador D">Facilitador D (Turma D)</option>
+              <option value="Facilitador E">Facilitador E (Turma E)</option>
             </select>
           </div>
         </div>

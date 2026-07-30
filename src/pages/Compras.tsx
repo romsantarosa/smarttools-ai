@@ -22,10 +22,10 @@ export const Compras: React.FC = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [selectedToolId, setSelectedToolId] = useState(tools[0]?.id || '');
-  const [quantity, setQuantity] = useState<number | ''>(5);
+  const [quantity, setQuantity] = useState<number | ''>(1);
   const [urgency, setUrgency] = useState<UrgencyLevel>('Média');
   const [reason, setReason] = useState('');
-  const [estimatedCost, setEstimatedCost] = useState(12000);
+  const [estimatedCost, setEstimatedCost] = useState(0);
 
   const handleCreateRequest = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,15 +39,15 @@ export const Compras: React.FC = () => {
       toolName: tool.name,
       quantity: qtyNum,
       urgency,
-      reason: reason || 'Reposição preventiva do estoque de segurança',
+      reason: reason || 'Solicitação registrada para análise operacional.',
       status: 'Solicitado',
-      requestedBy: 'Supervisor de Turno BTP',
+      requestedBy: 'Registro Operacional',
       estimatedCost,
     });
 
     setShowModal(false);
     setReason('');
-    setQuantity(5);
+    setQuantity(1);
   };
 
   const getUrgencyBadge = (u: UrgencyLevel) => {
@@ -110,6 +110,11 @@ export const Compras: React.FC = () => {
 
         {/* Mobile Card List (No Horizontal Scrollbar) */}
         <div className="block md:hidden divide-y divide-slate-200 dark:divide-slate-800">
+          {purchases.length === 0 && (
+            <div className="p-6 text-center text-xs font-bold text-slate-500 bg-white dark:bg-slate-900">
+              Nenhuma solicitação pendente.
+            </div>
+          )}
           {purchases.map(p => (
             <div key={p.id} className="p-4 space-y-3 bg-white dark:bg-slate-900">
               <div className="flex items-start justify-between gap-2">
@@ -178,7 +183,14 @@ export const Compras: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-800 dark:text-slate-200 font-medium">
-              {purchases.map(p => (
+              {purchases.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-3.5 py-6 text-center font-bold text-slate-500">
+                    Nenhuma solicitação pendente.
+                  </td>
+                </tr>
+              ) : (
+                purchases.map(p => (
                 <tr
                   key={p.id}
                   className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
@@ -234,7 +246,8 @@ export const Compras: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -263,11 +276,15 @@ export const Compras: React.FC = () => {
                   onChange={e => setSelectedToolId(e.target.value)}
                   className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
                 >
-                  {tools.map(t => (
+                  {tools.length === 0 ? (
+                    <option value="">Nenhuma ferramenta cadastrada</option>
+                  ) : (
+                    tools.map(t => (
                     <option key={t.id} value={t.id}>
                       {t.name} (Atual: {t.available} disp | min: {t.minStock})
                     </option>
-                  ))}
+                    ))
+                  )}
                 </select>
               </div>
 

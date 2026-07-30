@@ -748,6 +748,11 @@ export const Escala: React.FC = () => {
   }, [history]);
 
   const handleGerar = () => {
+    if (OPERADORES_INICIAIS.length === 0) {
+      showToast('Nenhuma escala disponível.', 'error');
+      return;
+    }
+
     if (!b1 && !b2 && !b3) {
       showToast("Por favor, informe a quantidade de ternos em pelo menos um berço.", "error");
       return;

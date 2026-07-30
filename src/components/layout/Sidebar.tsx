@@ -31,12 +31,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const lowStock = getLowStockCount();
 
   const menuItems = [
-    { label: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { label: 'Painel Operacional', path: '/', icon: LayoutDashboard },
     { label: 'Escala BTP', path: '/escala', icon: Calendar },
     { label: 'Programação BTP', path: '/programacao-btp', icon: Ship },
     { label: 'Atracação/Saída Navios', path: '/atracacao-saida', icon: Navigation, badge: 'API' },
     { label: 'Planejamento Split', path: '/planejamento-split', icon: PictureAsPdf },
-    { label: 'Guia de Navios', path: '/navios', icon: Ship, badge: ships ? `${ships.length}` : '97' },
+    { label: 'Guia de Navios', path: '/navios', icon: Ship, badge: ships.length > 0 ? `${ships.length}` : null },
     { label: 'Ferramentas Operacionais', path: '/ferramentas', icon: Wrench, badge: lowStock > 0 ? lowStock : null },
     { label: 'Manutenção', path: '/manutencao', icon: Cog },
     { label: 'Solicitação de Compras', path: '/compras', icon: ShoppingCart },

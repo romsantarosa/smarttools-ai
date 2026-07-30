@@ -23,7 +23,7 @@ export const Manutencao: React.FC = () => {
   const [selectedToolId, setSelectedToolId] = useState(tools[0]?.id || '');
   const [quantity, setQuantity] = useState<number | ''>(1);
   const [reason, setReason] = useState('');
-  const [responsible, setResponsible] = useState('Oficina Central BTP');
+  const [responsible, setResponsible] = useState('');
   const [status, setStatus] = useState<MaintenanceItem['status']>('Em manutenção');
 
   const handleCreateMaintenance = (e: React.FormEvent) => {
@@ -37,8 +37,8 @@ export const Manutencao: React.FC = () => {
       toolId: tool.id,
       toolName: tool.name,
       quantity: qtyNum,
-      reason: reason || 'Desgaste mecânico natural de operação',
-      responsible,
+      reason: reason || 'Solicitação de manutenção registrada para avaliação.',
+      responsible: responsible || 'Não informado',
       date: new Date().toISOString().split('T')[0],
       status,
     });
@@ -97,6 +97,11 @@ export const Manutencao: React.FC = () => {
 
         {/* Mobile Card List (No Horizontal Scrollbar) */}
         <div className="block md:hidden divide-y divide-slate-200 dark:divide-slate-800">
+          {maintenances.length === 0 && (
+            <div className="p-6 text-center text-xs font-bold text-slate-500 bg-white dark:bg-slate-900">
+              Nenhuma manutenção registrada.
+            </div>
+          )}
           {maintenances.map(m => (
             <div key={m.id} className="p-4 space-y-3 bg-white dark:bg-slate-900">
               <div className="flex items-start justify-between gap-2">
@@ -166,7 +171,14 @@ export const Manutencao: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-800 dark:text-slate-200 font-medium">
-              {maintenances.map(m => (
+              {maintenances.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-3.5 py-6 text-center font-bold text-slate-500">
+                    Nenhuma manutenção registrada.
+                  </td>
+                </tr>
+              ) : (
+                maintenances.map(m => (
                 <tr
                   key={m.id}
                   className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
@@ -230,7 +242,8 @@ export const Manutencao: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -259,11 +272,15 @@ export const Manutencao: React.FC = () => {
                   onChange={e => setSelectedToolId(e.target.value)}
                   className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
                 >
-                  {tools.map(t => (
+                  {tools.length === 0 ? (
+                    <option value="">Nenhuma ferramenta cadastrada</option>
+                  ) : (
+                    tools.map(t => (
                     <option key={t.id} value={t.id}>
                       {t.name} (Disponível: {t.available} | Maint: {t.inMaintenance})
                     </option>
-                  ))}
+                    ))
+                  )}
                 </select>
               </div>
 

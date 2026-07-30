@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { Layout } from './components/layout/Layout';
 import { Login } from './pages/Login';
-import { Dashboard } from './pages/Dashboard';
+import { PainelOperacional } from './pages/Dashboard';
 import { Navios } from './pages/Navios';
 import { Ferramentas } from './pages/Ferramentas';
 import { Manutencao } from './pages/Manutencao';
@@ -39,7 +39,7 @@ export default function App() {
 
           {/* Protected Application Routes */}
           <Route element={<ProtectedRoutes />}>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<PainelOperacional />} />
             <Route path="/escala" element={<Escala />} />
             <Route path="/programacao-btp" element={<ProgramacaoBtp />} />
             <Route path="/atracacao-saida" element={<AtracacaoSaida />} />

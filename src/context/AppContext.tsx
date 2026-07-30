@@ -34,6 +34,10 @@ import {
   subscribeBerthTurnUpdates,
   saveBerthTurnUpdateToFirestore,
   getBerthTurnDocId,
+  subscribeShips,
+  saveShipToFirestore,
+  deleteShipFromFirestore,
+  seedShipsCatalogIfEmpty,
 } from '../services/dbService';
 
 interface AppContextType {
@@ -102,7 +106,28 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const STORAGE_KEY_PREFIX = 'btp_smart_tools_v1_';
+const STORAGE_KEY_PREFIX = 'btp_smart_tools_v2_';
+const SHIPS_MIGRATION_FLAG_KEY = `${STORAGE_KEY_PREFIX}shipsLegacyMockMigrationDone`;
+
+const LEGACY_MOCK_SHIP_NAMES = new Set([
+  'AMERICO VESPUCIO',
+  'MAERSK LETICIA',
+  'MSC CARMELA',
+  'CAP SAN AUGUSTIN',
+]);
+
+function isLegacyMockShipsData(value: unknown): value is ShipInfo[] {
+  if (!Array.isArray(value) || value.length < 80) return false;
+
+  const names = value
+    .map(item => (item && typeof item === 'object' && 'name' in item ? String((item as any).name).toUpperCase() : ''))
+    .filter(Boolean);
+
+  const hits = names.filter(name => LEGACY_MOCK_SHIP_NAMES.has(name)).length;
+  const legacyIdLikeCount = value.filter(item => typeof item?.id === 'string' && item.id.startsWith('ship-')).length;
+
+  return hits >= 2 && legacyIdLikeCount >= 50;
+}
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
@@ -121,8 +146,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [ships, setShips] = useState<ShipInfo[]>(() => {
+    const migrationDone = localStorage.getItem(SHIPS_MIGRATION_FLAG_KEY) === '1';
     const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}ships`);
-    return saved ? JSON.parse(saved) : INITIAL_SHIPS;
+    if (!saved) return INITIAL_SHIPS;
+
+    try {
+      const parsed = JSON.parse(saved);
+
+      if (!migrationDone && isLegacyMockShipsData(parsed)) {
+        localStorage.setItem(SHIPS_MIGRATION_FLAG_KEY, '1');
+        return [];
+      }
+
+      if (!migrationDone) {
+        localStorage.setItem(SHIPS_MIGRATION_FLAG_KEY, '1');
+      }
+
+      return parsed;
+    } catch {
+      return INITIAL_SHIPS;
+    }
   });
 
   const [shifts, setShifts] = useState<ShiftRegistration[]>(() => {
@@ -147,20 +190,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [aiLogs, setAiLogs] = useState<AIOpinionLog[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}aiLogs`);
-    return saved ? JSON.parse(saved) : [
-      {
-        id: 'ai-001',
-        date: new Date().toISOString().split('T')[0],
-        time: '08:00',
-        supervisorName: 'Carlos Eduardo Santos',
-        opinion: 'O estoque atual atende a operação. Existem 3 spanners e 2 varas de 6 metros em manutenção. Recomenda-se acompanhar a disponibilidade antes do próximo turno.',
-        recommendations: [
-          'Agilizar o diagnóstico do empenamento nas varas de 9m.',
-          'Solicitar compra emergencial de varas de 9 metros.',
-        ],
-        riskLevel: 'MÉDIO',
-      }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() => {
@@ -249,6 +279,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => unsubscribe();
   }, []);
 
+  // Firestore ships sync + one-time initial seed when collection is empty
+  useEffect(() => {
+    seedShipsCatalogIfEmpty().catch(err => {
+      console.warn('Ships seed warning:', err);
+    });
+
+    const unsubscribe = subscribeShips(remoteShips => {
+      setShips(remoteShips);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY_PREFIX}maintenances`, JSON.stringify(maintenances));
   }, [maintenances]);
@@ -265,7 +308,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const login = (email: string, role: User['role'] = 'Supervisor') => {
     const newUser: User = {
       id: `usr-${Date.now()}`,
-      name: email.split('@')[0].replace(/[\._-]/g, ' ').toUpperCase() || 'Carlos Eduardo Santos',
+      name: email.split('@')[0].replace(/[\._-]/g, ' ').toUpperCase() || 'USUARIO OPERACIONAL',
       email,
       role,
       registrationNumber: 'BTP-' + Math.floor(1000 + Math.random() * 9000),
@@ -357,16 +400,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: new Date().toISOString().split('T')[0],
     };
     setShips(prev => [newShip, ...prev]);
+    saveShipToFirestore(newShip).catch(err => {
+      console.warn('Failed to save ship to Firestore:', err);
+    });
   };
 
   const updateShip = (id: string, updated: Partial<ShipInfo>) => {
-    setShips(prev =>
-      prev.map(s => (s.id === id ? { ...s, ...updated, updatedAt: new Date().toISOString().split('T')[0] } : s))
-    );
+    setShips(prev => {
+      const next = prev.map(s => (s.id === id ? { ...s, ...updated, updatedAt: new Date().toISOString().split('T')[0] } : s));
+      const target = next.find(s => s.id === id);
+      if (target) {
+        saveShipToFirestore(target).catch(err => {
+          console.warn('Failed to update ship on Firestore:', err);
+        });
+      }
+      return next;
+    });
   };
 
   const deleteShip = (id: string) => {
     setShips(prev => prev.filter(s => s.id !== id));
+    deleteShipFromFirestore(id).catch(err => {
+      console.warn('Failed to delete ship from Firestore:', err);
+    });
   };
 
   const findShipByName = (name: string) => {
@@ -600,9 +656,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTools(INITIAL_TOOLS);
     setShips(INITIAL_SHIPS);
     setShifts(INITIAL_SHIFTS);
+    setBerthTurnUpdates(INITIAL_BERTH_TURN_UPDATES);
     setMaintenances(INITIAL_MAINTENANCE);
     setPurchases(INITIAL_PURCHASES);
+    setAiLogs([]);
     setConfig(INITIAL_CONFIG);
+    setReadNotificationIds([]);
   };
 
   return (

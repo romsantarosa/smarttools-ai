@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { ShipInfo } from '../types';
+import { inferCompanyByShipName } from '../data/shipsCatalog';
 import {
   Ship,
   Search,
@@ -56,6 +57,13 @@ export const Navios: React.FC = () => {
 
   // Macaco filter options
   const macacoOptions = ['Todos', 'Normal', 'Trava móvel', 'Trava fixa', 'Sem trava', 'Gancho duplo'];
+
+  const getShipCompany = (ship: ShipInfo): string => {
+    const inferred = inferCompanyByShipName(ship.name);
+    if (!ship.company) return inferred;
+    if (ship.company === 'OUTROS' && inferred !== 'OUTROS') return inferred;
+    return ship.company;
+  };
 
   // Filtered ships
   const filteredShips = useMemo(() => {
@@ -204,7 +212,7 @@ export const Navios: React.FC = () => {
                 Base de Dados Operacional BTP
               </span>
               <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold">
-                Atualizado em 04/07 ({totalShips} Navios)
+                {totalShips > 0 ? `${totalShips} navios cadastrados` : 'Nenhum navio cadastrado'}
               </span>
             </div>
 
@@ -230,7 +238,7 @@ export const Navios: React.FC = () => {
               onClick={() => navigate('/')}
               className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
             >
-              <span>Ir para Dashboard</span>
+              <span>Ir para Painel Operacional</span>
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -412,7 +420,7 @@ export const Navios: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="font-black text-sm text-slate-900 dark:text-white tracking-tight group-hover:text-blue-600 transition-colors">
-                        {ship.name}
+                        {getShipCompany(ship)} • {ship.name}
                       </h3>
                       <span className="text-[10px] text-slate-400 font-mono block">
                         ID: {ship.id}
@@ -506,7 +514,7 @@ export const Navios: React.FC = () => {
               {/* Card Footer Quick Dock Action */}
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <span className="text-[10px] text-slate-400 font-mono">
-                  Ref: {ship.updatedAt || '04/07'}
+                  Ref: {ship.updatedAt || '-'}
                 </span>
                 <button
                   onClick={() => setDockingShip(ship)}
@@ -522,9 +530,9 @@ export const Navios: React.FC = () => {
       ) : (
         <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
           <Ship className="w-12 h-12 text-slate-300 mx-auto" />
-          <h4 className="font-bold text-slate-700 dark:text-slate-300 text-base">Nenhum navio encontrado</h4>
+          <h4 className="font-bold text-slate-700 dark:text-slate-300 text-base">Nenhum navio cadastrado.</h4>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
-            Não encontramos nenhum navio com os filtros atuais. Tente buscar por outros termos ou cadastre o navio.
+            Cadastre o primeiro navio para iniciar o controle operacional.
           </p>
           <button
             onClick={() => setSearchTerm('')}
@@ -702,7 +710,7 @@ export const Navios: React.FC = () => {
 
             <div className="p-3 bg-blue-50 dark:bg-blue-950/80 rounded-xl border border-blue-200 dark:border-blue-800 space-y-1">
               <span className="text-[10px] text-blue-500 uppercase font-black">Navio Selecionado:</span>
-              <p className="font-black text-sm text-blue-900 dark:text-blue-200">{dockingShip.name}</p>
+              <p className="font-black text-sm text-blue-900 dark:text-blue-200">{getShipCompany(dockingShip)} • {dockingShip.name}</p>
               <p className="text-xs text-blue-700 dark:text-blue-300">{dockingShip.details}</p>
             </div>
 
