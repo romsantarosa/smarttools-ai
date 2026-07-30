@@ -4,7 +4,7 @@ import { processPdf, type PDFExtractionResult } from './pdfService';
 import { extractTextFromImageWithGemini } from './geminiService';
 
 export type ImportDocumentType = 'escala' | 'split' | 'lista-operadores' | 'relatorio' | 'documento-administrativo' | 'outro';
-export type ImportStage = 'receiving' | 'validating' | 'reading-pdf' | 'running-ocr' | 'analyzing-ai' | 'importing' | 'completed' | 'error';
+export type ImportStage = 'receiving' | 'validating' | 'reading-pdf' | 'running-ocr' | 'running-cv' | 'analyzing-ai' | 'importing' | 'completed' | 'error';
 
 export interface ImportedDocumentEntities {
   dateCandidates: string[];
@@ -355,6 +355,7 @@ export async function importDocumentAndAnalyze(
   let sourceKind: ImportedDocumentResult['sourceKind'] = 'text';
   let pages: string[] = [];
   let lines: string[][] = [];
+  let pageAssets: PDFExtractionResult['pageAssets'] = [];
   let text = '';
   let extractionErrors: string[] = [];
 
@@ -389,14 +390,25 @@ export async function importDocumentAndAnalyze(
       text = pdfResult.text;
       pages = pdfResult.pages;
       lines = pdfResult.lines ?? pdfResult.pages.map((pageText) => pageText.split('\n'));
+      pageAssets = pdfResult.pageAssets || [];
       extractionErrors = pdfResult.errors;
 
       pushLog(logs, callbacks, extractionMethod === 'ocr' ? 'running-ocr' : 'reading-pdf', 'Extração do PDF concluída.', {
         extractionMethod,
         totalPages: pdfResult.totalPages,
         processingTimeMs: pdfResult.processingTime,
+        renderedPages: pageAssets.length,
         textChars: text.length,
       });
+
+      if (pageAssets.length > 0) {
+        pushLog(logs, callbacks, 'running-cv', 'Páginas convertidas para visão computacional.', {
+          totalPageAssets: pageAssets.length,
+          avgResolution: Math.round(
+            pageAssets.reduce((acc, item) => acc + item.width * item.height, 0) / Math.max(1, pageAssets.length)
+          ),
+        });
+      }
     } else if (mime.startsWith('image/') || /\.(png|jpe?g|webp|bmp|gif|tiff?)$/i.test(name)) {
       sourceKind = 'image';
       setStage(callbacks, 'running-ocr', 'Executando OCR automático...');
@@ -550,7 +562,33 @@ export async function importDocumentAndAnalyze(
   let analysis: any = null;
   if (documentType === 'split') {
     try {
-      analysis = await analyzeSplit({ pages, lines, text });
+      setStage(callbacks, 'running-cv', 'Executando visão computacional...');
+      analysis = await analyzeSplit({ pages, lines, text, pageAssets });
+
+      const extractionLog = [...logs]
+        .reverse()
+        .find((entry) => (entry.stage === 'running-ocr' || entry.stage === 'reading-pdf') && typeof entry.data?.processingTimeMs === 'number');
+
+      const ocrTimeMs = Number(extractionLog?.data?.processingTimeMs || 0);
+      if (analysis?.pipelineMetrics) {
+        analysis.pipelineMetrics.ocrTimeMs = ocrTimeMs;
+      }
+      if (analysis?.developerMode?.timing) {
+        analysis.developerMode.timing.ocrMs = ocrTimeMs;
+      }
+
+      if (analysis?.pipelineMetrics) {
+        pushLog(logs, callbacks, 'analyzing-ai', 'Métricas da análise de Split consolidadas.', {
+          ocrTimeMs: analysis.pipelineMetrics.ocrTimeMs,
+          aiTimeMs: analysis.pipelineMetrics.aiTimeMs,
+          visionTimeMs: analysis.pipelineMetrics.visionTimeMs,
+          baysCount: analysis.pipelineMetrics.baysCount,
+          containersCount: analysis.pipelineMetrics.containersCount,
+          deckCount: analysis.pipelineMetrics.deckCount,
+          holdCount: analysis.pipelineMetrics.holdCount,
+          confidence: analysis.pipelineMetrics.confidence,
+        });
+      }
     } catch (error) {
       extractionErrors.push(`Falha ao analisar Split: ${normalizeImportError(error)}`);
     }
