@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { getFirebaseErrorMessage } from '../services/authService';
+import { DocumentationUpdateButton } from '../components/documentation/DocumentationUpdateButton';
 
 // Official SVG Logos for Google and Facebook
 const GoogleLogo: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
@@ -570,6 +571,8 @@ export const Login: React.FC = () => {
           </div>
         </div>
       )}
+
+      <DocumentationUpdateButton />
     </div>
   );
 };

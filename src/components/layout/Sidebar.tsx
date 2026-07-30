@@ -18,6 +18,7 @@ import {
   Calendar,
   Navigation,
   Info,
+  BookOpenText,
 } from 'lucide-react';
 import PictureAsPdf from '@mui/icons-material/PictureAsPdf';
 import { useApp } from '../../context/AppContext';
@@ -47,6 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { label: 'Configurações', path: '/configuracoes', icon: Settings },
     { label: 'Perfil', path: '/perfil', icon: UserCircle },
     { label: 'Sobre', path: '/sobre', icon: Info },
+    { label: 'Documentação', path: '/documentacao', icon: BookOpenText },
   ];
 
   return (

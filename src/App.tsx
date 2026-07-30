@@ -18,6 +18,7 @@ import { AtracacaoSaida } from './pages/AtracacaoSaida';
 import { PlanejamentoSplit } from './pages/PlanejamentoSplit';
 import { ProgramacaoBtp } from './pages/ProgramacaoBtp';
 import { Sobre } from './pages/Sobre';
+import { Documentacao } from './pages/Documentacao';
 
 // Guarded Route component
 const ProtectedRoutes: React.FC = () => {
@@ -55,6 +56,7 @@ export default function App() {
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/planejamento-split" element={<PlanejamentoSplit />} />
             <Route path="/sobre" element={<Sobre />} />
+            <Route path="/documentacao" element={<Documentacao />} />
           </Route>
 
           {/* Fallback redirect */}
