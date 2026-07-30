@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="BTP SmartTools AI maskable icon">
+  <defs>
+    <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="#0f172a"/>
+  <rect x="72" y="72" width="368" height="368" rx="96" fill="url(#g2)"/>
+  <path d="M160 176h192v34H160zm0 68h150v34H160zm0 68h110v34H160z" fill="#ffffff"/>
+  <circle cx="360" cy="168" r="22" fill="#fbbf24"/>
+</svg>

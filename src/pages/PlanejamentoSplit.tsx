@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   UploadCloud,
   Search,
@@ -10,8 +10,8 @@ import {
   X,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { processPdf } from '../services/pdfService';
-import { analyzeSplit } from '../services/aiService';
+import { importDocumentAndAnalyze } from '../services/importPipeline';
+import { consumePlatformFiles, subscribePlatformFiles } from '../services/platformIntake';
 
 function displayValue(value: any, sourceLabel?: string) {
   if (value === null || value === undefined || value === '') {
@@ -50,6 +50,19 @@ export const PlanejamentoSplit: React.FC = () => {
   const [search, setSearch] = useState('');
   const [searchResult, setSearchResult] = useState<any>(null);
 
+  useEffect(() => {
+    const pendingFiles = consumePlatformFiles();
+    if (pendingFiles.length > 0 && !file) {
+      setFile(pendingFiles[0]);
+    }
+
+    return subscribePlatformFiles((files) => {
+      if (files.length > 0) {
+        setFile(files[0]);
+      }
+    });
+  }, [file]);
+
   const onDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     const f = e.dataTransfer.files?.[0];
@@ -74,27 +87,19 @@ export const PlanejamentoSplit: React.FC = () => {
     setCopySuccess(false);
 
     try {
-      const pdfResult = await processPdf(
+      const imported = await importDocumentAndAnalyze(
         file,
         (pct) => setProgress(pct),
         (current, total) => setOcrProgress({ current, total })
       );
 
-      setExtractedText(pdfResult.text);
-      setExtractionMethod(pdfResult.extractionMethod);
-      if (pdfResult.errors.length > 0) {
-        setExtractionErrors(pdfResult.errors);
+      setExtractedText(imported.text);
+      setExtractionMethod(imported.extractionMethod === 'sheet' ? 'native' : imported.extractionMethod);
+      if (imported.errors.length > 0) {
+        setExtractionErrors(imported.errors);
       }
 
-      const parsed = {
-        pages: pdfResult.pages,
-        lines: pdfResult.pages.map((pageText) => pageText.split('\n')),
-        text: pdfResult.text,
-      };
-
-      setProgress(85);
-      const analysis = await analyzeSplit(parsed);
-      setSummary(analysis);
+      setSummary(imported.analysis);
       setProgress(100);
       setShowTextViewer(false);
     } catch (err) {
@@ -387,6 +392,12 @@ export const PlanejamentoSplit: React.FC = () => {
             <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">{summary.smartSummary}</p>
           </div>
         </motion.div>
+      )}
+
+      {!summary && !parsing && (
+        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 p-4 text-xs text-slate-500 dark:text-slate-400">
+          Solte um PDF, imagem, planilha ou TXT aqui para iniciar a importação automática.
+        </div>
       )}
 
       <div className="fixed right-4 bottom-4 w-[320px] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl p-3 space-y-2">

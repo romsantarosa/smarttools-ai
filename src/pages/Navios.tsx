@@ -216,12 +216,12 @@ export const Navios: React.FC = () => {
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-3">
               <Ship className="w-8 h-8 text-blue-400" />
               <span>Guia & Ficha Técnica de Navios</span>
             </h1>
 
-            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl font-medium leading-relaxed">
+            <p className="text-[11px] sm:text-xs text-slate-300 max-w-2xl font-medium leading-relaxed">
               Consulte especificações de peação, tipo de castanha, modelo de macaco e alertas de segurança para o trancamento e destrancamento seguro a bordo dos navios atracados no Terminal BTP.
             </p>
           </div>
@@ -229,14 +229,14 @@ export const Navios: React.FC = () => {
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={handleOpenAddModal}
-              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 hover:scale-102 active:scale-98"
+              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-[11px] rounded-xl transition-all shadow-md flex items-center gap-2 hover:scale-102 active:scale-98"
             >
               <Plus className="w-4 h-4" />
               <span>Cadastrar Novo Navio</span>
             </button>
             <button
               onClick={() => navigate('/')}
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
+              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] rounded-xl border border-slate-700 transition-all flex items-center gap-2"
             >
               <span>Ir para Painel Operacional</span>
               <ChevronRight className="w-4 h-4" />
@@ -246,7 +246,7 @@ export const Navios: React.FC = () => {
 
         {/* Dock Notification Banner */}
         {dockNotification && (
-          <div className="mt-4 p-3 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-emerald-200 text-xs font-bold flex items-center gap-2 animate-fade-in">
+          <div className="mt-4 p-3 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-emerald-200 text-[11px] font-bold flex items-center gap-2 animate-fade-in">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{dockNotification}</span>
           </div>
@@ -260,8 +260,8 @@ export const Navios: React.FC = () => {
             <Ship className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Navios</span>
-            <span className="text-xl font-black text-slate-900 dark:text-white">{totalShips}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Navios</span>
+            <span className="text-lg font-black text-slate-900 dark:text-white">{totalShips}</span>
           </div>
         </div>
 
@@ -270,8 +270,8 @@ export const Navios: React.FC = () => {
             <Anchor className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Pé de Galinha</span>
-            <span className="text-xl font-black text-slate-900 dark:text-white">{countPeDeGalinha}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pé de Galinha</span>
+            <span className="text-lg font-black text-slate-900 dark:text-white">{countPeDeGalinha}</span>
           </div>
         </div>
 
@@ -280,8 +280,8 @@ export const Navios: React.FC = () => {
             <RefreshCw className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Automática</span>
-            <span className="text-xl font-black text-slate-900 dark:text-white">{countAutomatica}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Automática</span>
+            <span className="text-lg font-black text-slate-900 dark:text-white">{countAutomatica}</span>
           </div>
         </div>
 
@@ -290,8 +290,8 @@ export const Navios: React.FC = () => {
             <ShieldAlert className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Com Alertas</span>
-            <span className="text-xl font-black text-slate-900 dark:text-white">{countWithWarnings}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Com Alertas</span>
+            <span className="text-lg font-black text-slate-900 dark:text-white">{countWithWarnings}</span>
           </div>
         </div>
       </div>
@@ -307,7 +307,7 @@ export const Navios: React.FC = () => {
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder="Pesquisar navio por nome, tipo de castanha, macaco ou detalhes (ex: AMERICO, MAERSK, MSC, SAN, ZIM)..."
-              className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-[11px] font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             />
             {searchTerm && (
               <button

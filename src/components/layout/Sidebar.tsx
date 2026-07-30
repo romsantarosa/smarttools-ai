@@ -17,6 +17,7 @@ import {
   Ship,
   Calendar,
   Navigation,
+  Info,
 } from 'lucide-react';
 import PictureAsPdf from '@mui/icons-material/PictureAsPdf';
 import { useApp } from '../../context/AppContext';
@@ -45,6 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { label: 'Histórico', path: '/historico', icon: History },
     { label: 'Configurações', path: '/configuracoes', icon: Settings },
     { label: 'Perfil', path: '/perfil', icon: UserCircle },
+    { label: 'Sobre', path: '/sobre', icon: Info },
   ];
 
   return (
