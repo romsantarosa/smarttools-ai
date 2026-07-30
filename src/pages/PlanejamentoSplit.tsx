@@ -89,8 +89,10 @@ export const PlanejamentoSplit: React.FC = () => {
     try {
       const imported = await importDocumentAndAnalyze(
         file,
-        (pct) => setProgress(pct),
-        (current, total) => setOcrProgress({ current, total })
+        {
+          onProgress: (pct) => setProgress(pct),
+          onOcrProgress: (current, total) => setOcrProgress({ current, total }),
+        }
       );
 
       setExtractedText(imported.text);

@@ -24,6 +24,10 @@ export interface PDFExtractionResult {
   errors: string[];
 }
 
+export interface PDFProcessOptions {
+  enableOcr?: boolean;
+}
+
 function normalizeLine(line: string): string {
   return line.replace(/\s+/g, ' ').trim();
 }
@@ -171,11 +175,13 @@ export async function renderPdfPageToImage(
 export async function processPdf(
   file: File,
   onProgress?: (pct: number) => void,
-  onOcrProgress?: (current: number, total: number) => void
+  onOcrProgress?: (current: number, total: number) => void,
+  options: PDFProcessOptions = {}
 ): Promise<PDFExtractionResult> {
   console.log('[pdfService] Iniciando processamento completo do PDF:', file.name);
   const startTime = Date.now();
   const errors: string[] = [];
+  const enableOcr = options.enableOcr !== false;
 
   try {
     // Etapa 1: Tentar extração nativa
@@ -196,6 +202,23 @@ export async function processPdf(
         extractionMethod: 'native',
         totalPages: nativeExtraction.pages.length,
         processingTime: Date.now() - startTime,
+        errors,
+      };
+    }
+
+    if (!enableOcr) {
+      const processingTime = Date.now() - startTime;
+      const noTextError = 'PDF sem texto nativo. OCR desativado para este fluxo.';
+      errors.push(noTextError);
+
+      return {
+        text: '',
+        pages: nativeExtraction?.pages || [],
+        lines: nativeExtraction?.lines || [],
+        hasTextContent: false,
+        extractionMethod: 'native',
+        totalPages: nativeExtraction?.pages?.length || 0,
+        processingTime,
         errors,
       };
     }

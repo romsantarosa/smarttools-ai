@@ -19,6 +19,7 @@ import {
   Navigation,
   Info,
   BookOpenText,
+  Users,
 } from 'lucide-react';
 import PictureAsPdf from '@mui/icons-material/PictureAsPdf';
 import { useApp } from '../../context/AppContext';
@@ -35,6 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const menuItems = [
     { label: 'Painel Operacional', path: '/', icon: LayoutDashboard },
     { label: 'Escala BTP', path: '/escala', icon: Calendar },
+    { label: 'Colaboradores', path: '/colaboradores', icon: Users },
     { label: 'Programação BTP', path: '/programacao-btp', icon: Ship },
     { label: 'Atracação/Saída Navios', path: '/atracacao-saida', icon: Navigation, badge: 'API' },
     { label: 'Planejamento Split', path: '/planejamento-split', icon: PictureAsPdf },

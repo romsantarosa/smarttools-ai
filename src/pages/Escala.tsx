@@ -37,6 +37,8 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { auth, db } from '../services/firebase';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch } from 'firebase/firestore';
 import { useApp } from '../context/AppContext';
+import { consumePlatformFiles, subscribePlatformFiles } from '../services/platformIntake';
+import { importDocumentAndAnalyze, type ImportStage, type ImportLogEntry } from '../services/importPipeline';
 
 // Polyfill for ReadableStream async iterator, required by pdfjs-dist on some mobile browsers
 (function() {
@@ -219,6 +221,36 @@ export const Escala: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [processingPdf, setProcessingPdf] = useState(false);
+  const [importStage, setImportStage] = useState<ImportStage | null>(null);
+  const [importStageMessage, setImportStageMessage] = useState('');
+  const [importProgress, setImportProgress] = useState(0);
+  const [importLogs, setImportLogs] = useState<ImportLogEntry[]>([]);
+
+  useEffect(() => {
+    if (OPERADORES_INICIAIS.length === 0) {
+      setIndexInicio(0);
+      return;
+    }
+    const idx475 = OPERADORES_INICIAIS.findIndex((op) => op.mat === '475');
+    setIndexInicio(idx475 >= 0 ? idx475 : 0);
+  }, []);
+
+    useEffect(() => {
+      const pendingFiles = consumePlatformFiles();
+      if (pendingFiles.length > 0) {
+        const incoming = pendingFiles[0];
+        setPdfFile(incoming);
+        void handleGenerateFromPDF(incoming);
+      }
+
+      return subscribePlatformFiles((files) => {
+        if (files.length > 0) {
+          const incoming = files[0];
+          setPdfFile(incoming);
+          void handleGenerateFromPDF(incoming);
+        }
+      });
+    }, []);
   const [history, setHistory] = useState<any[]>([]);
 
   // Firestore sync for history with local fallback
@@ -858,52 +890,56 @@ export const Escala: React.FC = () => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.type !== 'application/pdf') {
-        showToast('Por favor, selecione um arquivo PDF válido.', 'error');
+      const name = file.name.toLowerCase();
+      const valid =
+        file.type === 'application/pdf' ||
+        file.type.startsWith('image/') ||
+        file.type.includes('text') ||
+        file.type.includes('csv') ||
+        /\.(pdf|png|jpe?g|txt|csv)$/i.test(name);
+
+      if (!valid) {
+        showToast('Formato inválido. Use PDF, PNG, JPG, TXT ou CSV.', 'error');
         return;
       }
       setPdfFile(file);
-      showToast('PDF selecionado com sucesso! Clique em GERAR ESCALA DE IMPORTAÇÃO.');
+      void handleGenerateFromPDF(file);
     }
   };
 
-  const handleGenerateFromPDF = async () => {
-    if (!pdfFile || processingPdf) return;
+  const handleGenerateFromPDF = async (fileOverride?: File) => {
+    const sourceFile = fileOverride ?? pdfFile;
+    if (!sourceFile || processingPdf) return;
+
     setProcessingPdf(true);
+    setImportStage('receiving');
+    setImportStageMessage('Recebendo arquivo');
+    setImportProgress(5);
+    setImportLogs([]);
 
     try {
-      const arrayBuffer = await pdfFile.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      let fullText = "";
+      const imported = await importDocumentAndAnalyze(sourceFile, {
+        onProgress: (pct) => setImportProgress(Math.max(5, pct)),
+        onStage: (stage, message) => {
+          setImportStage(stage);
+          setImportStageMessage(message);
+        },
+        onLog: (entry) => setImportLogs((prev) => [...prev, entry]),
+      }, {
+        disablePdfOcr: true,
+      });
 
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        
-        const items = textContent.items as any[];
-        const yMap: { [y: number]: { text: string, x: number }[] } = {};
-        const TOLERANCE = 5;
-        
-        items.forEach(item => {
-          const y = item.transform[5];
-          const text = (item.str || "").trim();
-          if (!text) return;
-
-          let foundY = Object.keys(yMap).map(Number).find(key => Math.abs(key - y) <= TOLERANCE);
-          if (foundY === undefined) {
-             foundY = y;
-             yMap[foundY] = [];
-          }
-          yMap[foundY].push({ text, x: item.transform[4] });
-        });
-        
-        const sortedY = Object.keys(yMap).map(Number).sort((a, b) => b - a);
-        sortedY.forEach(y => {
-          const sortedItems = yMap[y].sort((a, b) => a.x - b.x);
-          const lineStr = sortedItems.map(i => i.text).join("  ");
-          fullText += lineStr + "\n";
-        });
+      if (!imported.text.trim()) {
+        const reason = imported.errors[0] || 'Documento incompatível para importação da escala.';
+        showToast(reason, 'error');
+        return;
       }
+
+      if (imported.documentType !== 'escala') {
+        showToast(`Documento identificado como ${imported.documentType}. Tentando importação de escala mesmo assim...`, 'error');
+      }
+
+      const fullText = imported.text;
 
       const textUpper = fullText.toUpperCase();
       let extractedTurno = "";
@@ -926,29 +962,268 @@ export const Escala: React.FC = () => {
       const allocations: { mat: string, berco: string }[] = [];
       const lines = fullText.split('\n');
 
-      lines.forEach(line => {
-        OPERADORES_INICIAIS.forEach(op => {
-          const cleanMat = op.mat.replace(/^0+/, "");
-          const matRegex = new RegExp(`(?:^|\\s)(0*${cleanMat})(?:\\s|$)`);
-          
-          if (matRegex.test(line)) {
-            const bercoMatch = line.match(/BTP\s*0?([1-3])/i);
+      const normalizeName = (value: string) =>
+        value
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^A-Z\s]/gi, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .toUpperCase();
 
-            if (bercoMatch) {
-              const bercoLabel = `BTP 0${bercoMatch[1]}`;
-              allocations.push({
-                mat: op.mat,
-                berco: bercoLabel
-              });
+      const detectedCatalogMap = new Map<string, Operador>();
+      const detectedOrder: string[] = [];
+      const normalizeMatKey = (value: string) => value.replace(/^0+/, '').trim();
+      const isLikelyFullName = (value: string) => {
+        const cleaned = value.replace(/\s+/g, ' ').trim();
+        if (!cleaned) return false;
+        const tokens = cleaned.split(' ').filter(Boolean);
+        return tokens.length >= 2 && cleaned.length >= 8;
+      };
+      const sanitizeName = (value: string) => value.replace(/\s+/g, ' ').replace(/\b(BTP\s*0?[1-3]|OPERADOR(?:ES)?\s+DE\s+BORDO)\b/gi, '').trim();
+      const extractFirstMat = (value: string) => {
+        const match = value.match(/\b\d{4,8}\b/);
+        return match ? match[0] : null;
+      };
+      const extractNameCandidate = (value: string) => {
+        const cleaned = sanitizeName(
+          value
+            .replace(/\b\d{4,8}\b/g, ' ')
+            .replace(/[|;:]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+        );
+        return isLikelyFullName(cleaned) ? cleaned : null;
+      };
+
+      const parseBordoLine = (line: string): { mat: string; nome: string } | null => {
+        const compact = line.replace(/\s+/g, ' ').trim();
+        if (!compact) return null;
+
+        const patterns: RegExp[] = [
+          /(?:^|\s)(\d{4,8})(?:\s*[-–—:|]\s*|\s+)([A-ZÀ-Ú][A-ZÀ-Ú\s.'-]{5,})(?:\s*(?:\||\/|;).*)?$/i,
+          /^([A-ZÀ-Ú][A-ZÀ-Ú\s.'-]{5,}?)(?:\s*[-–—:|]\s*|\s+)(\d{4,8})(?:\s*(?:\||\/|;).*)?$/i,
+          /(?:^|\s)(\d{4,8})(?:\s+)([A-ZÀ-Ú][A-ZÀ-Ú\s.'-]{5,})/i,
+        ];
+
+        for (const pattern of patterns) {
+          const match = compact.match(pattern);
+          if (!match) continue;
+
+          const candidateMat = /\d{4,8}/.test(match[1]) ? match[1] : match[2];
+          const candidateName = /\d{4,8}/.test(match[1]) ? match[2] : match[1];
+          const cleanedName = sanitizeName(candidateName);
+
+          if (!candidateMat || !isLikelyFullName(cleanedName)) continue;
+          return { mat: candidateMat.trim(), nome: cleanedName };
+        }
+
+        return null;
+      };
+
+      const parseBordoLineLoose = (line: string): { mat: string; nome: string } | null => {
+        const compact = line.replace(/\s+/g, ' ').trim();
+        if (!compact) return null;
+
+        const columns = compact.split(/\s{2,}|\t|\|/).map(c => c.trim()).filter(Boolean);
+        if (columns.length >= 2) {
+          for (let i = 0; i < columns.length; i++) {
+            const matCol = extractFirstMat(columns[i] || '');
+            if (!matCol) continue;
+
+            const neighborCandidates = [columns[i - 1] || '', columns[i + 1] || '', columns.join(' ')];
+            for (const candidate of neighborCandidates) {
+              const name = extractNameCandidate(candidate);
+              if (name) {
+                return { mat: matCol, nome: name };
+              }
             }
           }
-        });
+        }
+
+        const anyMat = extractFirstMat(compact);
+        const anyName = extractNameCandidate(compact);
+        if (anyMat && anyName) {
+          return { mat: anyMat, nome: anyName };
+        }
+
+        return null;
+      };
+
+      const collectDetectedOperator = (matRaw: string, nome?: string) => {
+        const key = normalizeMatKey(matRaw);
+        if (!key) return;
+        const matDisplay = matRaw.trim();
+
+        if (!detectedCatalogMap.has(key)) {
+          detectedOrder.push(key);
+          detectedCatalogMap.set(key, {
+            mat: matDisplay,
+            nome: nome?.trim() || `OPERADOR ${matDisplay}`,
+          });
+          return;
+        }
+
+        if (nome) {
+          const current = detectedCatalogMap.get(key)!;
+          if (!current.nome || current.nome.startsWith('OPERADOR ')) {
+            current.nome = nome.trim();
+          }
+        }
+      };
+
+      let currentBercoContext: string | null = null;
+      const knownOperators = OPERADORES_INICIAIS.length > 0 ? OPERADORES_INICIAIS : [];
+      const knownNameMap = new Map<string, Operador>();
+      const hasBordoSection = /OPERADORES?\s+DE\s+BORDO|BORDO/i.test(textUpper);
+      let bordoSectionActive = !hasBordoSection;
+      const defaultBerco: 'BTP 01' = 'BTP 01';
+      const isSectionBoundary = (line: string) => /^(OPERADORES?\s+DE\s+(?!BORDO)|SUPERVIS|ENCARREG|APONTADOR|CONFERENTE|EQUIPE|OBSERVA|ASSINATURA|RESUMO|TOTAL)/i.test(line);
+      let pendingMat: string | null = null;
+      let pendingBerco: string = defaultBerco;
+      const bordoAllocations: { mat: string, berco: string }[] = [];
+      const bordoMatKeys = new Set<string>();
+
+      const registerAllocation = (matRaw: string, berco: string, nome?: string, asBordo = false) => {
+        const key = normalizeMatKey(matRaw);
+        if (!key) return;
+        collectDetectedOperator(matRaw, nome);
+        allocations.push({ mat: matRaw, berco });
+        if (asBordo) {
+          bordoAllocations.push({ mat: matRaw, berco });
+          bordoMatKeys.add(key);
+        }
+      };
+
+      knownOperators.forEach((op) => {
+        knownNameMap.set(normalizeName(op.nome), op);
       });
+
+      lines.forEach((rawLine, idx) => {
+        const line = rawLine.trim();
+        if (!line) return;
+
+        if (/OPERADORES?\s+DE\s+BORDO/i.test(line)) {
+          bordoSectionActive = true;
+          return;
+        }
+
+        if (hasBordoSection && bordoSectionActive && isSectionBoundary(line)) {
+          bordoSectionActive = false;
+        }
+
+        const bercoMatch = line.match(/\bBTP\s*0?([1-3])\b/i);
+        if (bercoMatch) {
+          currentBercoContext = `BTP 0${bercoMatch[1]}`;
+        }
+
+        const berthForLine = bercoMatch ? `BTP 0${bercoMatch[1]}` : (currentBercoContext || defaultBerco);
+        const lineWithoutBerth = line.replace(/\bBTP\s*0?[1-3]\b/gi, ' ').replace(/\s+/g, ' ').trim();
+
+        if (bordoSectionActive) {
+          const parsedStrict = parseBordoLine(lineWithoutBerth);
+          if (parsedStrict) {
+            registerAllocation(parsedStrict.mat, berthForLine, parsedStrict.nome, true);
+            pendingMat = null;
+            return;
+          }
+
+          const parsedLoose = parseBordoLineLoose(lineWithoutBerth);
+          if (parsedLoose) {
+            registerAllocation(parsedLoose.mat, berthForLine, parsedLoose.nome, true);
+            pendingMat = null;
+            return;
+          }
+
+          const matInLine = extractFirstMat(lineWithoutBerth);
+          const nameInLine = extractNameCandidate(lineWithoutBerth);
+
+          if (matInLine && nameInLine) {
+            registerAllocation(matInLine, berthForLine, nameInLine, true);
+            pendingMat = null;
+            return;
+          }
+
+          if (matInLine && !nameInLine) {
+            pendingMat = matInLine;
+            pendingBerco = berthForLine;
+            return;
+          }
+
+          if (!matInLine && nameInLine && pendingMat) {
+            registerAllocation(pendingMat, pendingBerco || berthForLine, nameInLine, true);
+            pendingMat = null;
+            return;
+          }
+
+          if (!matInLine && !nameInLine && pendingMat && idx + 1 < lines.length) {
+            const nextLine = (lines[idx + 1] || '').trim();
+            const nextMat = extractFirstMat(nextLine);
+            const nextName = extractNameCandidate(nextLine);
+            if (!nextMat && nextName) {
+              registerAllocation(pendingMat, pendingBerco || berthForLine, nextName, true);
+              pendingMat = null;
+              return;
+            }
+          }
+        }
+
+        if (knownOperators.length > 0) {
+          knownOperators.forEach((op) => {
+            const cleanMat = op.mat.replace(/^0+/, '');
+            const matRegex = new RegExp(`(?:^|\\s)(0*${cleanMat})(?:\\s|$)`);
+            const byMat = matRegex.test(line);
+            const byName = normalizeName(line).includes(normalizeName(op.nome));
+
+            if (byMat || byName) {
+              collectDetectedOperator(op.mat, op.nome);
+              if (isLikelyFullName(op.nome)) {
+                const onlyIfBordoMissing = bordoMatKeys.size === 0;
+                if (onlyIfBordoMissing) {
+                  allocations.push({ mat: op.mat, berco: berthForLine });
+                }
+              }
+            }
+          });
+        }
+
+        if (knownOperators.length > 0) {
+          const lineNormalized = normalizeName(line);
+          const foundKnown = knownNameMap.get(lineNormalized);
+          if (foundKnown && isLikelyFullName(foundKnown.nome)) {
+            if (bordoMatKeys.size === 0) {
+              allocations.push({ mat: foundKnown.mat, berco: berthForLine });
+            }
+          }
+        }
+      });
+
+      if (bordoAllocations.length > 0) {
+        allocations.splice(0, allocations.length, ...bordoAllocations);
+      }
+
+      if (OPERADORES_INICIAIS.length === 0 && detectedOrder.length > 0) {
+        const generated = detectedOrder
+          .map((mat) => detectedCatalogMap.get(mat))
+          .filter((op): op is Operador => Boolean(op));
+
+        OPERADORES_INICIAIS.splice(0, OPERADORES_INICIAIS.length, ...generated);
+      }
+
+      if (allocations.length === 0 && detectedOrder.length > 0) {
+        detectedOrder.forEach((matKey) => {
+          const op = detectedCatalogMap.get(matKey);
+          if (op?.mat) {
+            allocations.push({ mat: op.mat, berco: defaultBerco });
+          }
+        });
+      }
 
       const opsByBerco: Record<string, string[]> = { "BTP 01": [], "BTP 02": [], "BTP 03": [] };
       const flatPdfMats: string[] = [];
       allocations.forEach(a => {
-        if (!opsByBerco[a.berco].includes(a.mat)) {
+        const alreadyInBerco = opsByBerco[a.berco].some((existingMat) => normalizeMatKey(existingMat) === normalizeMatKey(a.mat));
+        if (!alreadyInBerco) {
           opsByBerco[a.berco].push(a.mat);
           flatPdfMats.push(a.mat);
         }
@@ -967,9 +1242,11 @@ export const Escala: React.FC = () => {
 
       let globalStartIndex = 0;
       if (firstOperatorMat) {
-        globalStartIndex = Math.max(0, OPERADORES_INICIAIS.findIndex(o => o.mat === firstOperatorMat));
+        globalStartIndex = Math.max(0, OPERADORES_INICIAIS.findIndex(o => normalizeMatKey(o.mat) === normalizeMatKey(firstOperatorMat!)));
         setIndexInicio(globalStartIndex);
       }
+
+      const flatPdfMatsNormalized = flatPdfMats.map((mat) => normalizeMatKey(mat));
 
       const calculatedUnavailableMats: string[] = [];
       let requiredRemaining = foundCount;
@@ -978,7 +1255,7 @@ export const Escala: React.FC = () => {
       
       while (requiredRemaining > 0 && maxScans > 0) {
         const mat = OPERADORES_INICIAIS[currIdx % OPERADORES_INICIAIS.length].mat;
-        if (flatPdfMats.includes(mat)) {
+        if (flatPdfMatsNormalized.includes(normalizeMatKey(mat))) {
            requiredRemaining--;
         } else {
            calculatedUnavailableMats.push(mat);
@@ -993,6 +1270,17 @@ export const Escala: React.FC = () => {
       setManualAssignments({});
 
       if (foundCount > 0) {
+        setImportStage('importing');
+        setImportStageMessage('Importando dados');
+        setImportProgress(95);
+
+        if (firstOperatorMat) {
+          const firstOp = OPERADORES_INICIAIS.find(op => normalizeMatKey(op.mat) === normalizeMatKey(firstOperatorMat!));
+          if (firstOp) {
+            showToast(`Primeiro colaborador do BTP 01: ${firstOp.nome} (${firstOp.mat})`, 'success');
+          }
+        }
+
         if (extractedTurno) setTurno(extractedTurno);
         if (extractedDate) setDataAtual(extractedDate);
         setB1(maxTernosFound["BTP 01"] > 0 ? maxTernosFound["BTP 01"] as any : "");
@@ -1000,18 +1288,58 @@ export const Escala: React.FC = () => {
         setB3(maxTernosFound["BTP 03"] > 0 ? maxTernosFound["BTP 03"] as any : "");
 
         setGerado(true);
-        showToast(`${foundCount} operadores identificados. Ausentes na lista marcados como indisponíveis.`, "success");
+        setImportStage('completed');
+        setImportStageMessage('Concluído');
+        setImportProgress(100);
+
+        if (imported.autoImported) {
+          showToast('Importação concluída com sucesso.', 'success');
+        } else {
+          showToast('Documento parcialmente reconhecido. Revise os dados importados.', 'error');
+        }
       } else {
-        showToast("Nenhuma informação identificada no PDF. Verifique o padrão do arquivo.", "error");
+        const docTypeLabelMap: Record<string, string> = {
+          escala: 'Escala',
+          split: 'Split',
+          'lista-operadores': 'Lista de Operadores',
+          relatorio: 'Relatório',
+          'documento-administrativo': 'Documento Administrativo',
+          outro: 'Outro',
+        };
+
+        const resolvedDocType = docTypeLabelMap[imported.documentType] || imported.documentType;
+        const hasOperators = imported.entities.operators.length > 0;
+        const hasMats = imported.entities.matriculas.length > 0;
+        const hasBerths = imported.entities.berths.length > 0;
+        const extractedBordoCount = detectedOrder.length;
+
+        const fallbackReason =
+          imported.errors[0]
+          || (imported.documentType !== 'escala'
+            ? `Documento identificado como ${resolvedDocType}. Para gerar Escala BTP, envie um PDF de escala de bordo.`
+            : !hasOperators && !hasMats
+              ? 'Não foi possível identificar operadores ou matrículas neste arquivo.'
+              : extractedBordoCount > 0
+                ? `Foram encontrados ${extractedBordoCount} operadores de bordo, mas sem sequência aplicável. Verifique se o bloco contém matrícula e nome na mesma área.`
+              : !hasBerths
+                ? 'Operadores identificados, mas sem berço BTP válido (BTP 01/02/03) para distribuição automática.'
+                : `Falha ao mapear automaticamente os dados da escala (confiança ${Math.round(imported.confidence * 100)}%).`);
+
+        showToast(fallbackReason, "error");
       }
 
     } catch (error: any) {
       console.error("Erro ao processar PDF:", error);
-      showToast(`Erro técnico ao ler o PDF: ${error?.message || 'Erro desconhecido'}`, "error");
+      showToast(`Falha na importação inteligente: ${error?.message || 'Erro desconhecido'}`, "error");
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
       setPdfFile(null);
       setProcessingPdf(false);
+      setTimeout(() => {
+        setImportStage(null);
+        setImportStageMessage('');
+        setImportProgress(0);
+      }, 1500);
     }
   };
 
@@ -1244,14 +1572,20 @@ export const Escala: React.FC = () => {
               1º da Escala (Início):
             </label>
             <select
-              value={indexInicio}
-              onChange={(e) => setIndexInicio(parseInt(e.target.value))}
+              value={OPERADORES_INICIAIS.length > 0 ? indexInicio : ''}
+              onChange={(e) => {
+                if (e.target.value === '') return;
+                setIndexInicio(parseInt(e.target.value, 10));
+              }}
               className={`w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-900 text-sm font-medium ${
                 (Array.isArray(unavailableMats) && unavailableMats.includes(OPERADORES_INICIAIS[indexInicio]?.mat)) 
                   ? 'border-rose-500 text-rose-600' 
                   : 'border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100'
               }`}
             >
+              {OPERADORES_INICIAIS.length === 0 && (
+                <option value="">Sem colaboradores cadastrados</option>
+              )}
               {OPERADORES_INICIAIS.map((op, idx) => (
                 <option key={op.mat} value={idx} className={(Array.isArray(unavailableMats) && unavailableMats.includes(op.mat)) ? 'text-rose-500' : ''}>
                   {(Array.isArray(unavailableMats) && unavailableMats.includes(op.mat)) ? '✖ ' : ''}{op.mat} - {op.nome}
@@ -1342,35 +1676,15 @@ export const Escala: React.FC = () => {
                   }`}
                 >
                   <ClipboardList className="w-4 h-4" />
-                  {pdfFile ? 'ALTERAR PDF' : 'SELECIONAR PDF DE BORDO'}
+                  {pdfFile ? 'ALTERAR ARQUIVO' : 'SELECIONAR / COMPARTILHAR ARQUIVO'}
                 </button>
                 <input
                   type="file"
                   ref={fileInputRef}
                   onChange={handleFileChange}
-                  accept="application/pdf"
+                  accept="application/pdf,image/png,image/jpeg,text/plain,text/csv,.csv"
                   className="hidden"
                 />
-                
-                {pdfFile && (
-                  <button
-                    onClick={handleGenerateFromPDF}
-                    disabled={processingPdf}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-emerald-600 text-white font-bold py-2.5 px-6 rounded-xl hover:bg-emerald-700 transition-all shadow-lg text-xs disabled:opacity-50"
-                  >
-                    {processingPdf ? (
-                      <>
-                        <RotateCcw className="w-4 h-4 animate-spin" />
-                        PROCESSANDO...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4" />
-                        GERAR ESCALA DO PDF
-                      </>
-                    )}
-                  </button>
-                )}
 
                 <div className="flex-1">
                   {pdfFile ? (
@@ -1380,11 +1694,28 @@ export const Escala: React.FC = () => {
                     </div>
                   ) : (
                     <p className="text-[11px] text-amber-700 dark:text-amber-300/80 font-medium">
-                      O leitor inteligente detecta operadores engajados e distribui os ternos automaticamente.
+                      O fluxo é automático: receber arquivo, ler PDF, OCR, analisar IA, importar dados e concluir.
                     </p>
                   )}
                 </div>
               </div>
+
+              {(processingPdf || importStage) && (
+                <div className="rounded-xl border border-amber-300/70 dark:border-amber-800 bg-white/70 dark:bg-slate-900/40 p-3 space-y-2">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-black text-amber-700 dark:text-amber-300 uppercase tracking-wider">
+                      {importStageMessage || 'Processando importação inteligente'}
+                    </span>
+                    <span className="font-mono font-bold text-slate-600 dark:text-slate-300">{importProgress}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-amber-100 dark:bg-amber-950 rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-500 transition-all duration-300" style={{ width: `${importProgress}%` }} />
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                    Logs desta execução: {importLogs.length}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -1689,7 +2020,7 @@ export const Escala: React.FC = () => {
                             }`}>
                               {op.mat}
                             </span>
-                            <span className={`truncate flex-1 ${
+                            <span className={`whitespace-normal break-words leading-tight flex-1 ${
                               op.isAbsent 
                                 ? 'line-through italic opacity-70' 
                                 : op.isDismissed
@@ -1758,7 +2089,7 @@ export const Escala: React.FC = () => {
                     className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 text-xs cursor-pointer transition-all"
                   >
                     <span className="font-mono font-bold w-9 shrink-0 text-[#003366] dark:text-blue-400">{op.mat}</span>
-                    <span className="truncate flex-1 text-slate-700 dark:text-slate-300 font-medium">{op.nome}</span>
+                    <span className="whitespace-normal break-words leading-tight flex-1 text-slate-700 dark:text-slate-300 font-medium">{op.nome}</span>
                   </div>
                 ))}
               </div>

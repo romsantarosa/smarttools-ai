@@ -341,6 +341,132 @@ const matchBerth =
     setTimeout(() => setCopiedEndpoint(null), 2000);
   };
 
+  const splitDateTime = (value?: string): { date?: string; time?: string } => {
+    if (!value) return {};
+    const normalized = value.trim().replace(/\s+/g, ' ');
+    const brMatch = normalized.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})(?:\s+(\d{1,2}:\d{2})(?::\d{2})?)?/);
+    if (brMatch) {
+      return { date: brMatch[1], time: brMatch[2] };
+    }
+
+    const isoMatch = normalized.match(/^(\d{4}-\d{2}-\d{2})(?:[ T](\d{1,2}:\d{2})(?::\d{2})?)?/);
+    if (isoMatch) {
+      return { date: isoMatch[1], time: isoMatch[2] };
+    }
+
+    return {};
+  };
+
+  const hasDateOrTime = (value?: string): boolean => Boolean(value && value.trim() && value.trim() !== '-');
+
+  const readDateTimeFromRecord = (record: BtpShipRecord | Record<string, any>): { date?: string; time?: string } => {
+    const rec: Record<string, any> = record as Record<string, any>;
+
+    const directDate =
+      rec.data ||
+      rec.pob ||
+      rec.dataatracacao ||
+      rec.dataAtracacao ||
+      rec.datachegada ||
+      rec.atracacaoData ||
+      rec.etbDate ||
+      '';
+
+    const directTime =
+      rec.horario ||
+      rec.passagem ||
+      rec.horaatracacao ||
+      rec.horaAtracacao ||
+      rec.horachegada ||
+      rec.atracacaoHora ||
+      rec.etbTime ||
+      '';
+
+    const combinedSource =
+      rec.atracacao ||
+      rec.datahoraatracacao ||
+      rec.dataHoraAtracacao ||
+      rec.etb ||
+      '';
+
+    const parsedCombined = splitDateTime(typeof combinedSource === 'string' ? combinedSource : '');
+
+    return {
+      date: directDate || parsedCombined.date,
+      time: directTime || parsedCombined.time,
+    };
+  };
+
+  const resolveRecordDateTime = (ship: BtpShipRecord): { date: string; time: string } => {
+    const ownDateTime = readDateTimeFromRecord(ship);
+    if (hasDateOrTime(ownDateTime.date) || hasDateOrTime(ownDateTime.time)) {
+      return {
+        date: ownDateTime.date || '-',
+        time: ownDateTime.time || '-',
+      };
+    }
+
+    const allRecords: BtpShipRecord[] = [
+      ...(data?.movimentos || []),
+      ...(data?.andamento || []),
+      ...(data?.confirmadas || []),
+      ...(data?.encerradas || []),
+      ...(data?.previstas || []),
+      ...(data?.atracados || []),
+      ...(data?.fundeados || []),
+    ];
+
+    const targetImo = (ship.imo || '').trim().toUpperCase();
+    const targetNavio = (ship.navio || '').trim().toUpperCase();
+
+    const candidates = allRecords.filter((record) => {
+      const recImo = (record.imo || '').trim().toUpperCase();
+      const recNavio = (record.navio || '').trim().toUpperCase();
+      const sameShip = (targetImo && recImo === targetImo) || (targetNavio && recNavio === targetNavio);
+
+      if (!sameShip) {
+        return false;
+      }
+
+      const dateTime = readDateTimeFromRecord(record);
+      return hasDateOrTime(dateTime.date) || hasDateOrTime(dateTime.time);
+    });
+
+    const candidate = candidates
+      .map((record) => {
+        const dateTime = readDateTimeFromRecord(record);
+        const recMov = (record.movimento || '').toUpperCase();
+
+        let score = 0;
+        if (/ATRAC/.test(recMov)) score += 40;
+        if (/ENTRADA|CHEGADA/.test(recMov)) score += 25;
+        if (/OPERANDO/.test(recMov)) score += 15;
+        if (hasDateOrTime(dateTime.date)) score += 10;
+        if (hasDateOrTime(dateTime.time)) score += 10;
+
+        const parsed = splitDateTime(`${dateTime.date || ''} ${dateTime.time || ''}`.trim());
+        const timestamp = parsed.date
+          ? new Date(`${parsed.date.includes('/') ? parsed.date.split('/').reverse().join('-') : parsed.date}T${parsed.time || '00:00'}:00`).getTime()
+          : 0;
+
+        return { record, dateTime, score, timestamp: Number.isNaN(timestamp) ? 0 : timestamp };
+      })
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return b.timestamp - a.timestamp;
+      })[0];
+
+    if (candidate) {
+      const candidateDateTime = candidate.dateTime;
+      return {
+        date: candidateDateTime.date || '-',
+        time: candidateDateTime.time || '-',
+      };
+    }
+
+    return { date: '-', time: '-' };
+  };
+
   // Export JSON Report
   const exportJsonReport = () => {
     if (!data) return;
@@ -627,6 +753,9 @@ const matchBerth =
               {filteredAtracados.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   {filteredAtracados.map((ship, idx) => (
+                    (() => {
+                      const atracacao = resolveRecordDateTime(ship);
+                      return (
                     <div
                       key={idx}
                       className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4 flex flex-col justify-between hover:border-blue-500 transition-all"
@@ -654,16 +783,16 @@ const matchBerth =
 <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2 text-[11px]">
 
   <div className="flex items-center justify-between">
-    <span className="text-slate-400 font-semibold">📅 Data:</span>
+    <span className="text-slate-400 font-semibold">📅 Atracação no berço:</span>
     <span className="font-bold text-slate-900 dark:text-white font-mono">
-      {ship.data || "-"}
+      {atracacao.date}
     </span>
   </div>
 
   <div className="flex items-center justify-between">
-    <span className="text-slate-400 font-semibold">🕒 Hora:</span>
+    <span className="text-slate-400 font-semibold">🕒 Hora da atracação:</span>
     <span className="font-bold text-slate-900 dark:text-white font-mono">
-      {ship.horario || "-"}
+      {atracacao.time}
     </span>
   </div>
 
@@ -698,6 +827,8 @@ const matchBerth =
                         </button>
                       </div>
                     </div>
+                      );
+                    })()
                   ))}
                 </div>
               ) : (
@@ -727,7 +858,9 @@ const matchBerth =
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-semibold text-slate-800 dark:text-slate-200">
-                      {filteredPrevistas.map((ship, idx) => (
+                      {filteredPrevistas.map((ship, idx) => {
+                        const previstoDateTime = resolveRecordDateTime(ship);
+                        return (
                         <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                           <td className="p-3 font-mono text-slate-500">{ship.imo}</td>
                           <td className="p-3 font-black text-slate-900 dark:text-white">{ship.navio}</td>
@@ -743,7 +876,7 @@ const matchBerth =
                             </span>
                           </td>
                           <td className="p-3 font-mono">
-                            {ship.horario} ({ship.data})
+                            {previstoDateTime.time} ({previstoDateTime.date})
                           </td>
                           <td className="p-3">
                             <span className="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-semibold text-[11px]">
@@ -754,7 +887,8 @@ const matchBerth =
                             {ship.agencia} • {ship.pratico}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -779,7 +913,9 @@ const matchBerth =
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-semibold text-slate-800 dark:text-slate-200">
-                    {filteredMovimentos.map((item, idx) => (
+                    {filteredMovimentos.map((item, idx) => {
+                      const movimentoDateTime = resolveRecordDateTime(item);
+                      return (
                       <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                         <td className="p-3.5 font-mono text-slate-500">{item.imo}</td>
                         <td className="p-3.5 font-black text-slate-900 dark:text-white">{item.navio}</td>
@@ -789,7 +925,7 @@ const matchBerth =
                           {item.loc1 || item.berco} → {item.loc2 || '-'}
                         </td>
                         <td className="p-3.5 font-mono">
-                          {item.horario} ({item.data})
+                          {movimentoDateTime.time} ({movimentoDateTime.date})
                         </td>
                         <td className="p-3.5">
                           <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[11px]">
@@ -797,7 +933,8 @@ const matchBerth =
                           </span>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -9,7 +9,7 @@ export function queuePlatformFiles(files: File[]): void {
     return;
   }
 
-  queuedFiles = validFiles;
+  queuedFiles = [...queuedFiles, ...validFiles];
   listeners.forEach((listener) => listener(validFiles));
 }
 
@@ -17,6 +17,10 @@ export function consumePlatformFiles(): File[] {
   const files = queuedFiles;
   queuedFiles = [];
   return files;
+}
+
+export function hasQueuedPlatformFiles(): boolean {
+  return queuedFiles.length > 0;
 }
 
 export function subscribePlatformFiles(listener: PlatformFileListener): () => void {
