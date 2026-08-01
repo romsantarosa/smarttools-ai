@@ -357,6 +357,25 @@ export const Escala: React.FC = () => {
     setTimeout(() => setGlobalToast(null), 3000);
   };
 
+  const persistScaleSnapshot = (clear = false) => {
+    if (clear) {
+      localStorage.removeItem('btp_latest_scale_snapshot');
+      window.dispatchEvent(new Event('btp-scale-snapshot-updated'));
+      return;
+    }
+
+    const snapshot = {
+      dataAtual,
+      turno,
+      b1: b1 === '' ? 0 : b1,
+      b2: b2 === '' ? 0 : b2,
+      b3: b3 === '' ? 0 : b3,
+    };
+
+    localStorage.setItem('btp_latest_scale_snapshot', JSON.stringify(snapshot));
+    window.dispatchEvent(new Event('btp-scale-snapshot-updated'));
+  };
+
   const saveToHistory = async (customMessage?: any) => {
     const messageStr = typeof customMessage === 'string' ? customMessage : undefined;
     const existingEntry = history.find(e => e.dataAtual === dataAtual && e.turno === turno);
@@ -393,6 +412,7 @@ export const Escala: React.FC = () => {
         localStorage.setItem('btp-history', JSON.stringify(updated));
         setHistory(updated);
       }
+      persistScaleSnapshot();
       showToast(messageStr || `Escala do dia ${dataAtual} (${turno}) salva com sucesso!`);
     } catch (e) {
       console.error(e);
@@ -811,6 +831,7 @@ export const Escala: React.FC = () => {
     setDismissedMats([]);
     setManualAssignments({});
     setOperatorMenu(null);
+    persistScaleSnapshot(true);
   };
 
   const handlePrint = () => {

@@ -44,6 +44,41 @@ function displayValue(value: any, sourceLabel?: string) {
   );
 }
 
+function normalizeBerthLabel(value?: string): string {
+  const raw = (value || '').toString().trim();
+  if (!raw) return '—';
+
+  const upper = raw.toUpperCase();
+  if (upper.includes('PONTO 1') || upper.includes('BTP 1')) return 'BTP 1';
+  if (upper.includes('PONTO 2') || upper.includes('BTP 2')) return 'BTP 2';
+  if (upper.includes('PONTO 3') || upper.includes('BTP 3')) return 'BTP 3';
+  if (upper.includes('BTP')) return raw;
+
+  return raw;
+}
+
+function persistSplitSnapshot(snapshot: Record<string, any>) {
+  try {
+    const normalizedSnapshot = {
+      ...snapshot,
+      updatedAt: snapshot.updatedAt || new Date().toISOString(),
+    };
+
+    const existingRaw = localStorage.getItem('btp_split_analysis_history');
+    const history = existingRaw ? JSON.parse(existingRaw) : [];
+
+    const nextHistory = [normalizedSnapshot, ...Array.isArray(history) ? history : []]
+      .filter((item) => item && typeof item === 'object')
+      .slice(0, 12);
+
+    localStorage.setItem('btp_split_analysis_history', JSON.stringify(nextHistory));
+    localStorage.setItem('btp_last_split_summary', JSON.stringify(normalizedSnapshot));
+    window.dispatchEvent(new Event('btp-split-snapshot-updated'));
+  } catch {
+    // noop
+  }
+}
+
 function kpi(label: string, value: number | string, accent = 'text-cyan-300') {
   return (
     <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-3">
@@ -128,6 +163,26 @@ export const PlanejamentoSplit: React.FC = () => {
         setExtractionErrors(imported.errors);
       }
 
+      const summaryPayload = imported.analysis || {};
+      const snapshot = {
+        updatedAt: new Date().toISOString(),
+        fileName: file?.name || 'split.pdf',
+        shipName: summaryPayload.shipName || 'Navio não identificado',
+        berth: summaryPayload.berth || '—',
+        berthLabel: normalizeBerthLabel(summaryPayload.berth || '—'),
+        totalContainers: summaryPayload.operationalStats?.totalContainers || 0,
+        totalMovements: summaryPayload.operationalStats?.totalContainers || 0,
+        loading: summaryPayload.operationalStats?.loading || 0,
+        discharge: summaryPayload.operationalStats?.discharge || 0,
+        reefer: summaryPayload.operationalStats?.reefer || 0,
+        dg: summaryPayload.operationalStats?.dg || 0,
+        oog: summaryPayload.operationalStats?.oog || 0,
+        totalBays: summaryPayload.operationalStats?.totalBays || 0,
+        deck: summaryPayload.operationalStats?.deck || 0,
+        hold: summaryPayload.operationalStats?.hold || 0,
+      };
+
+      persistSplitSnapshot(snapshot);
       setSummary(imported.analysis);
       setLogs(imported.logs || []);
       setProgress(100);
