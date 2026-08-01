@@ -93,6 +93,28 @@ function parsePortalDateTime(raw?: string): Date | null {
   return null;
 }
 
+function formatPortalDateTime(value?: string): string {
+  const trimmed = (value || '').trim();
+  if (!trimmed) return '';
+
+  const brWithTime = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (brWithTime) {
+    return `${brWithTime[1]}/${brWithTime[2]}/${brWithTime[3]} ${brWithTime[4]}:${brWithTime[5]}`;
+  }
+
+  const isoWithTime = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (isoWithTime) {
+    return `${isoWithTime[3]}/${isoWithTime[2]}/${isoWithTime[1]} ${isoWithTime[4]}:${isoWithTime[5]}`;
+  }
+
+  const timeOnly = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (timeOnly) {
+    return `${timeOnly[1].padStart(2, '0')}:${timeOnly[2]}`;
+  }
+
+  return trimmed;
+}
+
 function getPrevistoArrivalProgress(record: BtpScheduleRecord): number | null {
   // Para navio previsto, ETB representa melhor a proximidade operacional de atracação.
   const referenceDate = parsePortalDateTime(record.etb) || parsePortalDateTime(record.eta);
@@ -533,8 +555,8 @@ export const ProgramacaoBtp: React.FC = () => {
     { key: 'viagem', label: 'Viagem' },
     { key: 'berco', label: 'Berço' },
     { key: 'status', label: 'Status' },
-    { key: 'eta', label: 'Chegada no Porto' },
     { key: 'etb', label: 'Atracado na BTP' },
+    { key: 'inicioOperacao', label: 'Início Operação' },
     { key: 'etd', label: 'Saída da BTP' },
     { key: 'operacao', label: 'Operação' },
   ];
@@ -699,7 +721,7 @@ export const ProgramacaoBtp: React.FC = () => {
                         </button>
                       </td>
                       <td className="p-3">
-                        {(record.dataatracacao || record.datachegada || record.datasaida || '-')}
+                        {formatPortalDateTime(record.dataatracacao || record.datachegada || record.datasaida) || '-'}
                       </td>
                       <td className="p-3 font-black text-slate-900 dark:text-white">{record.navio || '-'}</td>
                       <td className="p-3">{record.viagem || '-'}</td>
@@ -745,9 +767,9 @@ export const ProgramacaoBtp: React.FC = () => {
                           )}
                         </div>
                       </td>
-                      <td className="p-3">{record.eta || '-'}</td>
-                      <td className="p-3">{record.etb || '-'}</td>
-                      <td className="p-3">{record.etd || '-'}</td>
+                      <td className="p-3">{formatPortalDateTime(record.etb) || '-'}</td>
+                      <td className="p-3">{formatPortalDateTime(record.inicioOperacao) || '-'}</td>
+                      <td className="p-3">{formatPortalDateTime(record.etd) || '-'}</td>
                       <td className="p-3">{record.operacao || '-'}</td>
                     </tr>
 
@@ -765,27 +787,27 @@ export const ProgramacaoBtp: React.FC = () => {
                             </div>
                             <div>
                               <p className="text-slate-400 font-bold uppercase tracking-wider">Data/Hora Chegada</p>
-                              <p className="font-semibold">{record.datachegada || '-'} {record.horachegada || ''}</p>
+                              <p className="font-semibold">{formatPortalDateTime(`${record.datachegada || ''} ${record.horachegada || ''}`.trim()) || '-'}</p>
                             </div>
                             <div>
                               <p className="text-slate-400 font-bold uppercase tracking-wider">Data/Hora Atracação</p>
-                              <p className="font-semibold">{record.dataatracacao || '-'} {record.horaatracacao || ''}</p>
+                              <p className="font-semibold">{formatPortalDateTime(`${record.dataatracacao || ''} ${record.horaatracacao || ''}`.trim()) || '-'}</p>
                             </div>
                             <div>
                               <p className="text-slate-400 font-bold uppercase tracking-wider">Data/Hora Saída</p>
-                              <p className="font-semibold">{record.datasaida || '-'} {record.horasaida || ''}</p>
+                              <p className="font-semibold">{formatPortalDateTime(`${record.datasaida || ''} ${record.horasaida || ''}`.trim()) || '-'}</p>
                             </div>
                             <div>
                               <p className="text-slate-400 font-bold uppercase tracking-wider">Chegada Prevista</p>
-                              <p className="font-semibold">{record.chegadaPrevista || record.eta || '-'}</p>
+                              <p className="font-semibold">{formatPortalDateTime(record.chegadaPrevista || record.eta) || '-'}</p>
                             </div>
                             <div>
                               <p className="text-slate-400 font-bold uppercase tracking-wider">Atracação</p>
-                              <p className="font-semibold">{record.atracacao || record.etb || '-'}</p>
+                              <p className="font-semibold">{formatPortalDateTime(record.atracacao || record.etb) || '-'}</p>
                             </div>
                             <div>
                               <p className="text-slate-400 font-bold uppercase tracking-wider">Saída Prevista</p>
-                              <p className="font-semibold">{record.saidaPrevista || record.etd || '-'}</p>
+                              <p className="font-semibold">{formatPortalDateTime(record.saidaPrevista || record.etd) || '-'}</p>
                             </div>
                             <div>
                               <p className="text-slate-400 font-bold uppercase tracking-wider">Comprimento do Navio</p>
@@ -805,7 +827,7 @@ export const ProgramacaoBtp: React.FC = () => {
                             </div>
                             <div>
                               <p className="text-slate-400 font-bold uppercase tracking-wider">Início Operação</p>
-                              <p className="font-semibold">{record.inicioOperacao || '-'}</p>
+                              <p className="font-semibold">{formatPortalDateTime(record.inicioOperacao) || '-'}</p>
                             </div>
                             <div>
                               <p className="text-slate-400 font-bold uppercase tracking-wider">Fim de Operação</p>
