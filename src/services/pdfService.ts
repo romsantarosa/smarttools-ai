@@ -13,6 +13,18 @@ if (typeof window !== 'undefined') {
   (pdfjsLib as any).GlobalWorkerOptions.workerSrc = workerUrl;
 }
 
+export interface PDFTextItem {
+  str: string;
+  transform: number[];
+  width?: number;
+  height?: number;
+}
+
+export interface PDFPageTextItems {
+  pageNumber: number;
+  items: PDFTextItem[];
+}
+
 export interface PDFExtractionResult {
   text: string;
   pages: string[];
@@ -23,6 +35,7 @@ export interface PDFExtractionResult {
   processingTime: number;
   errors: string[];
   pageAssets?: PDFPageAsset[];
+  pageTextItems?: PDFPageTextItems[];
 }
 
 export interface PDFProcessOptions {
@@ -78,7 +91,7 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 export async function extractPdfText(
   doc: any,
   onProgress?: (pct: number) => void
-): Promise<{ text: string; pages: string[]; lines: string[][]; hasText: boolean } | null> {
+): Promise<{ text: string; pages: string[]; lines: string[][]; hasText: boolean; pageTextItems: PDFPageTextItems[] } | null> {
   console.log('[pdfService] Iniciando extração de texto nativo do PDF...');
 
   try {
@@ -86,12 +99,13 @@ export async function extractPdfText(
 
     const pages: string[] = [];
     const linesByPage: string[][] = [];
+    const pageTextItems: PDFPageTextItems[] = [];
     let totalTextItems = 0;
 
     for (let i = 1; i <= doc.numPages; i++) {
       const page = await doc.getPage(i);
       const content = await page.getTextContent();
-      
+
       totalTextItems += content.items.length;
 
       const buckets: Array<{ y: number; items: Array<{ str: string; transform: number[] }> }> = [];
@@ -118,6 +132,15 @@ export async function extractPdfText(
       const pageText = pageLines.join('\n');
       pages.push(pageText);
       linesByPage.push(pageLines);
+      pageTextItems.push({
+        pageNumber: i,
+        items: content.items.map((item: any) => ({
+          str: String(item.str || '').trim(),
+          transform: Array.isArray(item.transform) ? item.transform : [],
+          width: item.width,
+          height: item.height,
+        })).filter((item: PDFTextItem) => item.str),
+      });
 
       const progressPct = Math.round((i / doc.numPages) * 40) + 10;
       onProgress?.(progressPct);
@@ -136,6 +159,7 @@ export async function extractPdfText(
       pages,
       lines: linesByPage,
       hasText: true,
+      pageTextItems,
     };
   } catch (error) {
     console.error('[pdfService] Erro ao extrair texto nativo:', error);
@@ -202,6 +226,27 @@ export async function renderPdfPageToImage(
 }
 
 /**
+ * Decide quais páginas precisam de OCR.
+ *
+ * IMPORTANTE: não basta olhar o número de caracteres do texto nativo.
+ * Documentos como o Split da BTP têm um título/cabeçalho longo em texto
+ * nativo (ex.: "BREMERHAVEN EXPRESS NA626A > GRANDE QUANTIDADE...") mesmo
+ * quando TODO o conteúdo operacional da página (QC Plan, Discharging/
+ * Loading, mapas de bay) é uma imagem JPEG embutida. Isso fazia a página
+ * "passar" no antigo critério de tamanho (>= 50 chars) e o OCR nunca era
+ * disparado, mesmo a página sendo 100% imagem.
+ *
+ * Critério novo: dispara OCR se o texto nativo for curto OU se tiver
+ * poucos grupos numéricos (proxy para "não há tabela/valores reais aqui,
+ * só um título").
+ */
+function shouldRunOcrOnPage(nativeText: string, ocrMinCharsPerPage: number): boolean {
+  const strippedChars = nativeText.replace(/\s+/g, '').length;
+  const numericGroups = (nativeText.match(/\d{2,7}/g) || []).length;
+  return strippedChars < ocrMinCharsPerPage || numericGroups < 3;
+}
+
+/**
  * Processa um PDF completo:
  * 1. Tenta extrair texto nativo
  * 2. Se falhar, renderiza páginas e usa OCR com Gemini
@@ -232,6 +277,7 @@ export async function processPdf(
     const nativePages = nativeExtraction?.pages || [];
     const nativeLines = nativeExtraction?.lines || [];
     const hasNativeText = Boolean(nativeExtraction?.hasText);
+    const pageTextItems = nativeExtraction?.pageTextItems || [];
 
     console.log('[pdfService] Etapa 2: Renderizando páginas em alta resolução...');
     setProgress(onProgress, 48);
@@ -249,9 +295,13 @@ export async function processPdf(
     const finalLines: string[][] = [];
 
     const ocrTargetIndices = renderedPages
-      .map((page, idx) => ({ idx, nativeChars: (nativePages[idx] || '').replace(/\s+/g, '').length }))
-      .filter((item) => item.nativeChars < ocrMinCharsPerPage)
-      .map((item) => item.idx);
+      .map((_page, idx) => idx)
+      .filter((idx) => shouldRunOcrOnPage(nativePages[idx] || '', ocrMinCharsPerPage));
+
+    console.log(
+      '[pdfService] Páginas selecionadas para OCR (visão):',
+      ocrTargetIndices.map((idx) => idx + 1)
+    );
 
     const shouldRunOcr = enableOcr && ocrTargetIndices.length > 0;
 
@@ -279,9 +329,8 @@ export async function processPdf(
       for (let i = 0; i < totalPages; i++) {
         const nativeText = nativePages[i] || '';
         const ocrText = ocrTextsByOriginalPage.get(i) || '';
-        const chosenText = nativeText.replace(/\s+/g, '').length >= ocrMinCharsPerPage
-          ? nativeText
-          : (ocrText || nativeText);
+        const needsOcr = shouldRunOcrOnPage(nativeText, ocrMinCharsPerPage);
+        const chosenText = needsOcr && ocrText.trim() ? ocrText : nativeText;
 
         if (chosenText === ocrText && ocrText.trim()) {
           usedOcr = true;
@@ -326,6 +375,7 @@ export async function processPdf(
       processingTime,
       errors,
       pageAssets,
+      pageTextItems,
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
@@ -362,6 +412,7 @@ export async function parsePDF(file: File, onProgress?: (pct: number) => void): 
     lines: result.pages.map((pageText) => pageText.split('\n')),
     text: result.text,
     pageAssets: result.pageAssets || [],
+    pageTextItems: result.pageTextItems || [],
   };
 }
 

@@ -79,11 +79,17 @@ function persistSplitSnapshot(snapshot: Record<string, any>) {
   }
 }
 
-function kpi(label: string, value: number | string, accent = 'text-cyan-300') {
+function formatSplitMetric(value: number | null | undefined): string {
+  if (value === null || value === undefined) return 'Analisando...';
+  return value.toLocaleString('pt-BR');
+}
+
+function kpi(label: string, value: number | string | null | undefined, accent = 'text-cyan-300') {
+  const displayValue = value === null || value === undefined ? '—' : value;
   return (
     <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-3">
       <p className="text-[11px] uppercase tracking-widest text-slate-400 font-black">{label}</p>
-      <p className={`text-xl font-black ${accent}`}>{value}</p>
+      <p className={`text-xl font-black ${accent}`}>{displayValue}</p>
     </div>
   );
 }
@@ -164,23 +170,40 @@ export const PlanejamentoSplit: React.FC = () => {
       }
 
       const summaryPayload = imported.analysis || {};
+      const headlineMetrics = {
+        total: summaryPayload.operationSummary?.totalMovements ?? null,
+        discharge: summaryPayload.operationSummary?.discharge?.total ?? null,
+        loading: summaryPayload.operationSummary?.loading?.total ?? null,
+        deck: summaryPayload.qcPlanSummary?.deckTotal ?? null,
+        hold: summaryPayload.qcPlanSummary?.holdTotal ?? null,
+        bays: summaryPayload.bays?.length ?? summaryPayload.operationalStats?.totalBays ?? null,
+        reefer: summaryPayload.operationalStats?.reefer ?? null,
+        dg: summaryPayload.operationalStats?.dg ?? null,
+        oog: summaryPayload.operationalStats?.oog ?? null,
+      };
       const snapshot = {
         updatedAt: new Date().toISOString(),
         fileName: file?.name || 'split.pdf',
         shipName: summaryPayload.shipName || 'Navio não identificado',
         berth: summaryPayload.berth || '—',
         berthLabel: normalizeBerthLabel(summaryPayload.berth || '—'),
-        totalContainers: summaryPayload.operationalStats?.totalContainers || 0,
-        totalMovements: summaryPayload.operationalStats?.totalContainers || 0,
-        loading: summaryPayload.operationalStats?.loading || 0,
-        discharge: summaryPayload.operationalStats?.discharge || 0,
-        reefer: summaryPayload.operationalStats?.reefer || 0,
-        dg: summaryPayload.operationalStats?.dg || 0,
-        oog: summaryPayload.operationalStats?.oog || 0,
-        totalBays: summaryPayload.operationalStats?.totalBays || 0,
-        deck: summaryPayload.operationalStats?.deck || 0,
-        hold: summaryPayload.operationalStats?.hold || 0,
+        totalContainers: headlineMetrics.total ?? 0,
+        totalMovements: headlineMetrics.total ?? 0,
+        loading: headlineMetrics.loading ?? 0,
+        discharge: headlineMetrics.discharge ?? 0,
+        reefer: headlineMetrics.reefer ?? 0,
+        dg: headlineMetrics.dg ?? 0,
+        oog: headlineMetrics.oog ?? 0,
+        totalBays: headlineMetrics.bays ?? 0,
+        deck: headlineMetrics.deck ?? 0,
+        hold: headlineMetrics.hold ?? 0,
       };
+
+      console.log('[SPLIT][FINAL RESULT]', imported.analysis);
+      console.log('[SPLIT][OPERATION SUMMARY]', imported.analysis?.operationSummary);
+      console.log('[SPLIT][QC PLAN]', imported.analysis?.qcPlanSummary);
+      console.log('[SPLIT][LEGACY STATISTICS]', imported.analysis?.operationalStats);
+      console.log('[SPLIT][PDF NATIVE TEXT]', imported.text);
 
       persistSplitSnapshot(snapshot);
       setSummary(imported.analysis);
@@ -240,8 +263,35 @@ export const PlanejamentoSplit: React.FC = () => {
   };
 
   const operationalStats = summary?.operationalStats || {};
+  const operationalSummary = summary?.operationSummary || summary?.operationalSummary || null;
+  const qcPlanSummary = summary?.qcPlanSummary || null;
+  const validation = summary?.validation || null;
   const chartData = summary?.chartData || {};
   const bayTable = summary?.bayTable || [];
+
+  const headlineMetrics = {
+    total: operationalSummary?.totalMovements ?? null,
+    discharge: operationalSummary?.discharge?.total ?? null,
+    loading: operationalSummary?.loading?.total ?? null,
+    deck: qcPlanSummary?.deckTotal ?? null,
+    hold: qcPlanSummary?.holdTotal ?? null,
+    bays: summary?.bays?.length ?? operationalStats.totalBays ?? null,
+    reefer: operationalStats.reefer ?? null,
+    dg: operationalStats.dg ?? null,
+    oog: operationalStats.oog ?? null,
+  };
+
+  const headlineSources = {
+    total: 'PDF Summary',
+    discharge: 'PDF Summary',
+    loading: 'PDF Summary',
+    deck: 'QC Plan',
+    hold: 'QC Plan',
+    bays: 'Legacy Vision',
+    reefer: 'Legacy Vision',
+    dg: 'Legacy Vision',
+    oog: 'Legacy Vision',
+  };
 
   const selectedBayPage = useMemo(() => {
     if (!selectedBay || !summary?.developerMode?.pages) return null;
@@ -256,23 +306,23 @@ export const PlanejamentoSplit: React.FC = () => {
             <FileJson className="w-3.5 h-3.5" />
             Importacao Inteligente - Plano de Estiva
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Split Analyzer OCR + Visao + IA</h1>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Split Analyzer OCR</h1>
           <p className="text-xs sm:text-sm text-slate-300 font-medium max-w-4xl">
-            Selecione um PDF e o sistema executa automaticamente classificacao de paginas, OCR, visao computacional,
-            fusao por IA e geracao do mapa operacional completo por Bay, Conves e Porao.
+            Selecione um PDF e o sistema executa automaticamente classificação de páginas, OCR, visão computacional,
+            fusao por IA e geração do mapa operacional completo por Bay, Conves e Porão.
           </p>
         </div>
 
         {summary && (
           <div className="mt-5 grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2">
-            {kpi('Total', operationalStats.totalContainers || 0, 'text-white')}
-            {kpi('Bays', operationalStats.totalBays || 0)}
-            {kpi('Conves', operationalStats.deck || 0)}
-            {kpi('Porao', operationalStats.hold || 0)}
-            {kpi('Descarga', operationalStats.discharge || 0)}
-            {kpi('Embarque', operationalStats.loading || 0)}
-            {kpi('Reefer', operationalStats.reefer || 0)}
-            {kpi('DG / OOG', `${operationalStats.dg || 0} / ${operationalStats.oog || 0}`, 'text-amber-300')}
+            {kpi('Total', headlineMetrics.total, 'text-white')}
+            {kpi('Bays', headlineMetrics.bays)}
+            {kpi('Conves', headlineMetrics.deck)}
+            {kpi('Porao', headlineMetrics.hold)}
+            {kpi('Descarga', headlineMetrics.discharge)}
+            {kpi('Embarque', headlineMetrics.loading)}
+            {kpi('Reefer', headlineMetrics.reefer)}
+            {kpi('DG / OOG', `${headlineMetrics.dg ?? 0} / ${headlineMetrics.oog ?? 0}`, 'text-amber-300')}
           </div>
         )}
       </div>
@@ -395,8 +445,8 @@ export const PlanejamentoSplit: React.FC = () => {
               <p><span className="text-slate-400">Confianca:</span> {Math.round((summary.confidence || 0) * 100)}%</p>
               <p><span className="text-slate-400">Descarga:</span> {displayValue(summary.discharge, summary.dischargeSource)}</p>
               <p><span className="text-slate-400">Embarque:</span> {displayValue(summary.load, summary.loadSource)}</p>
-              <p><span className="text-slate-400">Deck:</span> {operationalStats.deck || 0}</p>
-              <p><span className="text-slate-400">Hold:</span> {operationalStats.hold || 0}</p>
+              <p><span className="text-slate-400">Deck:</span> {qcPlanSummary?.deckTotal !== null && qcPlanSummary?.deckTotal !== undefined ? qcPlanSummary.deckTotal : 'Analisando...'}</p>
+              <p><span className="text-slate-400">Hold:</span> {qcPlanSummary?.holdTotal !== null && qcPlanSummary?.holdTotal !== undefined ? qcPlanSummary.holdTotal : 'Analisando...'}</p>
             </div>
             <p className="text-xs mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">{summary.smartSummary}</p>
           </div>
@@ -684,6 +734,19 @@ export const PlanejamentoSplit: React.FC = () => {
               <div className="mt-3 max-h-40 overflow-auto text-[10px] space-y-1">
                 {(summary?.developerMode?.logs || []).map((l: any, idx: number) => (
                   <p key={`${l.stage}-${idx}`}>[{l.elapsedMs}ms] {l.stage} :: {JSON.stringify(l.details)}</p>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-emerald-900/70 p-3 bg-emerald-950/30">
+              <h4 className="text-xs font-black mb-2">Headline Metrics (Fonte)</h4>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 text-[10px]">
+                {Object.entries(headlineMetrics).map(([key, value]) => (
+                  <div key={key} className="rounded border border-emerald-900/50 p-2">
+                    <p className="font-black uppercase">{key}</p>
+                    <p>{value === null || value === undefined ? '—' : value}</p>
+                    <p className="text-emerald-400">Fonte: {headlineSources[key as keyof typeof headlineSources]}</p>
+                  </div>
                 ))}
               </div>
             </div>

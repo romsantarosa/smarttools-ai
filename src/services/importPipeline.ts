@@ -171,7 +171,7 @@ Documento: ${fileName}
 Texto:\n${text.slice(0, 180000)}`;
 
   try {
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -358,6 +358,7 @@ export async function importDocumentAndAnalyze(
   let pageAssets: PDFExtractionResult['pageAssets'] = [];
   let text = '';
   let extractionErrors: string[] = [];
+  let pdfResult: PDFExtractionResult | null = null;
 
   try {
     const mime = (file.type || '').toLowerCase();
@@ -368,7 +369,6 @@ export async function importDocumentAndAnalyze(
       setStage(callbacks, 'reading-pdf', 'Lendo PDF...');
       callbacks.onProgress?.(12);
 
-      let pdfResult: PDFExtractionResult;
       try {
         pdfResult = await processPdf(
           file,
@@ -563,7 +563,7 @@ export async function importDocumentAndAnalyze(
   if (documentType === 'split') {
     try {
       setStage(callbacks, 'running-cv', 'Executando visão computacional...');
-      analysis = await analyzeSplit({ pages, lines, text, pageAssets });
+      analysis = await analyzeSplit({ pages, lines, text, pageAssets, pageTextItems: pdfResult?.pageTextItems ?? [] });
 
       const extractionLog = [...logs]
         .reverse()

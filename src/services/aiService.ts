@@ -11,6 +11,7 @@ export async function analyzeSplit(parsed: any): Promise<any> {
     pages,
     lines,
     pageAssets: Array.isArray(parsed?.pageAssets) ? parsed.pageAssets : [],
+    pageTextItems: Array.isArray(parsed?.pageTextItems) ? parsed.pageTextItems : [],
   });
 }
 
