@@ -126,6 +126,45 @@ function mapShip(item: any): BtpShipJson {
   };
 
 }
+
+export interface PilotageStatusInfo {
+  status: 'andamento' | 'confirmada' | 'na_barra';
+  dateTime: string;
+  berco: string;
+}
+
+export function normalizeShipName(name?: string): string {
+  return (name || "").toUpperCase().trim().replace(/\s+/g, " ");
+}
+
+/**
+ * Cruza andamento / confirmadas / fundeados (BTP) num mapa por nome do navio,
+ * na ordem de prioridade: manobra em andamento > confirmada pela praticagem > na barra.
+ */
+export function buildPilotageStatusMap(data: CacheStore): Map<string, PilotageStatusInfo> {
+  const map = new Map<string, PilotageStatusInfo>();
+
+  for (const item of data.fundeados) {
+    const key = normalizeShipName(item.navio);
+    if (!key) continue;
+    map.set(key, { status: 'na_barra', dateTime: item.data || '', berco: item.berco || '' });
+  }
+
+  for (const item of data.confirmadas) {
+    const key = normalizeShipName(item.navio);
+    if (!key) continue;
+    map.set(key, { status: 'confirmada', dateTime: item.data || '', berco: item.berco || '' });
+  }
+
+  for (const item of data.andamento) {
+    const key = normalizeShipName(item.navio);
+    if (!key) continue;
+    map.set(key, { status: 'andamento', dateTime: item.data || '', berco: item.berco || '' });
+  }
+
+  return map;
+}
+
 export async function getBtpData(
   
   forceRefresh = false

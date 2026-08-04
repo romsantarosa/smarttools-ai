@@ -97,12 +97,21 @@ export async function fetchUserFromFirestore(uid: string): Promise<Partial<User>
 }
 
 /**
- * Register user in Firebase Authentication and Firestore
+ * Register user in Firebase Authentication and Firestore.
+ *
+ * IMPORTANTE: contas novas SEMPRE nascem como 'Operador', mesmo que o
+ * chamador peça 'Supervisor'. Não existe hoje um fluxo de aprovação/admin
+ * para promover alguém a Supervisor — enquanto isso não existir, permitir
+ * que o próprio formulário de cadastro defina o papel é uma brecha de
+ * auto-promoção. As regras do Firestore também bloqueiam isso no banco,
+ * mas a checagem aqui evita até a tentativa.
  */
 export async function registerWithFirebase(data: RegisterData): Promise<User> {
+  const safeRole: 'Operador' = 'Operador';
+
   if (!auth) {
     const name = data.name || data.email.split('@')[0].replace(/[\._-]/g, ' ').toUpperCase();
-    return buildAppUser(`local_${Date.now()}`, data.email, name, data.role);
+    return buildAppUser(`local_${Date.now()}`, data.email, name, safeRole);
   }
 
   try {
@@ -110,34 +119,42 @@ export async function registerWithFirebase(data: RegisterData): Promise<User> {
     const fbUser = credential.user;
 
     // Save profile to Firestore
-    await saveUserToFirestore(fbUser.uid, data.email, data.name, data.role, 'password');
+    await saveUserToFirestore(fbUser.uid, data.email, data.name, safeRole, 'password');
 
-    return buildAppUser(fbUser.uid, data.email, data.name, data.role, fbUser.photoURL);
+    return buildAppUser(fbUser.uid, data.email, data.name, safeRole, fbUser.photoURL);
   } catch (err: any) {
     if (err?.code === 'auth/email-already-in-use') {
-      return loginWithFirebase(data.email, data.password, data.role);
+      // Conta já existe: o papel real vem do Firestore dentro de loginWithFirebase,
+      // não do formulário de cadastro.
+      return loginWithFirebase(data.email, data.password);
     }
     if (err?.code === 'auth/operation-not-allowed') {
       console.warn('Firebase Auth: O provedor E-mail/Senha não está ativado no Firebase Console. Alternando para sessão local.');
       const fallbackUid = 'local_' + Date.now();
       try {
-        await saveUserToFirestore(fallbackUid, data.email, data.name, data.role, 'password');
+        await saveUserToFirestore(fallbackUid, data.email, data.name, safeRole, 'password');
       } catch (e) {
         // Ignore Firestore write error if unauthenticated
       }
-      return buildAppUser(fallbackUid, data.email, data.name, data.role);
+      return buildAppUser(fallbackUid, data.email, data.name, safeRole);
     }
     throw err;
   }
 }
 
 /**
- * Login with Email & Password in Firebase
+ * Login with Email & Password in Firebase.
+ *
+ * `defaultRole` só é usado como fallback de exibição quando não existe
+ * nenhum perfil no Firestore ainda (ex.: modo local sem Firebase
+ * configurado). Para contas que acabam de ser criadas automaticamente
+ * durante o login (usuário não existia), o papel é sempre 'Operador' —
+ * nunca o valor vindo do formulário.
  */
 export async function loginWithFirebase(
   email: string,
   password: string,
-  defaultRole: 'Supervisor' | 'Operador' = 'Supervisor'
+  defaultRole: 'Supervisor' | 'Operador' = 'Operador'
 ): Promise<User> {
   if (!auth) {
     const name = email.split('@')[0].replace(/[\._-]/g, ' ').toUpperCase() || 'Usuário BTP';
@@ -161,20 +178,22 @@ export async function loginWithFirebase(
       const fallbackUid = 'local_' + Math.abs(email.split('').reduce((a, b) => (a << 5) - a + b.charCodeAt(0), 0));
       return buildAppUser(fallbackUid, email, name, defaultRole);
     }
-    // If account does not exist yet in Firebase Auth, automatically create it on the fly
+    // If account does not exist yet in Firebase Auth, automatically create it on the fly.
+    // Papel sempre 'Operador' aqui — é criação de conta nova, mesma regra do registerWithFirebase.
     if (err?.code === 'auth/user-not-found' || err?.code === 'auth/invalid-credential') {
+      const safeRole: 'Operador' = 'Operador';
       try {
         const newCredential = await createUserWithEmailAndPassword(auth, email, password);
         const fbUser = newCredential.user;
         const name = email.split('@')[0].replace(/[\._-]/g, ' ').toUpperCase() || 'Usuário BTP';
 
-        await saveUserToFirestore(fbUser.uid, email, name, defaultRole, 'password');
-        return buildAppUser(fbUser.uid, email, name, defaultRole, fbUser.photoURL);
+        await saveUserToFirestore(fbUser.uid, email, name, safeRole, 'password');
+        return buildAppUser(fbUser.uid, email, name, safeRole, fbUser.photoURL);
       } catch (createErr: any) {
         if (createErr?.code === 'auth/operation-not-allowed') {
           const name = email.split('@')[0].replace(/[\._-]/g, ' ').toUpperCase() || 'Usuário BTP';
           const fallbackUid = 'local_' + Math.abs(email.split('').reduce((a, b) => (a << 5) - a + b.charCodeAt(0), 0));
-          return buildAppUser(fallbackUid, email, name, defaultRole);
+          return buildAppUser(fallbackUid, email, name, safeRole);
         }
       }
     }
@@ -183,11 +202,16 @@ export async function loginWithFirebase(
 }
 
 /**
- * Login with Google / Gmail Popup
+ * Login with Google / Gmail Popup.
+ *
+ * Antes: toda conta Google nova virava 'Supervisor' automaticamente — ou
+ * seja, qualquer pessoa com conta Google ganhava acesso de supervisor só
+ * clicando em "Entrar com Google". Agora: se já existe perfil no Firestore,
+ * usa o papel real salvo lá; se é a primeira vez, nasce como 'Operador'.
  */
 export async function loginWithGoogleFirebase(): Promise<User> {
   if (!auth) {
-    return buildAppUser('google_local_' + Date.now(), 'usuario.google@btp.com.br', 'Usuário Google', 'Supervisor');
+    return buildAppUser('google_local_' + Date.now(), 'usuario.google@btp.com.br', 'Usuário Google', 'Operador');
   }
 
   try {
@@ -197,24 +221,33 @@ export async function loginWithGoogleFirebase(): Promise<User> {
     const email = fbUser.email || 'usuario.google@btp.com.br';
     const name = fbUser.displayName || 'Usuário Google';
 
-    await saveUserToFirestore(fbUser.uid, email, name, 'Supervisor', 'google.com');
+    const firestoreProfile = await fetchUserFromFirestore(fbUser.uid);
+    const role = (firestoreProfile?.role as 'Supervisor' | 'Operador' | undefined) || 'Operador';
 
-    return buildAppUser(fbUser.uid, email, name, 'Supervisor', fbUser.photoURL);
+    if (!firestoreProfile) {
+      await saveUserToFirestore(fbUser.uid, email, name, role, 'google.com');
+    }
+
+    return buildAppUser(fbUser.uid, email, firestoreProfile?.name || name, role, fbUser.photoURL);
   } catch (err: any) {
     if (err?.code === 'auth/operation-not-allowed') {
       console.warn('Firebase Auth: Login Google não ativado no Firebase Console. Alternando para login local Google.');
-      return buildAppUser('google_local_' + Date.now(), 'usuario.google@btp.com.br', 'Usuário Google (Local)', 'Supervisor');
+      return buildAppUser('google_local_' + Date.now(), 'usuario.google@btp.com.br', 'Usuário Google (Local)', 'Operador');
     }
     if (err?.code === 'auth/unauthorized-domain') {
       console.warn('Firebase Auth: Domínio não autorizado para Google Sign-In. Alternando para login local Google.');
-      return buildAppUser('google_local_' + Date.now(), 'usuario.google@btp.com.br', 'Usuário Google (Local)', 'Supervisor');
+      return buildAppUser('google_local_' + Date.now(), 'usuario.google@btp.com.br', 'Usuário Google (Local)', 'Operador');
     }
     throw err;
   }
 }
 
 /**
- * Login with Facebook Popup
+ * Login with Facebook Popup.
+ *
+ * Mesmo princípio do login Google: usa o papel já salvo no Firestore se a
+ * conta já existir (evita rebaixar um Supervisor de volta a Operador a
+ * cada login), e só define 'Operador' na primeira vez que a conta aparece.
  */
 export async function loginWithFacebookFirebase(): Promise<User> {
   if (!auth) {
@@ -228,9 +261,14 @@ export async function loginWithFacebookFirebase(): Promise<User> {
     const email = fbUser.email || 'usuario.facebook@btp.com.br';
     const name = fbUser.displayName || 'Usuário Facebook';
 
-    await saveUserToFirestore(fbUser.uid, email, name, 'Operador', 'facebook.com');
+    const firestoreProfile = await fetchUserFromFirestore(fbUser.uid);
+    const role = (firestoreProfile?.role as 'Supervisor' | 'Operador' | undefined) || 'Operador';
 
-    return buildAppUser(fbUser.uid, email, name, 'Operador', fbUser.photoURL);
+    if (!firestoreProfile) {
+      await saveUserToFirestore(fbUser.uid, email, name, role, 'facebook.com');
+    }
+
+    return buildAppUser(fbUser.uid, email, firestoreProfile?.name || name, role, fbUser.photoURL);
   } catch (err: any) {
     if (err?.code === 'auth/operation-not-allowed') {
       console.warn('Firebase Auth: Login Facebook não ativado no Firebase Console. Alternando para login local Facebook.');

@@ -3,7 +3,7 @@ import path from 'path';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
-import { getBtpData, getCacheTimeRemainingSeconds, setCustomBtpData, parseSppilotsRawText } from './src/services/btpService.js';
+import { getBtpData, getCacheTimeRemainingSeconds, setCustomBtpData, parseSppilotsRawText, buildPilotageStatusMap, normalizeShipName } from './src/services/btpService.js';
 import { fetchBtpSchedule } from './src/services/btpScheduleService.js';
 
 dotenv.config();
@@ -88,6 +88,29 @@ app.get('/api/btp-schedule', async (req: express.Request, res: express.Response)
   try {
     console.log('[Server] Buscando dados de programação BTP...');
     const result = await fetchBtpSchedule();
+
+    // Enriquece com o status ao vivo do portal da Praticagem (SPPilots): manobra
+    // em andamento / confirmada / na barra. Se o portal da praticagem falhar,
+    // a programação BTP continua sendo retornada normalmente, sem esses campos.
+    try {
+      const pilotageData = await getBtpData();
+      const pilotageMap = buildPilotageStatusMap(pilotageData);
+
+      result.data = result.data.map((record: any) => {
+        const pilotage = pilotageMap.get(normalizeShipName(record.navio));
+        if (!pilotage) return record;
+
+        return {
+          ...record,
+          pilotStatus: pilotage.status,
+          pilotDateTime: pilotage.dateTime,
+          pilotBerco: pilotage.berco,
+        };
+      });
+    } catch (pilotageErr: any) {
+      console.warn('[Server] Falha ao buscar status da Praticagem (SPPilots), seguindo sem esses dados:', pilotageErr?.message || pilotageErr);
+    }
+
     return res.json(result);
   } catch (err: any) {
     console.error('[Server] Erro ao buscar schedule BTP:', err);

@@ -1,0 +1,8 @@
+{
+  "firestore": {
+    "database": "ai-studio-btpsmarttoolsai-a2159407-e78d-4c31-97c1-f85e189f17cf",
+    "location": "us-east1",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}

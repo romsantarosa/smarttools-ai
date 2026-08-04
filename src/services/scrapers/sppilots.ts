@@ -183,56 +183,95 @@ console.log("CHROMIUM ABRIU");
     );
 
     // ============================
-    // MANOBRAS
+    // MANOBRAS PREVISTAS (schedule sem status ao vivo)
     // ============================
 
-    const tabela = page.locator("#manobras table");
+    const tabelaPrevistas = page.locator("#manobras table");
 
-    await tabela.waitFor();
+    await tabelaPrevistas.waitFor();
 
-    const rows = tabela.locator("tbody tr");
+    const previstasRows = tabelaPrevistas.locator("tbody tr");
+
+    const previstas: MovimentoPortal[] = [];
+
+    const totalPrevistas = await previstasRows.count();
+
+    console.log(`Manobras previstas encontradas: ${totalPrevistas}`);
+
+    for (let i = 0; i < totalPrevistas; i++) {
+
+      const row = previstasRows.nth(i);
+
+      const cols = (
+        await row.locator("td").allTextContents()
+      ).map(c => c.trim());
+
+      if (cols.length < 2) continue;
+
+      previstas.push({
+
+        imo: cols[0] || "",
+        navio: cols[1] || "",
+        movimento: (cols[2] || "").toUpperCase(),
+        loc1: (cols[3] || "").toUpperCase(),
+        loc2: (cols[4] || "").toUpperCase(),
+        agencia: cols[5] || "",
+        passagem: "",
+        pob: "",
+        calado: "",
+        style: ""
+
+      });
+
+    }
+
+    // ============================
+    // MOVIMENTOS DE NAVIOS (tabela com status ao vivo, colorida)
+    // ============================
+    // Esta é a ÚNICA tabela do portal que traz o status colorido em tempo real
+    // (manobra em andamento / confirmada pela praticagem / encerrada). A antiga
+    // tabela "#manobras" (Manobras Previstas) nunca tem cor, por isso a
+    // classificação por cor não podia ser feita ali.
+
+    const tabelaMovimentos = page.locator("#movimentos table");
+
+    await tabelaMovimentos.waitFor();
+
+    const movimentosRows = tabelaMovimentos.locator("tbody tr");
 
     const andamento: MovimentoPortal[] = [];
     const confirmadas: MovimentoPortal[] = [];
     const encerradas: MovimentoPortal[] = [];
-    const previstas: MovimentoPortal[] = [];
 
-    const total = await rows.count();
+    const totalMovimentos = await movimentosRows.count();
 
-    console.log(`Manobras encontradas: ${total}`);
+    console.log(`Movimentos encontrados: ${totalMovimentos}`);
 
-    for (let i = 0; i < total; i++) {
+    for (let i = 0; i < totalMovimentos; i++) {
 
-      const row = rows.nth(i);
+      const row = movimentosRows.nth(i);
 
-const cols = (
-  await row.locator("td").allTextContents()
-).map(c => c.trim());
+      const cols = (
+        await row.locator("td").allTextContents()
+      ).map(c => c.trim());
 
+      if (cols.length < 8) continue;
 
       const item: MovimentoPortal = {
 
-  imo: cols[0] || "",
-  navio: cols[1] || "",
-  movimento: (cols[2] || "").toUpperCase(),
-  loc1: (cols[3] || "").toUpperCase(),
-  loc2: (cols[4] || "").toUpperCase(),
+        imo: cols[0] || "",
+        navio: cols[1] || "",
+        movimento: (cols[2] || "").toUpperCase(),
+        loc1: (cols[3] || "").toUpperCase(),
+        loc2: (cols[4] || "").toUpperCase(),
+        pob: cols[5] || "",
+        passagem: cols[6] || "",
+        calado: cols[7] || "",
+        agencia: cols[8] || "",
+        style: (await row.getAttribute("style")) || ""
 
-  agencia: cols[5] || "",
-  passagem: cols[6] || "",
-  pob: "",
-  calado: "",
-  style: (await row.getAttribute("style")) || ""
+      };
 
-};
-
-console.log(item);
-
-console.log("====================");
-console.log("COLUNAS:", cols);
-console.log("LOC1:", item.loc1);
-console.log("LOC2:", item.loc2);
-console.log("====================");
       // Apenas operações da BTP
 
       if (
@@ -242,18 +281,16 @@ console.log("====================");
         continue;
       }
 
-      const style = item.style.toLowerCase();
-
-      console.log(
-        item.navio,
-        style
-      );
+      const style = item.style.toLowerCase().replace(/\s+/g, "");
 
       // ========================
-      // CLASSIFICAÇÃO POR COR
+      // CLASSIFICAÇÃO POR COR (confirmada via inspeção do portal real)
       // ========================
+      // #00bfff (ciano)  -> Manobra em Andamento
+      // #b7b7ff (lilás)  -> Manobra confirmada pela Praticagem
+      // #ff4a4a (vermelho) -> Manobra Encerrada
 
-      if (style.includes("#ff4a4a")) {
+      if (style.includes("#00bfff")) {
 
         andamento.push(item);
 
@@ -269,7 +306,7 @@ console.log("====================");
 
       }
 
-      if (style.includes("#8fd19e")) {
+      if (style.includes("#ff4a4a")) {
 
         encerradas.push(item);
 
@@ -277,21 +314,67 @@ console.log("====================");
 
       }
 
-      // Sem cor = prevista
-
-      previstas.push(item);
-
     }
 
     // ============================
-    // FUNDEADOS
+    // FUNDEADOS (navios na barra aguardando prático/berço)
     // ============================
+    // A tabela "#fundeados" só traz IMO, navio e data/hora de fundeio - sem
+    // berço. Por isso cruzamos pelo IMO com as manobras previstas para saber
+    // se o destino é a BTP.
 
-    const fundeados = [...previstas].filter(item =>
-      item.loc1.includes("FUNDEADO") ||
-      item.loc1.includes("FUNDEADOURO") ||
-      item.loc1.includes("BARRA")
-    );
+    const destinoBtpPorImo = new Map<string, string>();
+    for (const item of previstas) {
+      if (item.loc1.includes("BTP")) {
+        destinoBtpPorImo.set(item.imo, item.loc1);
+      } else if (item.loc2.includes("BTP")) {
+        destinoBtpPorImo.set(item.imo, item.loc2);
+      }
+    }
+
+    const tabelaFundeados = page.locator("#fundeados table");
+
+    await tabelaFundeados.waitFor();
+
+    const fundeadosRows = tabelaFundeados.locator("tbody tr");
+
+    const fundeados: MovimentoPortal[] = [];
+
+    const totalFundeados = await fundeadosRows.count();
+
+    console.log(`Fundeados encontrados: ${totalFundeados}`);
+
+    for (let i = 0; i < totalFundeados; i++) {
+
+      const row = fundeadosRows.nth(i);
+
+      const cols = (
+        await row.locator("td").allTextContents()
+      ).map(c => c.trim());
+
+      if (cols.length < 3) continue;
+
+      const imo = cols[0] || "";
+      const bercoDestino = destinoBtpPorImo.get(imo);
+
+      if (!bercoDestino) continue;
+
+      fundeados.push({
+
+        imo,
+        navio: cols[1] || "",
+        movimento: "",
+        loc1: bercoDestino,
+        loc2: "",
+        pob: cols[2] || "",
+        passagem: "",
+        calado: "",
+        agencia: "",
+        style: ""
+
+      });
+
+    }
 
     console.log("===============================");
     console.log("ATRACADOS :", atracados.length);

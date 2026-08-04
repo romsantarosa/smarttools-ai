@@ -79,6 +79,53 @@ function persistSplitSnapshot(snapshot: Record<string, any>) {
   }
 }
 
+const SPLIT_BERTH_CACHE_KEY = 'btp_split_by_berth_v1';
+const BERTH_CARDS = ['BTP 1', 'BTP 2', 'BTP 3'];
+
+interface SavedBerthSplit {
+  berthLabel: string;
+  savedAt: string;
+  fileName: string;
+  extractionMethod: 'native' | 'ocr' | null;
+  extractedText: string | null;
+  analysis: any;
+}
+
+// Remove imagens em base64 do modo desenvolvedor antes de gravar no localStorage (evita estourar a cota).
+function stripHeavyAnalysisData(analysis: any): any {
+  if (!analysis || typeof analysis !== 'object') return analysis;
+
+  const pages = analysis?.developerMode?.pages;
+  if (!Array.isArray(pages)) return analysis;
+
+  return {
+    ...analysis,
+    developerMode: {
+      ...analysis.developerMode,
+      pages: pages.map((page: any) => ({ ...page, image: null })),
+    },
+  };
+}
+
+function loadBerthSplitCache(): Record<string, SavedBerthSplit> {
+  try {
+    const raw = localStorage.getItem(SPLIT_BERTH_CACHE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveBerthSplitCache(cache: Record<string, SavedBerthSplit>) {
+  try {
+    localStorage.setItem(SPLIT_BERTH_CACHE_KEY, JSON.stringify(cache));
+  } catch (err) {
+    console.warn('[PlanejamentoSplit] Falha ao salvar cache de split por berco:', err);
+  }
+}
+
 function formatSplitMetric(value: number | null | undefined): string {
   if (value === null || value === undefined) return 'Analisando...';
   return value.toLocaleString('pt-BR');
@@ -116,6 +163,58 @@ export const PlanejamentoSplit: React.FC = () => {
   const [showDeveloper, setShowDeveloper] = useState(false);
   const [selectedBay, setSelectedBay] = useState<any>(null);
   const [selectedContainer, setSelectedContainer] = useState<any>(null);
+
+  const [berthCache, setBerthCache] = useState<Record<string, SavedBerthSplit>>(() => loadBerthSplitCache());
+  const [activeBerth, setActiveBerth] = useState<string | null>(null);
+
+  // Restaura a ultima analise salva ao reabrir a pagina/app, para nao perder o que ja foi processado.
+  useEffect(() => {
+    const entries = Object.values(berthCache);
+    if (entries.length === 0) return;
+
+    const mostRecent = entries.reduce((latest, entry) =>
+      !latest || new Date(entry.savedAt).getTime() > new Date(latest.savedAt).getTime() ? entry : latest
+    , entries[0]);
+
+    if (mostRecent) {
+      setSummary(mostRecent.analysis);
+      setExtractedText(mostRecent.extractedText);
+      setExtractionMethod(mostRecent.extractionMethod);
+      setActiveBerth(mostRecent.berthLabel);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleLoadBerth = (berthKey: string) => {
+    const entry = berthCache[berthKey];
+    if (!entry) return;
+
+    setSummary(entry.analysis);
+    setExtractedText(entry.extractedText);
+    setExtractionMethod(entry.extractionMethod);
+    setActiveBerth(berthKey);
+    setSelectedBay(null);
+    setSelectedContainer(null);
+    setSearch('');
+    setSearchResult(null);
+    setErrorMessage(null);
+    setExtractionErrors([]);
+    setShowTextViewer(false);
+    setShowDeveloper(false);
+  };
+
+  const handleRemoveBerth = (berthKey: string) => {
+    const nextCache = { ...berthCache };
+    delete nextCache[berthKey];
+    setBerthCache(nextCache);
+    saveBerthSplitCache(nextCache);
+
+    if (activeBerth === berthKey) {
+      setActiveBerth(null);
+      setSummary(null);
+      setExtractedText(null);
+    }
+  };
 
   useEffect(() => {
     const pendingFiles = consumePlatformFiles();
@@ -206,6 +305,23 @@ export const PlanejamentoSplit: React.FC = () => {
       console.log('[SPLIT][PDF NATIVE TEXT]', imported.text);
 
       persistSplitSnapshot(snapshot);
+
+      const berthKey = normalizeBerthLabel(summaryPayload.berth || '—');
+      if (BERTH_CARDS.includes(berthKey)) {
+        const berthEntry: SavedBerthSplit = {
+          berthLabel: berthKey,
+          savedAt: new Date().toISOString(),
+          fileName: file.name,
+          extractionMethod: imported.extractionMethod === 'sheet' ? 'native' : imported.extractionMethod,
+          extractedText: imported.text,
+          analysis: stripHeavyAnalysisData(imported.analysis),
+        };
+        const nextCache = { ...berthCache, [berthKey]: berthEntry };
+        setBerthCache(nextCache);
+        saveBerthSplitCache(nextCache);
+        setActiveBerth(berthKey);
+      }
+
       setSummary(imported.analysis);
       setLogs(imported.logs || []);
       setProgress(100);
@@ -325,6 +441,59 @@ export const PlanejamentoSplit: React.FC = () => {
             {kpi('DG / OOG', `${headlineMetrics.dg ?? 0} / ${headlineMetrics.oog ?? 0}`, 'text-amber-300')}
           </div>
         )}
+      </div>
+
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+        <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Splits Salvos por Berço</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {BERTH_CARDS.map((berthKey) => {
+            const entry = berthCache[berthKey];
+            const isActive = activeBerth === berthKey;
+            const bayCount = entry?.analysis?.bays?.length ?? entry?.analysis?.operationalStats?.totalBays ?? 0;
+            const containerCount = entry?.analysis?.operationSummary?.totalMovements ?? entry?.analysis?.pipelineMetrics?.containersCount ?? 0;
+
+            return (
+              <div
+                key={berthKey}
+                onClick={() => entry && handleLoadBerth(berthKey)}
+                className={`rounded-xl border p-3 transition-all ${
+                  isActive
+                    ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-950/30'
+                    : entry
+                    ? 'border-slate-200 dark:border-slate-700 hover:border-cyan-400 cursor-pointer'
+                    : 'border-dashed border-slate-200 dark:border-slate-700 opacity-60'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <h4 className="font-black text-xs text-slate-900 dark:text-white">{berthKey}</h4>
+                  {entry && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveBerth(berthKey);
+                      }}
+                      className="text-slate-400 hover:text-rose-600"
+                      title="Remover analise salva"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+                {entry ? (
+                  <div className="space-y-0.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                    <p className="font-black text-slate-800 dark:text-slate-100 truncate">
+                      {entry.analysis?.shipName || 'Navio não identificado'}
+                    </p>
+                    <p>{bayCount} bays · {containerCount} mov.</p>
+                    <p className="text-slate-400">{new Date(entry.savedAt).toLocaleString('pt-BR')}</p>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-400">Nenhuma analise salva</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div
