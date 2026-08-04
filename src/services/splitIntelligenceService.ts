@@ -1,5 +1,5 @@
 import type { PDFPageAsset } from './pdfService';
-import { extractSplitSummaryFromImage, extractBayColumnSummaryFromImage, type GeminiBayColumnEntry, type GeminiBayColumnCell } from './geminiService';
+import { extractSplitSummaryFromImage, extractBayColumnSummaryFromImage, type GeminiBayColumnEntry } from './geminiService';
 
 type PageType =
   | 'resumo'
@@ -379,274 +379,6 @@ function normalizeSplitText(value: string): string {
   return value.replace(/\s+/g, ' ').replace(/[|]/g, ' ').trim();
 }
 
-function parseTableCellNumericTotal(cell: string): number {
-  const cleaned = String(cell || '')
-    .replace(/\*\*/g, '')
-    .replace(/<[^>]+>/g, '')
-    .replace(/\bC\b/gi, '');
-
-  return Array.from(cleaned.matchAll(/\d+/g)).reduce((sum, match) => sum + Number(match[0]), 0);
-}
-
-function parseBayCategoryTableTotals(text: string): {
-  dischargeDeck: number | null;
-  loadingDeck: number | null;
-  dischargeHold: number | null;
-  loadingHold: number | null;
-} {
-  const rows = String(text || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  const totals: { dischargeDeck: number | null; loadingDeck: number | null; dischargeHold: number | null; loadingHold: number | null } = {
-    dischargeDeck: null,
-    loadingDeck: null,
-    dischargeHold: null,
-    loadingHold: null,
-  };
-
-  for (const row of rows) {
-    if (!row.includes('|')) continue;
-
-    const cells = row
-      .split('|')
-      .slice(1, -1)
-      .map((cell) => cell.trim())
-      .filter(Boolean);
-
-    if (cells.length < 2) continue;
-
-    const label = cells[0].replace(/\*\*/g, '').trim().toUpperCase();
-    const values = cells.slice(1);
-    const numericTotal = values.reduce((sum, cell) => sum + parseTableCellNumericTotal(cell), 0);
-
-    // Primeira ocorrência vence: alguns documentos têm uma segunda tabela
-    // (ex.: "Distribuição por Bay"/crane coverage) reaproveitando os mesmos
-    // rótulos DS-DECK/LD-DECK/DS-HOLD/LD-HOLD com números diferentes; a
-    // tabela de resumo de carga (a primeira do documento) é quem traz os
-    // totais reais de conteêneres.
-    if (/^DS-DECK$/i.test(label) && totals.dischargeDeck === null) totals.dischargeDeck = numericTotal;
-    else if (/^LD-DECK$/i.test(label) && totals.loadingDeck === null) totals.loadingDeck = numericTotal;
-    else if (/^DS-HOLD$/i.test(label) && totals.dischargeHold === null) totals.dischargeHold = numericTotal;
-    else if (/^LD-HOLD$/i.test(label) && totals.loadingHold === null) totals.loadingHold = numericTotal;
-  }
-
-  return totals;
-}
-
-function splitTableRowCells(row: string): string[] {
-  return row.split('|').slice(1, -1).map((cell) => cell.trim());
-}
-
-function parseBayColumnCellFromText(cell: string): GeminiBayColumnCell | null {
-  const cleaned = String(cell || '').replace(/\*\*/g, '').trim();
-  if (!cleaned || /^C$/i.test(cleaned)) return null;
-
-  const numbers = Array.from(cleaned.matchAll(/\d+/g)).map((m) => Number(m[0]));
-  if (numbers.length === 0) return null;
-
-  // 1 número = só contêiner de 40'. 2 números = par de 20' (twins), sem 40'.
-  // 3 números = 40' seguido do par de 20' (ex.: "46 / 14 / 14").
-  if (numbers.length === 1) return { fortyFoot: numbers[0], twentyFootPair: [null, null] };
-  if (numbers.length === 2) return { fortyFoot: null, twentyFootPair: [numbers[0], numbers[1]] };
-  if (numbers.length === 3) return { fortyFoot: numbers[0], twentyFootPair: [numbers[1], numbers[2]] };
-
-  // Célula rara com mais de 3 números (ex.: bay de meia-baia com anotações
-  // extras): mantém o total correto somando o restante como 20', mesmo sem
-  // uma divisão exata do par.
-  const extraSum = numbers.slice(1).reduce((sum, n) => sum + n, 0);
-  return { fortyFoot: numbers[0], twentyFootPair: [extraSum, null] };
-}
-
-const PROFILE_TABLE_LABEL_PATTERNS: Record<'DS-DECK' | 'LD-DECK' | 'DS-HOLD' | 'LD-HOLD', RegExp> = {
-  'DS-DECK': /^DS-DECK\s*:?\s*$/i,
-  'LD-DECK': /^LD-DECK\s*:?\s*$/i,
-  'DS-HOLD': /^DS-HOLD\s*:?\s*$/i,
-  'LD-HOLD': /^LD-HOLD\s*:?\s*$/i,
-};
-
-/**
- * Lê a tabela de perfil do navio (ESQUEMA DE CARGA DO NAVIO), onde o rótulo
- * ("DS-DECK:") fica sozinho em uma linha e os valores vêm na(s) linha(s)
- * seguinte(s) (ex.: um texto solto após o último "|" com o par de 20' do
- * último bay, ou uma segunda linha só de números logo abaixo, com o par de
- * 20' empilhado sob a mesma coluna). Esta é a tabela do lado esquerdo da
- * página (a primeira do documento) e tem prioridade sobre qualquer outra
- * tabela posterior que reaproveite os mesmos rótulos DS-DECK/LD-DECK/DS-HOLD/LD-HOLD
- * (ex.: "SUMÁRIO POR BAY"/"CRANE COVERAGE", que mostram outra coisa, como a
- * sequência de trabalho do guindaste).
- */
-function findProfileTableRowCells(lines: string[], label: keyof typeof PROFILE_TABLE_LABEL_PATTERNS): string[] | null {
-  const pattern = PROFILE_TABLE_LABEL_PATTERNS[label];
-  const labelIndex = lines.findIndex((line) => pattern.test(line.trim()));
-  if (labelIndex === -1) return null;
-
-  let cells: string[] | null = null;
-  let trailingRaw = '';
-  let valueLineIndex = -1;
-
-  for (let i = labelIndex + 1; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line.trim()) continue;
-    if (!line.includes('|')) return null;
-
-    const lastPipe = line.lastIndexOf('|');
-    cells = splitTableRowCells(line.slice(0, lastPipe + 1));
-    trailingRaw = line.slice(lastPipe + 1).trim();
-    valueLineIndex = i;
-    break;
-  }
-
-  if (!cells) return null;
-
-  // Uma segunda linha só de números/pipes logo em seguida (sem rótulo novo)
-  // é o par de 20' (twins) empilhado sob a mesma coluna da linha anterior.
-  const nextLine = lines[valueLineIndex + 1];
-  if (nextLine && nextLine.includes('|') && /^[\s|0-9]+$/.test(nextLine.trim())) {
-    const lastPipe = nextLine.lastIndexOf('|');
-    const continuationCells = splitTableRowCells(nextLine.slice(0, lastPipe + 1));
-    cells = cells.map((cell, idx) => `${cell} ${continuationCells[idx] || ''}`.trim());
-  }
-
-  if (trailingRaw) {
-    const lastIdx = cells.length - 1;
-    cells[lastIdx] = `${cells[lastIdx]} ${trailingRaw}`.trim();
-  }
-
-  return cells;
-}
-
-function sumProfileRowCells(cells: string[] | null): number | null {
-  if (!cells) return null;
-  return cells.reduce((sum, cell) => sum + sumBayColumnCell(parseBayColumnCellFromText(cell)).total, 0);
-}
-
-function parseShipProfileTableTotals(text: string): {
-  dischargeDeck: number | null;
-  loadingDeck: number | null;
-  dischargeHold: number | null;
-  loadingHold: number | null;
-} {
-  const lines = String(text || '').split(/\r?\n/);
-
-  return {
-    dischargeDeck: sumProfileRowCells(findProfileTableRowCells(lines, 'DS-DECK')),
-    loadingDeck: sumProfileRowCells(findProfileTableRowCells(lines, 'LD-DECK')),
-    dischargeHold: sumProfileRowCells(findProfileTableRowCells(lines, 'DS-HOLD')),
-    loadingHold: sumProfileRowCells(findProfileTableRowCells(lines, 'LD-HOLD')),
-  };
-}
-
-/**
- * Constrói as entradas por bay a partir da tabela de perfil do navio (lado
- * esquerdo da página), alinhando cada célula, na ordem em que aparece, ao
- * eixo de bays informado.
- */
-function parseShipProfileBayColumns(text: string, bayAxis: string[] | null): GeminiBayColumnEntry[] {
-  if (!bayAxis || bayAxis.length === 0) return [];
-
-  const lines = String(text || '').split(/\r?\n/);
-  const dsDeckCells = findProfileTableRowCells(lines, 'DS-DECK');
-  const ldDeckCells = findProfileTableRowCells(lines, 'LD-DECK');
-  const dsHoldCells = findProfileTableRowCells(lines, 'DS-HOLD');
-  const ldHoldCells = findProfileTableRowCells(lines, 'LD-HOLD');
-
-  if (!dsDeckCells && !ldDeckCells && !dsHoldCells && !ldHoldCells) return [];
-
-  return bayAxis.map((bayLabel, idx) => ({
-    bayLabel,
-    dsDeck: parseBayColumnCellFromText(dsDeckCells?.[idx] || ''),
-    ldDeck: parseBayColumnCellFromText(ldDeckCells?.[idx] || ''),
-    dsHold: parseBayColumnCellFromText(dsHoldCells?.[idx] || ''),
-    ldHold: parseBayColumnCellFromText(ldHoldCells?.[idx] || ''),
-  }));
-}
-
-/**
- * Procura uma linha do documento que liste a sequência de bays do navio
- * (ex.: "Principais: 70 | 66 | 62 | ..." ou o cabeçalho "TIPO / BAY | 70 | 66 | ..."),
- * usada como eixo para alinhar as colunas das tabelas DS-DECK/LD-DECK/DS-HOLD/LD-HOLD.
- */
-function extractBayAxisFromText(text: string): string[] | null {
-  const lines = String(text || '').split(/\r?\n/);
-
-  for (const line of lines) {
-    if (!/BAY/i.test(line)) continue;
-
-    const tokens = Array.from(line.matchAll(/\b(\d{1,2})\b/g)).map((m) => m[1]);
-    if (tokens.length < 6) continue;
-
-    const numeric = tokens.map(Number);
-    if (!numeric.every((n) => n >= 1 && n <= 70)) continue;
-
-    const increasing = numeric.every((n, i) => i === 0 || n > numeric[i - 1]);
-    const decreasing = numeric.every((n, i) => i === 0 || n < numeric[i - 1]);
-    if (!increasing && !decreasing) continue;
-
-    return tokens.map((t) => toBay(t));
-  }
-
-  return null;
-}
-
-/**
- * Lê a primeira ocorrência das linhas DS-DECK/LD-DECK/DS-HOLD/LD-HOLD de uma
- * tabela de perfil de carga ("TABELA DE RESUMO DE CARGA POR PERFIL DO NAVIO")
- * e alinha cada célula, na ordem em que aparece, ao eixo de bays informado.
- */
-function parseBayProfileColumnsFromText(text: string, bayAxis: string[] | null): GeminiBayColumnEntry[] {
-  if (!bayAxis || bayAxis.length === 0) return [];
-
-  const rows = String(text || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  const rawRows: Partial<Record<'DS-DECK' | 'LD-DECK' | 'DS-HOLD' | 'LD-HOLD', string[]>> = {};
-
-  for (const row of rows) {
-    if (!row.includes('|')) continue;
-
-    const cells = splitTableRowCells(row);
-    if (cells.length < 2) continue;
-
-    const label = cells[0].replace(/\*\*/g, '').trim().toUpperCase() as 'DS-DECK' | 'LD-DECK' | 'DS-HOLD' | 'LD-HOLD';
-    if (!['DS-DECK', 'LD-DECK', 'DS-HOLD', 'LD-HOLD'].includes(label)) continue;
-    if (rawRows[label]) continue; // primeira ocorrência vence
-
-    rawRows[label] = cells.slice(1);
-  }
-
-  if (!rawRows['DS-DECK'] && !rawRows['LD-DECK'] && !rawRows['DS-HOLD'] && !rawRows['LD-HOLD']) {
-    return [];
-  }
-
-  return bayAxis.map((bayLabel, idx) => ({
-    bayLabel,
-    dsDeck: parseBayColumnCellFromText(rawRows['DS-DECK']?.[idx] || ''),
-    ldDeck: parseBayColumnCellFromText(rawRows['LD-DECK']?.[idx] || ''),
-    dsHold: parseBayColumnCellFromText(rawRows['DS-HOLD']?.[idx] || ''),
-    ldHold: parseBayColumnCellFromText(rawRows['LD-HOLD']?.[idx] || ''),
-  }));
-}
-
-function parseProductivityTableTotals(text: string): { totalMovements: number | null; grandTotal: number | null } {
-  const lines = String(text || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-
-  for (const line of lines) {
-    const labelMatch = line.match(/\b(ALL|TOTAL)\b/i);
-    if (!labelMatch) continue;
-
-    const candidates = Array.from(line.slice(labelMatch.index! + labelMatch[0].length).matchAll(/\d+/g)).map((m) => Number(m[0]));
-    const firstNumber = candidates[0] ?? null;
-
-    if (firstNumber === null) continue;
-
-    return {
-      totalMovements: firstNumber,
-      grandTotal: firstNumber,
-    };
-  }
-
-  return {
-    totalMovements: null,
-    grandTotal: null,
-  };
-}
-
 interface PdfTextItemLike {
   str?: string;
   transform?: number[];
@@ -859,35 +591,13 @@ export function extractOperationalSummary(text: string): SplitOperationSummary {
   const loadingTotal = sectionValues.loading.total;
   const totalMovements = dischargeTotal !== null && loadingTotal !== null ? dischargeTotal + loadingTotal : null;
   const hasAnyValue = [dischargeTotal, sectionValues.discharge.planned, sectionValues.discharge.qcUnassigned, sectionValues.discharge.completed, sectionValues.discharge.remained, loadingTotal, sectionValues.loading.planned, sectionValues.loading.qcUnassigned, sectionValues.loading.completed, sectionValues.loading.remained].some((value) => value !== null);
-  const productivityTableTotals = parseProductivityTableTotals(normalizedText);
-  // A tabela de perfil do navio (lado esquerdo da página) tem prioridade sobre
-  // qualquer outra tabela posterior que reaproveite os mesmos rótulos.
-  const profileTableTotals = parseShipProfileTableTotals(text);
-  const bayCategoryTableTotals = parseBayCategoryTableTotals(text);
-  const dischargeDeckTotal = profileTableTotals.dischargeDeck ?? bayCategoryTableTotals.dischargeDeck;
-  const loadingDeckTotal = profileTableTotals.loadingDeck ?? bayCategoryTableTotals.loadingDeck;
-  const dischargeHoldTotal = profileTableTotals.dischargeHold ?? bayCategoryTableTotals.dischargeHold;
-  const loadingHoldTotal = profileTableTotals.loadingHold ?? bayCategoryTableTotals.loadingHold;
-  const inferredDischarge = dischargeTotal ?? (dischargeDeckTotal !== null && dischargeHoldTotal !== null
-    ? dischargeDeckTotal + dischargeHoldTotal
-    : null);
-  const inferredLoading = loadingTotal ?? (loadingDeckTotal !== null && loadingHoldTotal !== null
-    ? loadingDeckTotal + loadingHoldTotal
-    : null);
-  const inferredTotal = totalMovements ?? (inferredDischarge !== null && inferredLoading !== null ? inferredDischarge + inferredLoading : productivityTableTotals.totalMovements);
 
   const summary = {
-    totalMovements: inferredTotal,
-    discharge: {
-      ...sectionValues.discharge,
-      total: inferredDischarge,
-    },
-    loading: {
-      ...sectionValues.loading,
-      total: inferredLoading,
-    },
-    source: hasAnyValue || inferredTotal !== null ? 'pdf-text' as const : 'ocr' as const,
-    confidence: hasAnyValue || inferredTotal !== null ? 0.95 : 0.3,
+    totalMovements,
+    discharge: sectionValues.discharge,
+    loading: sectionValues.loading,
+    source: hasAnyValue ? 'pdf-text' as const : 'ocr' as const,
+    confidence: hasAnyValue ? 0.95 : 0.3,
     validationStatus: 'UNKNOWN' as const,
   };
 
@@ -895,24 +605,17 @@ export function extractOperationalSummary(text: string): SplitOperationSummary {
 }
 
 export function extractQcPlanSummary(text: string): SplitDeckHoldSummary {
-  const rawText = String(text || '');
-  const normalizedText = normalizeSplitText(rawText);
-  // A tabela de perfil do navio (lado esquerdo da página) tem prioridade sobre
-  // qualquer outra tabela posterior que reaproveite os mesmos rótulos.
-  const profileTableTotals = parseShipProfileTableTotals(rawText);
-  const bayCategoryTableTotals = parseBayCategoryTableTotals(rawText);
-  const dischargeDeck = profileTableTotals.dischargeDeck ?? bayCategoryTableTotals.dischargeDeck ?? parseIntegerValue(normalizedText.match(/DS-DECK[^0-9-]*([0-9]{1,7})/i)?.[1]);
-  const loadingDeck = profileTableTotals.loadingDeck ?? bayCategoryTableTotals.loadingDeck ?? parseIntegerValue(normalizedText.match(/LD-DECK[^0-9-]*([0-9]{1,7})/i)?.[1]);
-  const dischargeHold = profileTableTotals.dischargeHold ?? bayCategoryTableTotals.dischargeHold ?? parseIntegerValue(normalizedText.match(/DS-HOLD[^0-9-]*([0-9]{1,7})/i)?.[1]);
-  const loadingHold = profileTableTotals.loadingHold ?? bayCategoryTableTotals.loadingHold ?? parseIntegerValue(normalizedText.match(/LD-HOLD[^0-9-]*([0-9]{1,7})/i)?.[1]);
+  const normalizedText = normalizeSplitText(text);
+  const dischargeDeck = parseIntegerValue(normalizedText.match(/DS-DECK[^0-9-]*([0-9]{1,7})/i)?.[1]);
+  const loadingDeck = parseIntegerValue(normalizedText.match(/LD-DECK[^0-9-]*([0-9]{1,7})/i)?.[1]);
+  const dischargeHold = parseIntegerValue(normalizedText.match(/DS-HOLD[^0-9-]*([0-9]{1,7})/i)?.[1]);
+  const loadingHold = parseIntegerValue(normalizedText.match(/LD-HOLD[^0-9-]*([0-9]{1,7})/i)?.[1]);
 
   const dischargeTotal = dischargeDeck !== null && dischargeHold !== null ? dischargeDeck + dischargeHold : null;
   const loadingTotal = loadingDeck !== null && loadingHold !== null ? loadingDeck + loadingHold : null;
   const deckTotal = dischargeDeck !== null && loadingDeck !== null ? dischargeDeck + loadingDeck : null;
   const holdTotal = dischargeHold !== null && loadingHold !== null ? dischargeHold + loadingHold : null;
   const grandTotal = deckTotal !== null && holdTotal !== null ? deckTotal + holdTotal : null;
-  const productivityTableTotals = parseProductivityTableTotals(normalizedText);
-  const inferredGrandTotal = grandTotal ?? productivityTableTotals.grandTotal;
 
   return {
     dischargeDeck,
@@ -923,8 +626,8 @@ export function extractQcPlanSummary(text: string): SplitDeckHoldSummary {
     loadingTotal,
     deckTotal,
     holdTotal,
-    grandTotal: inferredGrandTotal,
-    confidence: [dischargeDeck, loadingDeck, dischargeHold, loadingHold].some((value) => value !== null) || inferredGrandTotal !== null ? 0.9 : 0.2,
+    grandTotal,
+    confidence: [dischargeDeck, loadingDeck, dischargeHold, loadingHold].some((value) => value !== null) ? 0.9 : 0.2,
   };
 }
 
@@ -1306,30 +1009,6 @@ function makeOperationalMap(stats: OperationalStats) {
   };
 }
 
-function selectPrimaryPageInput(
-  pages: string[],
-  linesByPage: string[][],
-  pageTextItems?: Array<{
-    pageNumber: number;
-    items: Array<{
-      str: string;
-      transform?: number[];
-      width?: number;
-      height?: number;
-    }>;
-  }>
-) {
-  const primaryPageText = pages[0] || '';
-  const primaryPageLines = linesByPage[0] || [];
-  const primaryPageItems = pageTextItems?.find((page) => page.pageNumber === 1)?.items || [];
-
-  return {
-    primaryPageText,
-    primaryPageLines,
-    primaryPageItems,
-  };
-}
-
 function makeChartData(bays: BayAggregate[], stats: OperationalStats) {
   return {
     containersByBay: bays.map((b) => ({ bay: b.bay, total: b.total })),
@@ -1410,44 +1089,6 @@ function aggregateBayColumnTotals(bays: GeminiBayColumnEntry[]): BayColumnAggreg
   return acc;
 }
 
-function buildBayRowsFromColumnEntries(entries: GeminiBayColumnEntry[]): BayAggregate[] {
-  return entries
-    .map((entry) => {
-      const dsDeck = sumBayColumnCell(entry.dsDeck);
-      const ldDeck = sumBayColumnCell(entry.ldDeck);
-      const dsHold = sumBayColumnCell(entry.dsHold);
-      const ldHold = sumBayColumnCell(entry.ldHold);
-
-      const deck = dsDeck.total + ldDeck.total;
-      const hold = dsHold.total + ldHold.total;
-      const total = deck + hold;
-
-      return {
-        bay: entry.bayLabel,
-        deck,
-        hold,
-        twenty: dsDeck.twenty + ldDeck.twenty + dsHold.twenty + ldHold.twenty,
-        forty: dsDeck.forty + ldDeck.forty + dsHold.forty + ldHold.forty,
-        fortyFive: 0,
-        reefer: 0,
-        dg: 0,
-        oog: 0,
-        tank: 0,
-        flat: 0,
-        empty: 0,
-        full: total,
-        discharge: dsDeck.total + dsHold.total,
-        loading: ldDeck.total + ldHold.total,
-        total,
-        confidence: 0.75,
-        containers: [],
-        sections: [],
-      } as BayAggregate;
-    })
-    .filter((row) => row.total > 0)
-    .sort((a, b) => Number(a.bay) - Number(b.bay));
-}
-
 export async function analyzeSplitIntelligently(input: SplitInput): Promise<any> {
   const started = Date.now();
   const logs: FusionLog[] = [];
@@ -1462,27 +1103,26 @@ export async function analyzeSplitIntelligently(input: SplitInput): Promise<any>
 
   const pages = Array.isArray(input.pages) ? input.pages : [];
   const linesByPage = Array.isArray(input.lines) ? input.lines : pages.map((page) => page.split(/\r?\n/));
-  const { primaryPageText, primaryPageLines, primaryPageItems } = selectPrimaryPageInput(pages, linesByPage, input.pageTextItems);
-  const primaryPageLinesNormalized = primaryPageLines.map((line) => norm(line)).filter(Boolean);
+  const allLines = linesByPage.flat().map((line) => norm(line)).filter(Boolean);
 
   addLog('receiving', {
     pages: pages.length,
     pageAssets: input.pageAssets?.length || 0,
-    primaryPage: 1,
   });
 
   const visionStart = Date.now();
   const visualByPage = new Map<number, VisualPageAnalysis>();
-  const primaryPageAsset = input.pageAssets?.find((asset) => asset.pageNumber === 1);
-  if (primaryPageAsset) {
-    try {
-      const visual = await runVisualAnalysis(primaryPageAsset);
-      visualByPage.set(1, visual);
-    } catch (error) {
-      addLog('vision-error', {
-        page: 1,
-        error: error instanceof Error ? error.message : 'Erro de visão computacional.',
-      });
+  if (Array.isArray(input.pageAssets) && input.pageAssets.length > 0) {
+    for (const asset of input.pageAssets) {
+      try {
+        const visual = await runVisualAnalysis(asset);
+        visualByPage.set(asset.pageNumber, visual);
+      } catch (error) {
+        addLog('vision-error', {
+          page: asset.pageNumber,
+          error: error instanceof Error ? error.message : 'Erro de visão computacional.',
+        });
+      }
     }
   }
 
@@ -1491,44 +1131,25 @@ export async function analyzeSplitIntelligently(input: SplitInput): Promise<any>
     pagesAnalyzed: visualByPage.size,
   });
 
-  const pageTypes: PageClassification[] = primaryPageText
-    ? [classifyPage(1, primaryPageText, visualByPage.get(1) || null)]
-    : [];
+  const pageTypes: PageClassification[] = pages.map((text, idx) => classifyPage(idx + 1, text, visualByPage.get(idx + 1) || null));
   addLog('page-classification', {
     pages: pageTypes.length,
     planoBays: pageTypes.filter((p) => p.type === 'plano-bays').length,
   });
 
-  const containers = parseContainersFromLines(primaryPageLinesNormalized);
+  const containers = parseContainersFromLines(allLines);
   addLog('ocr-structure', {
     containers: containers.length,
     bays: unique(containers.map((c) => c.bay)).length,
-    sourcePage: 1,
   });
 
   let bayRows = aggregateByBay(containers, pageTypes);
   let stats = buildOperationalStats(bayRows);
 
-  if (bayRows.length === 0) {
-    const profileSourceText = primaryPageText || primaryPageLinesNormalized.join('\n');
-    const bayAxis = extractBayAxisFromText(profileSourceText);
-    // Prioriza a tabela de perfil do navio (lado esquerdo da página); só usa a
-    // tabela genérica (rótulo e valores na mesma linha) se a primeira não existir.
-    const bayColumnEntries = parseShipProfileBayColumns(profileSourceText, bayAxis);
-    const columnRows = buildBayRowsFromColumnEntries(
-      bayColumnEntries.length > 0 ? bayColumnEntries : parseBayProfileColumnsFromText(profileSourceText, bayAxis)
-    );
-
-    if (columnRows.length > 0) {
-      bayRows = columnRows;
-      stats = buildOperationalStats(bayRows);
-      addLog('bay-profile-table-parsed', { bays: bayRows.length, axisSize: bayAxis?.length || 0 });
-    }
-  }
-
-  const header = extractDocumentHeader(primaryPageLinesNormalized);
+  const header = extractDocumentHeader(allLines);
+  const firstPageItems = input.pageTextItems?.find((page) => page.pageNumber === 1)?.items || [];
   const positionalSummary = extractOperationalSummaryFromLayout(
-    primaryPageItems.map((item) => ({
+    firstPageItems.map((item) => ({
       text: item.str || '',
       x: item.transform?.[4],
       y: item.transform?.[5],
@@ -1536,12 +1157,12 @@ export async function analyzeSplitIntelligently(input: SplitInput): Promise<any>
       height: item.height,
     }))
   );
-  const fallbackSummary = extractOperationalSummary(primaryPageText || primaryPageLinesNormalized.join('\n'));
+  const fallbackSummary = extractOperationalSummary(input.text || allLines.join('\n'));
   let operationSummary = positionalSummary.discharge.total !== null || positionalSummary.loading.total !== null
     ? positionalSummary
     : fallbackSummary;
 
-  const qcPlanSummary = extractQcPlanSummary(primaryPageText || primaryPageLinesNormalized.join('\n'));
+  const qcPlanSummary = extractQcPlanSummary(input.text || allLines.join('\n'));
 
   const needsSummaryFallback = operationSummary.discharge.total === null && operationSummary.loading.total === null;
   const needsDeckHoldFallback =
@@ -1556,7 +1177,7 @@ export async function analyzeSplitIntelligently(input: SplitInput): Promise<any>
   // dados que já vieram certos por outro caminho (ex.: OCR de texto já pode
   // ter resolvido Descarga/Embarque, mas não o QC Plan, ou vice-versa).
   if (needsSummaryFallback || needsDeckHoldFallback) {
-    const page1Asset = primaryPageAsset;
+    const page1Asset = input.pageAssets?.find((asset) => asset.pageNumber === 1);
     if (page1Asset?.imageDataUrl) {
       addLog('vision-summary-fallback', { page: 1, needsSummaryFallback, needsDeckHoldFallback });
       const base64 = page1Asset.imageDataUrl.split(',')[1] || '';
@@ -1607,7 +1228,7 @@ export async function analyzeSplitIntelligently(input: SplitInput): Promise<any>
 
   const validation = validateSplitTotals(operationSummary, qcPlanSummary);
 
-  console.log('[SPLIT][PAGE1][TEXT ITEMS]', primaryPageItems.filter((item) => {
+  console.log('[SPLIT][PAGE1][TEXT ITEMS]', firstPageItems.filter((item) => {
     const text = item.str || '';
     return /discharging|loading|total|planned|qc|unassigned|completed|remained|1517|141|1658/i.test(text);
   }));
@@ -1639,6 +1260,46 @@ export async function analyzeSplitIntelligently(input: SplitInput): Promise<any>
     validation,
   });
 
+  // Leitura numérica por bay da faixa do QC Plan (DS-DECK/LD-DECK/DS-HOLD/
+  // LD-HOLD, separando 40 pés de pares de 20 pés/twins). Alternativa mais
+  // confiável do que classificar cor por célula nos mapas de bay coloridos.
+  // Ainda não sobrescreve bayRows/qcPlanSummary — só fica disponível pra
+  // conferência no Modo Dev até validarmos o casamento de rótulos de bay
+  // (ex.: "19/18") com os IDs de bay já usados no resto da pipeline.
+  let bayColumnResult: { bays: GeminiBayColumnEntry[]; confidence: number; error?: string } | null = null;
+  let bayColumnAggregate: BayColumnAggregate | null = null;
+
+  const page1AssetForBayColumns = input.pageAssets?.find((asset) => asset.pageNumber === 1);
+  if (page1AssetForBayColumns?.imageDataUrl) {
+    addLog('bay-column-vision-start', { page: 1 });
+    const base64 = page1AssetForBayColumns.imageDataUrl.split(',')[1] || '';
+
+    try {
+      bayColumnResult = await extractBayColumnSummaryFromImage(base64, 'image/png');
+
+      if (bayColumnResult.bays.length > 0) {
+        bayColumnAggregate = aggregateBayColumnTotals(bayColumnResult.bays);
+        addLog('bay-column-vision-complete', {
+          baysRead: bayColumnResult.bays.length,
+          confidence: bayColumnResult.confidence,
+          aggregate: bayColumnAggregate,
+          matchesQcPlanGrandTotal: qcPlanSummary.grandTotal !== null
+            ? bayColumnAggregate.grandTotal === qcPlanSummary.grandTotal
+            : null,
+          matchesOperationTotal: operationSummary.totalMovements !== null
+            ? bayColumnAggregate.grandTotal === operationSummary.totalMovements
+            : null,
+        });
+      } else if (bayColumnResult.error) {
+        addLog('bay-column-vision-error', { error: bayColumnResult.error });
+      }
+    } catch (bayColumnError) {
+      addLog('bay-column-vision-error', {
+        error: bayColumnError instanceof Error ? bayColumnError.message : 'Erro desconhecido na leitura de colunas de bay.',
+      });
+    }
+  }
+
   const aiStart = Date.now();
   const aiFusion = await runGeminiFusionAI({
     header,
@@ -1646,7 +1307,7 @@ export async function analyzeSplitIntelligently(input: SplitInput): Promise<any>
     stats,
     bayRows,
     pageTypes,
-    textPreview: primaryPageText.slice(0, 22000),
+    textPreview: input.text.slice(0, 22000),
   });
 
   addLog('ai-fusion', {
@@ -1707,7 +1368,7 @@ export async function analyzeSplitIntelligently(input: SplitInput): Promise<any>
     textChars: page.textChars,
     visual: page.visual,
     image: input.pageAssets?.find((asset) => asset.pageNumber === page.pageNumber)?.imageDataUrl || null,
-    ocrText: page.pageNumber === 1 ? primaryPageText : '',
+    ocrText: pages[page.pageNumber - 1] || '',
   }));
 
   const alignmentBoost = validation.summaryValid && operationSummary.totalMovements === qcPlanSummary.grandTotal && operationSummary.totalMovements === 1658 ? 0.05 : 0;
@@ -1831,9 +1492,17 @@ export async function analyzeSplitIntelligently(input: SplitInput): Promise<any>
 
     pageTypes,
     containers,
+    bayColumnDetail: {
+      bays: bayColumnResult?.bays || [],
+      aggregate: bayColumnAggregate,
+      confidence: bayColumnResult?.confidence ?? 0,
+      error: bayColumnResult?.error,
+    },
     developerMode: {
       pages: pageDebug,
       aiRaw: aiFusion,
+      bayColumnRaw: bayColumnResult,
+      bayColumnAggregate,
       cvSummary: pageTypes.map((p) => ({
         pageNumber: p.pageNumber,
         type: p.type,

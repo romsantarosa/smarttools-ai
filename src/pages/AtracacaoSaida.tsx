@@ -112,7 +112,7 @@ export const AtracacaoSaida: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {atracados.map((ship, index) => {
             const atracacao = formatPortalDateTime(`${ship.dataatracacao || ''} ${ship.horaatracacao || ''}`.trim());
-            const previsaoSaida = formatPortalDateTime(`${ship.datasaida || ''} ${ship.horasaida || ''}`.trim());
+            const previsaoSaida = formatPortalDateTime(ship.etd || ship.saidaPrevista || '');
             const inicioOperacao = formatPortalDateTime(ship.inicioOperacao || '');
 
             return (

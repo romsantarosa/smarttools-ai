@@ -30,7 +30,10 @@ interface BtpScheduleRecord {
   horasaida: string;
   operacao: string;
   terminal: string;
-  [key: string]: string;
+  pilotStatus?: 'andamento' | 'confirmada' | 'na_barra';
+  pilotDateTime?: string;
+  pilotBerco?: string;
+  [key: string]: string | undefined;
 }
 
 type SortDirection = 'asc' | 'desc';
@@ -39,6 +42,8 @@ const REFRESH_INTERVAL = 5 * 60 * 1000;
 
 function getStatusClass(status: string): string {
   const key = status.toLowerCase();
+  if (key.includes('andamento')) return 'bg-cyan-200 text-cyan-900 border-cyan-400';
+  if (key.includes('confirmada')) return 'bg-indigo-200 text-indigo-900 border-indigo-400';
   if (key.includes('desatracado')) return 'bg-green-200 text-green-900 border-green-400';
   if (key.includes('atracado')) return 'bg-orange-200 text-orange-900 border-orange-400';
   if (key.includes('na barra')) return 'bg-yellow-200 text-yellow-900 border-yellow-400';
@@ -182,6 +187,13 @@ function getPortalStatusLabel(record: BtpScheduleRecord): string {
   if (etbDate && etbDate.getTime() <= now.getTime()) return 'Atracado';
 
   if (sourceText.includes('atracad')) return 'Atracado';
+
+  // Status ao vivo do portal da Praticagem (SPPilots) tem prioridade sobre o
+  // fallback genérico "Previsto"/"Na Barra" baseado só em texto/datas do BTP.
+  if (record.pilotStatus === 'andamento') return 'Manobra em Andamento';
+  if (record.pilotStatus === 'confirmada') return 'Manobra confirmada pela Praticagem';
+  if (record.pilotStatus === 'na_barra') return 'Na Barra';
+
   if (hasExplicitPrevisto) return 'Previsto';
   if (sourceText.includes('barra') || sourceText.includes('fundeado')) return 'Na Barra';
 
@@ -198,10 +210,12 @@ function getPortalStatusLabel(record: BtpScheduleRecord): string {
 function getStatusRank(status: string): number {
   const label = status;
   if (label === 'Atracado') return 1;
-  if (label === 'Na Barra') return 2;
-  if (label === 'Previsto') return 3;
-  if (label === 'Desatracado') return 4;
-  return 5;
+  if (label === 'Manobra em Andamento') return 2;
+  if (label === 'Manobra confirmada pela Praticagem') return 3;
+  if (label === 'Na Barra') return 4;
+  if (label === 'Previsto') return 5;
+  if (label === 'Desatracado') return 6;
+  return 7;
 }
 
 function parseBrDateTime(dateValue?: string, timeValue?: string): number {
@@ -731,6 +745,16 @@ export const ProgramacaoBtp: React.FC = () => {
                           <span className={`px-2.5 py-1 rounded-lg border text-[11px] font-black ${getStatusClass(statusLabel)}`}>
                             {statusLabel}
                           </span>
+                          {(statusLabel === 'Manobra em Andamento' || statusLabel === 'Manobra confirmada pela Praticagem') && record.pilotDateTime && (
+                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                              Prático: {record.pilotDateTime}
+                            </span>
+                          )}
+                          {statusLabel === 'Na Barra' && record.pilotDateTime && (
+                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                              Fundeado desde: {record.pilotDateTime}
+                            </span>
+                          )}
                           {statusLabel === 'Previsto' && previstoProgress !== null && (
                             <>
                               <div

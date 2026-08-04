@@ -121,20 +121,44 @@ export function getPortalStatusLabel(record: BtpScheduleRecord): string {
     .join(' ')
     .toLowerCase();
 
-  const etbDate = parsePortalDateTime(record.etb);
   const now = new Date();
   const hasExplicitPrevisto = rawPortalStatus.includes('previst') || sourceText.includes('previst');
 
   if (sourceText.includes('desatrac')) return 'Desatracado';
   if (hasValue(record.datasaida) || hasValue(record.horasaida)) return 'Desatracado';
 
-  if (etbDate && etbDate.getTime() <= now.getTime()) return 'Atracado';
+  // Confirmação REAL de atracação (não estimativa) é o sinal mais confiável
+  // que existe. Checar isso antes do ETB evita que um navio nunca-atracado
+  // (ETB estimado que só ficou no passado) seja contado como atracado.
+  const hasRealAtracacao = hasValue(record.dataatracacao) || hasValue(record.horaatracacao);
+
+  if (hasRealAtracacao) {
+    // Rede de segurança: se a saída PREVISTA já passou há bastante tempo e
+    // não há dado de saída real (o que pode acontecer se o enriquecimento
+    // via RAP falhar silenciosamente), é mais seguro considerar que o navio
+    // já saiu do que deixá-lo acumular como "Atracado" indefinidamente —
+    // já que o terminal tem só 3 berços, um navio "preso" na lista por bug
+    // de dado ausente é pior do que um falso-negativo ocasional.
+    const etdDate = parsePortalDateTime(record.etd) || parsePortalDateTime(record.saidaPrevista);
+    const staleThresholdMs = 12 * 60 * 60 * 1000; // 12 horas
+    if (etdDate && now.getTime() - etdDate.getTime() > staleThresholdMs) {
+      return 'Desatracado';
+    }
+    return 'Atracado';
+  }
 
   if (sourceText.includes('atracad')) return 'Atracado';
   if (hasExplicitPrevisto) return 'Previsto';
   if (sourceText.includes('barra') || sourceText.includes('fundeado')) return 'Na Barra';
 
-  if (hasValue(record.dataatracacao) || hasValue(record.horaatracacao)) return 'Atracado';
+  const etbDate = parsePortalDateTime(record.etb);
+  if (etbDate && etbDate.getTime() <= now.getTime()) {
+    // ETB estimado já passou, mas SEM confirmação real de atracação. Trata
+    // como "Na Barra" (chegou/previsto, ainda não confirmadamente atracado)
+    // em vez de "Atracado", para não inflar a contagem com estimativas.
+    return 'Na Barra';
+  }
+
   if (hasValue(record.datachegada) || hasValue(record.horachegada)) {
     return hasExplicitPrevisto ? 'Previsto' : 'Na Barra';
   }
@@ -253,16 +277,13 @@ export function getStatusRank(status: string): number {
 }
 
 export function toOperationalShipSnapshot(record: BtpScheduleRecord): BtpOperationalShipSnapshot {
-  const atracacaoDateTime = formatPortalDateTime(`${record.dataatracacao || ''} ${record.horaatracacao || ''}`.trim());
-  const saidaPrevistaDateTime = formatPortalDateTime(`${record.datasaida || ''} ${record.horasaida || ''}`.trim());
-
   return {
     ...record,
     displayBerco: getDisplayBerco(record),
     atracacaoDate: record.dataatracacao || record.datachegada || '',
     atracacaoTime: record.horaatracacao || record.horachegada || '',
-    previsaoSaidaDate: record.datasaida || '',
-    previsaoSaidaTime: record.horasaida || '',
+    previsaoSaidaDate: record.etd || record.saidaPrevista || '',
+    previsaoSaidaTime: '',
     telemetry: {
       movimentosTotais: undefined,
       movimentosConcluidos: undefined,
