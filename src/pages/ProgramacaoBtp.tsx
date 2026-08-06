@@ -11,6 +11,8 @@ import {
   Ship,
   Search,
   Filter,
+  Check,
+  X,
 } from 'lucide-react';
 
 interface BtpScheduleRecord {
@@ -39,6 +41,9 @@ interface BtpScheduleRecord {
 type SortDirection = 'asc' | 'desc';
 
 const REFRESH_INTERVAL = 5 * 60 * 1000;
+
+/** As 4 categorias de status que o usuário pode escolher pra priorizar na primeira linha da tabela. */
+const STATUS_PRIORITY_OPTIONS = ['Atracado', 'Na Barra', 'Previsto', 'Desatracado'] as const;
 
 function getStatusClass(status: string): string {
   const key = status.toLowerCase();
@@ -283,7 +288,21 @@ export const ProgramacaoBtp: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [statusPriority, setStatusPriority] = useState<string | null>(null);
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const statusMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!statusMenuOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (statusMenuRef.current && !statusMenuRef.current.contains(event.target as Node)) {
+        setStatusMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [statusMenuOpen]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -348,7 +367,7 @@ export const ProgramacaoBtp: React.FC = () => {
     return navioMatch && bercoMatch && dataMatch;
   });
 
-  const sortedData = [...filteredData].sort((a, b) => {
+  const baseSortedData = [...filteredData].sort((a, b) => {
     if (sortBy === 'data') {
       const aRank = getRecordDateRank(a);
       const bRank = getRecordDateRank(b);
@@ -371,6 +390,17 @@ export const ProgramacaoBtp: React.FC = () => {
     if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
     return 0;
   });
+
+  // Quando o usuário escolhe um status pra priorizar (menu da coluna Status),
+  // só reordena pra trazer esse grupo pra cima — não filtra os demais navios.
+  // Array.sort é estável, então a ordem relativa dentro de cada grupo é preservada.
+  const sortedData = statusPriority
+    ? [...baseSortedData].sort((a, b) => {
+        const aMatches = getPortalStatusLabel(a) === statusPriority ? 0 : 1;
+        const bMatches = getPortalStatusLabel(b) === statusPriority ? 0 : 1;
+        return aMatches - bMatches;
+      })
+    : baseSortedData;
 
   const handleSort = (column: string) => {
     if (sortBy === column) {
@@ -692,9 +722,9 @@ export const ProgramacaoBtp: React.FC = () => {
 
       {!loading && sortedData.length > 0 && (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-auto max-h-[70vh]">
             <table className="w-full text-xs">
-              <thead className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 uppercase tracking-wide">
+              <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 uppercase tracking-wide">
                 <tr>
                   <th className="p-3 w-12" />
                   {columns.map((column) => (
@@ -702,17 +732,62 @@ export const ProgramacaoBtp: React.FC = () => {
                       key={column.key}
                       className="p-3 text-left whitespace-nowrap"
                     >
-                      <button
-                        onClick={() => handleSort(column.key)}
-                        className="inline-flex items-center gap-1 font-black hover:text-blue-600"
-                      >
-                        {column.label}
-                        {sortBy === column.key ? (
-                          sortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
-                        ) : (
-                          <ChevronDown className="w-3.5 h-3.5 opacity-30" />
-                        )}
-                      </button>
+                      {column.key === 'status' ? (
+                        <div className="relative inline-block" ref={statusMenuRef}>
+                          <button
+                            onClick={() => setStatusMenuOpen((v) => !v)}
+                            className={`inline-flex items-center gap-1 font-black hover:text-blue-600 ${statusPriority ? 'text-blue-600' : ''}`}
+                          >
+                            {column.label}
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          </button>
+                          {statusMenuOpen && (
+                            <div className="absolute z-20 top-full left-0 mt-1 w-52 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg py-1 normal-case">
+                              <p className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                Mostrar primeiro
+                              </p>
+                              {STATUS_PRIORITY_OPTIONS.map((option) => (
+                                <button
+                                  key={option}
+                                  onClick={() => {
+                                    setStatusPriority(option);
+                                    setStatusMenuOpen(false);
+                                  }}
+                                  className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-xs font-bold text-left hover:bg-slate-100 dark:hover:bg-slate-800 ${
+                                    statusPriority === option ? 'text-blue-600' : 'text-slate-700 dark:text-slate-200'
+                                  }`}
+                                >
+                                  {option}
+                                  {statusPriority === option && <Check className="w-3.5 h-3.5" />}
+                                </button>
+                              ))}
+                              {statusPriority && (
+                                <button
+                                  onClick={() => {
+                                    setStatusPriority(null);
+                                    setStatusMenuOpen(false);
+                                  }}
+                                  className="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-left text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border-t border-slate-200 dark:border-slate-700"
+                                >
+                                  <X className="w-3.5 h-3.5" /> Limpar (ordem padrão)
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleSort(column.key)}
+                          className="inline-flex items-center gap-1 font-black hover:text-blue-600"
+                        >
+                          {column.label}
+                          {sortBy === column.key ? (
+                            sortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
+                          ) : (
+                            <ChevronDown className="w-3.5 h-3.5 opacity-30" />
+                          )}
+                        </button>
+                      )}
                     </th>
                   ))}
                 </tr>

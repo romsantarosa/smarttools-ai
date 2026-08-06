@@ -1,12 +1,20 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
+  Anchor,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Copy,
   Download,
   FileJson,
   FileText,
   Info,
+  Pencil,
+  RotateCcw,
   Search,
+  ShieldAlert,
+  Trash2,
   UploadCloud,
   Wrench,
   X,
@@ -24,6 +32,19 @@ import {
 } from 'recharts';
 import { importDocumentAndAnalyze } from '../services/importPipeline';
 import { consumePlatformFiles, subscribePlatformFiles } from '../services/platformIntake';
+import { analyzeSplitFromFile, type SplitBayAnalysisResult, type SplitBayRow } from '../services/splitBayReaderService';
+import {
+  computeFileSha256,
+  deleteSplitRecord,
+  findRecordByFileHash,
+  getLatestRecordPerBerth,
+  getRecordsByBerth,
+  saveSplitRecord,
+  updateSplitRecord,
+  SPLIT_BERTHS,
+  type SplitBerth,
+  type SplitRecord,
+} from '../services/splitPersistenceService';
 
 function displayValue(value: any, sourceLabel?: string) {
   if (value === null || value === undefined || value === '') {
@@ -166,6 +187,338 @@ export const PlanejamentoSplit: React.FC = () => {
 
   const [berthCache, setBerthCache] = useState<Record<string, SavedBerthSplit>>(() => loadBerthSplitCache());
   const [activeBerth, setActiveBerth] = useState<string | null>(null);
+  const [showLegacyMode, setShowLegacyMode] = useState(false);
+
+  // ---- Novo fluxo determinístico de SPLIT (página 1 + perfil do navio) ----
+  const splitFileRef = useRef<HTMLInputElement | null>(null);
+  const [splitFile, setSplitFile] = useState<File | null>(null);
+  const [splitFileHash, setSplitFileHash] = useState<string | null>(null);
+  const [splitAnalyzing, setSplitAnalyzing] = useState(false);
+  const [splitError, setSplitError] = useState<string | null>(null);
+  const [splitResult, setSplitResult] = useState<SplitBayAnalysisResult | null>(null);
+  const [splitEditableBays, setSplitEditableBays] = useState<SplitBayRow[]>([]);
+  const [splitVesselName, setSplitVesselName] = useState('');
+  const [splitVoyage, setSplitVoyage] = useState('');
+  const [splitConfirmed, setSplitConfirmed] = useState(false);
+  const [splitSelectedBerth, setSplitSelectedBerth] = useState<SplitBerth | null>(null);
+  const [splitSavedRecord, setSplitSavedRecord] = useState<SplitRecord | null>(null);
+  const [splitDuplicateRecord, setSplitDuplicateRecord] = useState<SplitRecord | null>(null);
+  const [splitPendingFile, setSplitPendingFile] = useState<File | null>(null);
+  const [splitShowCrop, setSplitShowCrop] = useState(false);
+  const [splitHistoryFilter, setSplitHistoryFilter] = useState<'TODOS' | SplitBerth>('TODOS');
+  const [splitRecordsVersion, setSplitRecordsVersion] = useState(0);
+
+  // ---- Edição/exclusão de SPLIT já salvo ----
+  const [editingRecord, setEditingRecord] = useState<SplitRecord | null>(null);
+  const [editBays, setEditBays] = useState<SplitBayRow[]>([]);
+  const [editVessel, setEditVessel] = useState('');
+  const [editVoyage, setEditVoyage] = useState('');
+  const [editBerth, setEditBerth] = useState<SplitBerth | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const latestPerBerth = useMemo(() => getLatestRecordPerBerth(), [splitRecordsVersion]);
+  const splitHistoryRecords = useMemo(() => getRecordsByBerth(splitHistoryFilter), [splitHistoryFilter, splitRecordsVersion]);
+
+  const splitComputedTotals = useMemo(() => {
+    const totalMoves = splitEditableBays.reduce((sum, row) => sum + (row.total ?? 0), 0);
+    const totalDischarge = splitEditableBays.reduce((sum, row) => sum + row.discharge, 0);
+    const totalLoad = splitEditableBays.reduce((sum, row) => sum + row.load, 0);
+    const numberOfActiveBays = splitEditableBays.filter((row) => (row.total ?? 0) > 0).length;
+    return {
+      totalDischarge,
+      totalLoad,
+      totalMoves,
+      numberOfActiveBays,
+    };
+  }, [splitEditableBays]);
+
+  const splitChartData = useMemo(
+    () =>
+      splitEditableBays
+        .filter((row) => (row.total ?? 0) > 0 || row.discharge > 0 || row.load > 0)
+        .map((row) => ({ bay: row.bay, descarga: row.discharge, embarque: row.load })),
+    [splitEditableBays]
+  );
+
+  const resetSplitFlow = () => {
+    setSplitResult(null);
+    setSplitEditableBays([]);
+    setSplitConfirmed(false);
+    setSplitSelectedBerth(null);
+    setSplitError(null);
+    setSplitSavedRecord(null);
+    setSplitDuplicateRecord(null);
+    setSplitPendingFile(null);
+    setSplitVesselName('');
+    setSplitVoyage('');
+    setSplitFileHash(null);
+  };
+
+  const onSplitFileSelected = (f?: File) => {
+    const fileToUse = f ?? splitFileRef.current?.files?.[0] ?? null;
+    if (!fileToUse) return;
+    resetSplitFlow();
+    setSplitFile(fileToUse);
+  };
+
+  const onSplitDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const f = e.dataTransfer.files?.[0];
+    if (f) onSplitFileSelected(f);
+  };
+
+  const applyAnalysisResult = (result: SplitBayAnalysisResult) => {
+    setSplitResult(result);
+    setSplitEditableBays(result.bays);
+    setSplitVesselName(result.vessel || '');
+    setSplitVoyage(result.voyage || '');
+  };
+
+  const onAnalyzeSplitClick = async () => {
+    if (!splitFile) return;
+    resetSplitFlow();
+    setSplitAnalyzing(true);
+
+    try {
+      const hash = await computeFileSha256(splitFile);
+      setSplitFileHash(hash);
+
+      const existing = findRecordByFileHash(hash);
+      if (existing) {
+        setSplitDuplicateRecord(existing);
+        setSplitPendingFile(splitFile);
+        return;
+      }
+
+      const result = await analyzeSplitFromFile(splitFile);
+      applyAnalysisResult(result);
+    } catch (err) {
+      setSplitError(err instanceof Error ? err.message : 'Erro inesperado ao analisar o SPLIT.');
+    } finally {
+      setSplitAnalyzing(false);
+    }
+  };
+
+  const onOpenSavedDuplicate = () => {
+    if (!splitDuplicateRecord) return;
+    setSplitVesselName(splitDuplicateRecord.vessel);
+    setSplitVoyage(splitDuplicateRecord.voyage || '');
+    setSplitEditableBays(
+      splitDuplicateRecord.bayData.map((row) => ({
+        ...row,
+        totalConfidence: 1,
+        totalNeedsReview: false,
+        compositionMismatch: row.discharge + row.load !== row.total,
+        confidence: 1,
+        needsReview: false,
+      }))
+    );
+    setSplitSelectedBerth(splitDuplicateRecord.berth);
+    setSplitSavedRecord(splitDuplicateRecord);
+    setSplitConfirmed(true);
+    setSplitDuplicateRecord(null);
+    setSplitPendingFile(null);
+  };
+
+  const onReanalyzeAnyway = async () => {
+    const pending = splitPendingFile;
+    setSplitDuplicateRecord(null);
+    setSplitPendingFile(null);
+    if (!pending) return;
+
+    setSplitAnalyzing(true);
+    setSplitError(null);
+    try {
+      const result = await analyzeSplitFromFile(pending);
+      applyAnalysisResult(result);
+    } catch (err) {
+      setSplitError(err instanceof Error ? err.message : 'Erro inesperado ao analisar o SPLIT.');
+    } finally {
+      setSplitAnalyzing(false);
+    }
+  };
+
+  function makeBayFieldUpdater(setter: React.Dispatch<React.SetStateAction<SplitBayRow[]>>) {
+    return (index: number, field: 'dsDeck' | 'ldDeck' | 'dsHold' | 'ldHold', rawValue: string) => {
+      setter((prev) =>
+        prev.map((row, i) => {
+          if (i !== index) return row;
+          const numeric = rawValue.trim() === '' ? null : Math.max(0, Math.round(Number(rawValue)));
+          const safeNumeric = numeric !== null && Number.isFinite(numeric) ? numeric : null;
+          const next: SplitBayRow = { ...row, [field]: safeNumeric };
+          const discharge = (next.dsDeck ?? 0) + (next.dsHold ?? 0);
+          const load = (next.ldDeck ?? 0) + (next.ldHold ?? 0);
+          // O TOTAL OFICIAL (caixa branca) nunca é recalculado a partir de descarga/embarque.
+          const compositionMismatch = next.total !== null && discharge + load !== next.total;
+          return {
+            ...next,
+            discharge,
+            load,
+            confidence: 1,
+            compositionMismatch,
+            needsReview: next.totalNeedsReview || compositionMismatch,
+          };
+        })
+      );
+    };
+  }
+
+  function makeBayTotalUpdater(setter: React.Dispatch<React.SetStateAction<SplitBayRow[]>>) {
+    return (index: number, rawValue: string) => {
+      setter((prev) =>
+        prev.map((row, i) => {
+          if (i !== index) return row;
+          const numeric = rawValue.trim() === '' ? null : Math.max(0, Math.round(Number(rawValue)));
+          const safeNumeric = numeric !== null && Number.isFinite(numeric) ? numeric : null;
+          const compositionMismatch = safeNumeric !== null && row.discharge + row.load !== safeNumeric;
+          return {
+            ...row,
+            total: safeNumeric,
+            totalConfidence: 1,
+            totalNeedsReview: safeNumeric === null,
+            compositionMismatch,
+            needsReview: safeNumeric === null || compositionMismatch,
+          };
+        })
+      );
+    };
+  }
+
+  const updateSplitBayField = makeBayFieldUpdater(setSplitEditableBays);
+  const updateSplitBayTotal = makeBayTotalUpdater(setSplitEditableBays);
+
+  const onConfirmSplitAnalysis = () => {
+    setSplitConfirmed(true);
+  };
+
+  const onBackToReview = () => {
+    setSplitConfirmed(false);
+    setSplitSelectedBerth(null);
+  };
+
+  const onSaveSplit = () => {
+    if (!splitSelectedBerth || !splitFile || !splitFileHash) return;
+
+    if (splitEditableBays.some((row) => row.total === null)) {
+      setSplitError('Existem bays sem o TOTAL oficial confirmado. Preencha o total (caixa branca) de todas as bays antes de salvar.');
+      return;
+    }
+
+    const record = saveSplitRecord({
+      vessel: splitVesselName.trim() || 'Navio não identificado',
+      voyage: splitVoyage.trim() || null,
+      berth: splitSelectedBerth,
+      totalContainers: splitComputedTotals.totalMoves,
+      totalDischarge: splitComputedTotals.totalDischarge,
+      totalLoad: splitComputedTotals.totalLoad,
+      activeBays: splitComputedTotals.numberOfActiveBays,
+      bayData: splitEditableBays.map(({ bay, dsDeck, ldDeck, dsHold, ldHold, discharge, load, total }) => ({
+        bay,
+        dsDeck,
+        ldDeck,
+        dsHold,
+        ldHold,
+        discharge,
+        load,
+        total: total ?? 0,
+      })),
+      confidence: splitResult?.confidence ?? 1,
+      sourceFileHash: splitFileHash,
+      fileName: splitFile.name,
+    });
+
+    setSplitSavedRecord(record);
+    setSplitRecordsVersion((v) => v + 1);
+  };
+
+  const onStartNewSplitAnalysis = () => {
+    resetSplitFlow();
+    setSplitFile(null);
+    if (splitFileRef.current) splitFileRef.current.value = '';
+  };
+
+  const updateEditBayField = makeBayFieldUpdater(setEditBays);
+  const updateEditBayTotal = makeBayTotalUpdater(setEditBays);
+
+  const editComputedTotals = useMemo(() => {
+    const totalMoves = editBays.reduce((sum, row) => sum + (row.total ?? 0), 0);
+    const totalDischarge = editBays.reduce((sum, row) => sum + row.discharge, 0);
+    const totalLoad = editBays.reduce((sum, row) => sum + row.load, 0);
+    const numberOfActiveBays = editBays.filter((row) => (row.total ?? 0) > 0).length;
+    return { totalDischarge, totalLoad, totalMoves, numberOfActiveBays };
+  }, [editBays]);
+
+  const onStartEditRecord = (record: SplitRecord) => {
+    setDeleteConfirmId(null);
+    setEditingRecord(record);
+    setEditVessel(record.vessel);
+    setEditVoyage(record.voyage || '');
+    setEditBerth(record.berth);
+    setEditBays(
+      record.bayData.map((row) => ({
+        ...row,
+        totalConfidence: 1,
+        totalNeedsReview: row.total === null,
+        compositionMismatch: row.discharge + row.load !== row.total,
+        confidence: 1,
+        needsReview: row.total === null || row.discharge + row.load !== row.total,
+      }))
+    );
+  };
+
+  const onCancelEdit = () => {
+    setEditingRecord(null);
+    setEditBays([]);
+    setEditVessel('');
+    setEditVoyage('');
+    setEditBerth(null);
+  };
+
+  const onSaveEdit = () => {
+    if (!editingRecord || !editBerth) return;
+
+    if (editBays.some((row) => row.total === null)) {
+      setSplitError('Existem bays sem o TOTAL oficial confirmado. Preencha o total (caixa branca) de todas as bays antes de salvar.');
+      return;
+    }
+
+    updateSplitRecord(editingRecord.id, {
+      vessel: editVessel.trim() || 'Navio não identificado',
+      voyage: editVoyage.trim() || null,
+      berth: editBerth,
+      totalContainers: editComputedTotals.totalMoves,
+      totalDischarge: editComputedTotals.totalDischarge,
+      totalLoad: editComputedTotals.totalLoad,
+      activeBays: editComputedTotals.numberOfActiveBays,
+      bayData: editBays.map(({ bay, dsDeck, ldDeck, dsHold, ldHold, discharge, load, total }) => ({
+        bay,
+        dsDeck,
+        ldDeck,
+        dsHold,
+        ldHold,
+        discharge,
+        load,
+        total: total ?? 0,
+      })),
+      confidence: editingRecord.confidence,
+    });
+
+    setSplitRecordsVersion((v) => v + 1);
+    onCancelEdit();
+  };
+
+  const onRequestDelete = (id: string) => {
+    setEditingRecord(null);
+    setDeleteConfirmId(id);
+  };
+
+  const onConfirmDelete = (id: string) => {
+    deleteSplitRecord(id);
+    setSplitRecordsVersion((v) => v + 1);
+    setDeleteConfirmId(null);
+  };
+
+  const onCancelDelete = () => setDeleteConfirmId(null);
 
   // Restaura a ultima analise salva ao reabrir a pagina/app, para nao perder o que ja foi processado.
   useEffect(() => {
@@ -443,8 +796,607 @@ export const PlanejamentoSplit: React.FC = () => {
         )}
       </div>
 
+      {/* ===== Painel Operacional oficial: BTP 1 / BTP 2 / BTP 3 (navio atualmente salvo em cada berço) ===== */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
-        <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Splits Salvos por Berço</h3>
+        <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+          <Anchor className="w-4 h-4 text-cyan-600" /> Painel Operacional - Berços
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {SPLIT_BERTHS.map((berth) => {
+            const record = latestPerBerth[berth];
+            return (
+              <div
+                key={berth}
+                className={`rounded-xl border p-4 ${
+                  record ? 'border-cyan-400 bg-cyan-50/60 dark:bg-cyan-950/20' : 'border-dashed border-slate-200 dark:border-slate-700 opacity-70'
+                }`}
+              >
+                <h4 className="font-black text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{berth}</h4>
+                {record ? (
+                  <div className="space-y-1">
+                    <p className="font-black text-slate-900 dark:text-white text-sm truncate">{record.vessel}</p>
+                    {record.voyage && <p className="text-[11px] text-slate-500">Viagem {record.voyage}</p>}
+                    <div className="flex items-center gap-3 text-[11px] font-bold text-slate-600 dark:text-slate-300 pt-1">
+                      <span>Descarga {record.totalDischarge}</span>
+                      <span>Embarque {record.totalLoad}</span>
+                    </div>
+                    <p className="text-xs font-black text-cyan-700 dark:text-cyan-300">Total {record.totalContainers} · {record.activeBays} bays</p>
+                    <p className="text-[10px] text-slate-400">
+                      {record.updatedAt ? `Editado em ${new Date(record.updatedAt).toLocaleString('pt-BR')}` : new Date(record.createdAt).toLocaleString('pt-BR')}
+                    </p>
+
+                    {deleteConfirmId === record.id ? (
+                      <div className="pt-2 space-y-1.5">
+                        <p className="text-[11px] font-black text-rose-700">Apagar este SPLIT de {berth}?</p>
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => onConfirmDelete(record.id)}
+                            className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-black"
+                          >
+                            Confirmar
+                          </button>
+                          <button
+                            onClick={onCancelDelete}
+                            className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-[11px] font-black text-slate-600 dark:text-slate-300"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-1.5 pt-2">
+                        <button
+                          onClick={() => onStartEditRecord(record)}
+                          className="px-2.5 py-1.5 rounded-lg border border-cyan-300 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300 text-[11px] font-black flex items-center gap-1"
+                        >
+                          <Pencil className="w-3 h-3" /> Editar
+                        </button>
+                        <button
+                          onClick={() => onRequestDelete(record.id)}
+                          className="px-2.5 py-1.5 rounded-lg border border-rose-300 dark:border-rose-900 text-rose-700 dark:text-rose-400 text-[11px] font-black flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" /> Apagar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 font-semibold">Nenhum SPLIT salvo</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {editingRecord && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-cyan-300 dark:border-cyan-800 space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <Pencil className="w-4 h-4 text-cyan-600" /> Editando SPLIT — {editingRecord.berth}
+            </h3>
+            <span className="text-[11px] font-bold text-slate-400">
+              Salvo em {new Date(editingRecord.createdAt).toLocaleString('pt-BR')}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="text-xs font-black text-slate-600 dark:text-slate-300 space-y-1 block">
+              Navio
+              <input
+                value={editVessel}
+                onChange={(e) => setEditVessel(e.target.value)}
+                className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold"
+              />
+            </label>
+            <label className="text-xs font-black text-slate-600 dark:text-slate-300 space-y-1 block">
+              Viagem
+              <input
+                value={editVoyage}
+                onChange={(e) => setEditVoyage(e.target.value)}
+                className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold"
+              />
+            </label>
+          </div>
+
+          <div>
+            <p className="text-xs font-black text-slate-600 dark:text-slate-300 mb-1.5">BERÇO DE ATRACAÇÃO</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {SPLIT_BERTHS.map((berth) => (
+                <button
+                  key={berth}
+                  onClick={() => setEditBerth(berth)}
+                  className={`px-3 py-3 rounded-xl border text-xs font-black flex items-center justify-center gap-2 ${
+                    editBerth === berth
+                      ? 'border-cyan-600 bg-cyan-50 text-cyan-800 dark:bg-cyan-950/30'
+                      : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-cyan-400'
+                  }`}
+                >
+                  <span className={`w-3 h-3 rounded-full border ${editBerth === berth ? 'bg-cyan-600 border-cyan-600' : 'border-slate-400'}`} />
+                  {berth}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {kpi('Total de contêineres', editComputedTotals.totalMoves, 'text-cyan-700')}
+            {kpi('Descarga', editComputedTotals.totalDischarge)}
+            {kpi('Embarque', editComputedTotals.totalLoad)}
+            {kpi('Bays em operação', editComputedTotals.numberOfActiveBays)}
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[820px] text-xs">
+              <thead>
+                <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                  <th className="text-left p-2">Bay</th>
+                  <th className="text-right p-2">Total oficial</th>
+                  <th className="text-right p-2">DS-DECK</th>
+                  <th className="text-right p-2">LD-DECK</th>
+                  <th className="text-right p-2">DS-HOLD</th>
+                  <th className="text-right p-2">LD-HOLD</th>
+                  <th className="text-right p-2">Descarga</th>
+                  <th className="text-right p-2">Embarque</th>
+                </tr>
+              </thead>
+              <tbody>
+                {editBays.map((row, idx) => (
+                  <tr
+                    key={`${row.bay}-${idx}`}
+                    className={`border-b border-slate-200 dark:border-slate-700 ${row.compositionMismatch ? 'bg-amber-50/70 dark:bg-amber-950/20' : ''}`}
+                  >
+                    <td className="p-2 font-black">BAY {row.bay}</td>
+                    <td className="p-1 text-right">
+                      <input
+                        type="number"
+                        min={0}
+                        value={row.total ?? ''}
+                        placeholder={row.total === null ? '?' : ''}
+                        onChange={(e) => updateEditBayTotal(idx, e.target.value)}
+                        className="w-20 text-right px-1.5 py-1 rounded-lg border border-cyan-300 dark:border-cyan-800 bg-white dark:bg-slate-800 text-xs font-black"
+                      />
+                    </td>
+                    {(['dsDeck', 'ldDeck', 'dsHold', 'ldHold'] as const).map((field) => (
+                      <td key={field} className="p-1 text-right">
+                        <input
+                          type="number"
+                          min={0}
+                          value={row[field] ?? ''}
+                          placeholder={row[field] === null ? '?' : ''}
+                          onChange={(e) => updateEditBayField(idx, field, e.target.value)}
+                          className="w-16 text-right px-1.5 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold"
+                        />
+                      </td>
+                    ))}
+                    <td className={`p-2 text-right font-bold ${row.compositionMismatch ? 'text-amber-600' : ''}`}>{row.discharge}</td>
+                    <td className={`p-2 text-right font-bold ${row.compositionMismatch ? 'text-amber-600' : ''}`}>{row.load}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex justify-between items-center pt-1">
+            <button onClick={onCancelEdit} className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-black text-slate-600 dark:text-slate-300">
+              Cancelar
+            </button>
+            <button
+              disabled={!editBerth}
+              onClick={onSaveEdit}
+              className="px-5 py-2.5 rounded-xl bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white text-xs font-black flex items-center gap-1.5"
+            >
+              <CheckCircle2 className="w-4 h-4" /> SALVAR ALTERAÇÕES
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Novo SPLIT: analisa SOMENTE a página 1 (perfil longitudinal do navio) ===== */}
+      <div
+        className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={onSplitDrop}
+      >
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <FileJson className="w-4 h-4 text-cyan-600" /> Novo SPLIT
+          </h3>
+          {splitResult && (
+            <span className="text-[11px] font-bold text-slate-400">
+              Região:{' '}
+              {splitResult.regionSource === 'text-anchors'
+                ? 'âncoras de texto (confiável)'
+                : splitResult.regionSource === 'vision-fallback'
+                ? 'visão computacional (fallback)'
+                : 'página inteira (revisar)'}
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-slate-400 font-medium mt-1">
+          Analisa somente a página 1 e o recorte do perfil do navio (DS-DECK/LD-DECK/DS-HOLD/LD-HOLD). Páginas 2+ e demais tabelas são ignoradas.
+        </p>
+
+        {!splitSavedRecord && !splitConfirmed && (
+          <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-6 text-center space-y-3 mt-3">
+            <UploadCloud className="w-10 h-10 text-cyan-700 mx-auto" />
+            <p className="text-sm font-black text-slate-700 dark:text-slate-200">Arraste o PDF de Split aqui</p>
+            <p className="text-xs text-slate-400">ou selecione manualmente</p>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <button
+                onClick={() => splitFileRef.current?.click()}
+                className="px-4 py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white font-black text-xs rounded-xl transition-all"
+              >
+                Selecionar Arquivo
+              </button>
+              <button
+                disabled={!splitFile || splitAnalyzing}
+                onClick={onAnalyzeSplitClick}
+                className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-black text-xs rounded-xl transition-all"
+              >
+                {splitAnalyzing ? 'Analisando...' : 'Analisar SPLIT'}
+              </button>
+            </div>
+            <input
+              ref={splitFileRef}
+              type="file"
+              accept="application/pdf"
+              className="hidden"
+              onChange={() => onSplitFileSelected()}
+            />
+            {splitFile && <p className="text-xs font-semibold text-slate-500">Arquivo: {splitFile.name}</p>}
+          </div>
+        )}
+
+        {splitError && (
+          <div className="mt-3 p-3 rounded-xl border border-rose-300 bg-rose-50 text-rose-700 text-xs font-black">
+            Erro: {splitError}
+          </div>
+        )}
+
+        {splitDuplicateRecord && (
+          <div className="mt-3 p-4 rounded-xl border border-amber-300 bg-amber-50 space-y-2">
+            <p className="text-xs font-black text-amber-800 flex items-center gap-1.5">
+              <ShieldAlert className="w-4 h-4" /> Este SPLIT já foi analisado anteriormente.
+            </p>
+            <div className="text-xs font-semibold text-amber-800 space-y-0.5">
+              <p>Navio: {splitDuplicateRecord.vessel}</p>
+              <p>Data/hora: {new Date(splitDuplicateRecord.createdAt).toLocaleString('pt-BR')}</p>
+              <p>Berço: {splitDuplicateRecord.berth}</p>
+              <p>
+                Resultado salvo: Total {splitDuplicateRecord.totalContainers} (Descarga {splitDuplicateRecord.totalDischarge} / Embarque{' '}
+                {splitDuplicateRecord.totalLoad})
+              </p>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button onClick={onOpenSavedDuplicate} className="px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-black">
+                ABRIR ANÁLISE SALVA
+              </button>
+              <button onClick={onReanalyzeAnyway} className="px-3 py-2 rounded-lg bg-white border border-amber-400 text-amber-800 text-xs font-black">
+                ANALISAR NOVAMENTE
+              </button>
+            </div>
+          </div>
+        )}
+
+        {splitAnalyzing && (
+          <div className="mt-3 p-3 rounded-xl bg-sky-50 border border-sky-200 text-sky-700 text-xs font-black">
+            Lendo somente a página 1 e o perfil do navio...
+          </div>
+        )}
+
+        {splitResult && !splitSavedRecord && (
+          <div className="mt-4 space-y-4">
+            <div className="text-sm font-black text-slate-900 dark:text-white">SPLIT ANALISADO</div>
+
+            <div
+              className={`p-3 rounded-xl border text-xs font-black ${
+                splitResult.needsReview ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-emerald-50 border-emerald-300 text-emerald-800'
+              }`}
+            >
+              {splitResult.needsReview ? 'Leitura do SPLIT precisa de confirmação.' : 'Leitura concluída com boa confiança.'} Confiança geral:{' '}
+              {Math.round(splitResult.confidence * 100)}%
+            </div>
+
+            {splitResult.warnings.length > 0 && (
+              <div className="p-3 rounded-xl border border-amber-200 bg-amber-50/60 text-[11px] text-amber-800 font-semibold space-y-1">
+                {splitResult.warnings.map((w, idx) => (
+                  <p key={idx}>- {w}</p>
+                ))}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="text-xs font-black text-slate-600 dark:text-slate-300 space-y-1 block">
+                Navio
+                <input
+                  value={splitVesselName}
+                  onChange={(e) => setSplitVesselName(e.target.value)}
+                  disabled={splitConfirmed}
+                  className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold disabled:opacity-70"
+                />
+              </label>
+              <label className="text-xs font-black text-slate-600 dark:text-slate-300 space-y-1 block">
+                Viagem
+                <input
+                  value={splitVoyage}
+                  onChange={(e) => setSplitVoyage(e.target.value)}
+                  disabled={splitConfirmed}
+                  className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold disabled:opacity-70"
+                />
+              </label>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {kpi('Total de contêineres', splitComputedTotals.totalMoves, 'text-cyan-700')}
+              {kpi('Descarga', splitComputedTotals.totalDischarge)}
+              {kpi('Embarque', splitComputedTotals.totalLoad)}
+              {kpi('Bays em operação', splitComputedTotals.numberOfActiveBays)}
+            </div>
+
+            {splitChartData.length > 0 && (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={splitChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="bay" tickFormatter={(bay: string) => `BAY ${bay}`} />
+                    <YAxis />
+                    <Tooltip labelFormatter={(bay) => `BAY ${bay}`} />
+                    <Legend />
+                    <Bar dataKey="descarga" fill="#16a34a" name="Descarga" />
+                    <Bar dataKey="embarque" fill="#7c3aed" name="Embarque" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[820px] text-xs">
+                <thead>
+                  <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    <th className="text-left p-2">Bay</th>
+                    <th className="text-right p-2">Total oficial</th>
+                    <th className="text-right p-2">DS-DECK</th>
+                    <th className="text-right p-2">LD-DECK</th>
+                    <th className="text-right p-2">DS-HOLD</th>
+                    <th className="text-right p-2">LD-HOLD</th>
+                    <th className="text-right p-2">Descarga</th>
+                    <th className="text-right p-2">Embarque</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {splitEditableBays.map((row, idx) => (
+                    <tr
+                      key={`${row.bay}-${idx}`}
+                      className={`border-b border-slate-200 dark:border-slate-700 ${row.needsReview ? 'bg-amber-50/70 dark:bg-amber-950/20' : ''}`}
+                    >
+                      <td className="p-2 font-black">BAY {row.bay}</td>
+                      <td className="p-1 text-right">
+                        <input
+                          type="number"
+                          min={0}
+                          value={row.total ?? ''}
+                          placeholder={row.total === null ? '?' : ''}
+                          disabled={splitConfirmed}
+                          onChange={(e) => updateSplitBayTotal(idx, e.target.value)}
+                          className={`w-20 text-right px-1.5 py-1 rounded-lg border text-xs font-black disabled:opacity-70 ${
+                            row.totalNeedsReview ? 'border-amber-400 bg-amber-50' : 'border-cyan-300 dark:border-cyan-800 bg-white dark:bg-slate-800'
+                          }`}
+                        />
+                      </td>
+                      {(['dsDeck', 'ldDeck', 'dsHold', 'ldHold'] as const).map((field) => (
+                        <td key={field} className="p-1 text-right">
+                          <input
+                            type="number"
+                            min={0}
+                            value={row[field] ?? ''}
+                            placeholder={row[field] === null ? '?' : ''}
+                            disabled={splitConfirmed}
+                            onChange={(e) => updateSplitBayField(idx, field, e.target.value)}
+                            className={`w-16 text-right px-1.5 py-1 rounded-lg border text-xs font-bold disabled:opacity-70 ${
+                              row[field] === null ? 'border-amber-400 bg-amber-50' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800'
+                            }`}
+                          />
+                        </td>
+                      ))}
+                      <td className={`p-2 text-right font-bold ${row.compositionMismatch ? 'text-amber-600' : ''}`}>{row.discharge}</td>
+                      <td className={`p-2 text-right font-bold ${row.compositionMismatch ? 'text-amber-600' : ''}`}>{row.load}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {splitEditableBays.some((row) => row.compositionMismatch) && (
+              <p className="text-[11px] text-amber-700 font-bold">
+                Bays com fundo destacado: a soma de descarga+embarque não bate com o TOTAL OFICIAL (caixa branca). O total oficial foi mantido —
+                confirme manualmente a composição (descarga/embarque) dessas bays.
+              </p>
+            )}
+            <p className="text-[11px] text-slate-400 font-semibold">
+              O TOTAL OFICIAL de cada bay vem da linha de caixas brancas acima do perfil do navio — nunca é recalculado a partir de
+              DS-DECK/LD-DECK/DS-HOLD/LD-HOLD. Campos em destaque (?) não puderam ser confirmados automaticamente — confira visualmente e corrija
+              antes de confirmar.
+            </p>
+
+            {splitResult.croppedImageDataUrl && (
+              <div>
+                <button
+                  onClick={() => setSplitShowCrop((v) => !v)}
+                  className="text-[11px] font-black text-cyan-700 flex items-center gap-1"
+                >
+                  {splitShowCrop ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}{' '}
+                  {splitShowCrop ? 'Ocultar recorte analisado' : 'Ver recorte analisado (perfil do navio)'}
+                </button>
+                {splitShowCrop && (
+                  <img
+                    src={splitResult.croppedImageDataUrl}
+                    alt="Perfil do navio recortado"
+                    className="mt-2 w-full rounded-xl border border-slate-200 dark:border-slate-700"
+                  />
+                )}
+              </div>
+            )}
+
+            {!splitConfirmed ? (
+              <div className="flex justify-end">
+                <button
+                  onClick={onConfirmSplitAnalysis}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" /> CONFIRMAR ANÁLISE
+                </button>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                <p className="text-xs font-black text-slate-700 dark:text-slate-200">BERÇO DE ATRACAÇÃO</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {SPLIT_BERTHS.map((berth) => (
+                    <button
+                      key={berth}
+                      onClick={() => setSplitSelectedBerth(berth)}
+                      className={`px-3 py-3 rounded-xl border text-xs font-black flex items-center justify-center gap-2 ${
+                        splitSelectedBerth === berth
+                          ? 'border-cyan-600 bg-cyan-50 text-cyan-800 dark:bg-cyan-950/30'
+                          : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-cyan-400'
+                      }`}
+                    >
+                      <span className={`w-3 h-3 rounded-full border ${splitSelectedBerth === berth ? 'bg-cyan-600 border-cyan-600' : 'border-slate-400'}`} />
+                      {berth}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex justify-between items-center pt-2">
+                  <button onClick={onBackToReview} className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-black text-slate-600 dark:text-slate-300">
+                    Voltar e corrigir
+                  </button>
+                  <button
+                    disabled={!splitSelectedBerth}
+                    onClick={onSaveSplit}
+                    className="px-5 py-2.5 rounded-xl bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white text-xs font-black"
+                  >
+                    SALVAR SPLIT
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {splitSavedRecord && (
+          <div className="mt-4 p-4 rounded-xl border border-emerald-300 bg-emerald-50 space-y-2">
+            <p className="text-xs font-black text-emerald-800 flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4" /> SPLIT salvo em {splitSavedRecord.berth}
+            </p>
+            <div className="text-xs font-semibold text-emerald-900 space-y-0.5">
+              <p>
+                Navio: {splitSavedRecord.vessel}
+                {splitSavedRecord.voyage ? ` · Viagem ${splitSavedRecord.voyage}` : ''}
+              </p>
+              <p>
+                Total: {splitSavedRecord.totalContainers} (Descarga {splitSavedRecord.totalDischarge} / Embarque {splitSavedRecord.totalLoad})
+              </p>
+              <p>Bays em operação: {splitSavedRecord.activeBays}</p>
+              <p>{new Date(splitSavedRecord.createdAt).toLocaleString('pt-BR')}</p>
+            </div>
+            <button
+              onClick={onStartNewSplitAnalysis}
+              className="mt-1 px-3 py-2 rounded-lg bg-white border border-emerald-400 text-emerald-800 text-xs font-black flex items-center gap-1.5"
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> Analisar novo arquivo
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ===== Histórico por berço (registros independentes) ===== */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+          <h3 className="text-sm font-black text-slate-900 dark:text-white">SPLITS SALVOS</h3>
+          <div className="flex gap-1.5 flex-wrap">
+            {(['TODOS', ...SPLIT_BERTHS] as const).map((filterKey) => (
+              <button
+                key={filterKey}
+                onClick={() => setSplitHistoryFilter(filterKey)}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-black ${
+                  splitHistoryFilter === filterKey ? 'bg-cyan-700 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                {filterKey}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {splitHistoryRecords.length === 0 ? (
+          <p className="text-xs text-slate-400 font-semibold">Nenhum SPLIT salvo ainda.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {splitHistoryRecords.map((record) => (
+              <div key={record.id} className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                <p className="text-[10px] font-black uppercase tracking-wider text-cyan-700">{record.berth}</p>
+                <p className="font-black text-sm text-slate-900 dark:text-white truncate">{record.vessel}</p>
+                <p className="text-[11px] font-bold text-slate-500">
+                  Split: Descarga {record.totalDischarge} / Embarque {record.totalLoad}
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  {new Date(record.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} ·{' '}
+                  {new Date(record.createdAt).toLocaleDateString('pt-BR')}
+                  {record.updatedAt ? ' · editado' : ''}
+                </p>
+
+                {deleteConfirmId === record.id ? (
+                  <div className="pt-2 space-y-1.5">
+                    <p className="text-[11px] font-black text-rose-700">Apagar este registro?</p>
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => onConfirmDelete(record.id)}
+                        className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-black"
+                      >
+                        Confirmar
+                      </button>
+                      <button
+                        onClick={onCancelDelete}
+                        className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-[11px] font-black text-slate-600 dark:text-slate-300"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-1.5 pt-2">
+                    <button
+                      onClick={() => onStartEditRecord(record)}
+                      className="px-2.5 py-1.5 rounded-lg border border-cyan-300 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300 text-[11px] font-black flex items-center gap-1"
+                    >
+                      <Pencil className="w-3 h-3" /> Editar
+                    </button>
+                    <button
+                      onClick={() => onRequestDelete(record.id)}
+                      className="px-2.5 py-1.5 rounded-lg border border-rose-300 dark:border-rose-900 text-rose-700 dark:text-rose-400 text-[11px] font-black flex items-center gap-1"
+                    >
+                      <Trash2 className="w-3 h-3" /> Apagar
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-center">
+        <button
+          onClick={() => setShowLegacyMode((v) => !v)}
+          className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-black text-slate-500 dark:text-slate-400 flex items-center gap-1.5"
+        >
+          <Wrench className="w-3.5 h-3.5" /> {showLegacyMode ? 'Ocultar Modo Legado' : 'Modo Legado (análise multi-página / IA — somente inspeção)'}
+        </button>
+      </div>
+
+      {showLegacyMode && (
+      <>
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+        <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Splits Salvos por Berço (legado)</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {BERTH_CARDS.map((berthKey) => {
             const entry = berthCache[berthKey];
@@ -1008,6 +1960,8 @@ export const PlanejamentoSplit: React.FC = () => {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 };

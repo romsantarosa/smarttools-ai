@@ -126,7 +126,7 @@ Comece a extração:`,
       generationConfig: {
         temperature: 0.1, // Baixa temperatura para máxima consistência
         topP: 0.95,
-        maxOutputTokens: 8192, // páginas com tabelas densas (ex.: perfil de carga) truncavam em 4096
+        maxOutputTokens: 16384, // páginas com tabelas densas (ex.: perfil de carga) truncavam em 4096
       },
     };
 
@@ -369,7 +369,7 @@ Regras:
         generationConfig: {
           temperature: 0.2,
           responseMimeType: 'application/json',
-          maxOutputTokens: 2048,
+          maxOutputTokens: 8192,
           responseSchema: {
             type: 'OBJECT',
             properties: {
@@ -654,7 +654,7 @@ Regras:
         generationConfig: {
           temperature: 0.2,
           responseMimeType: 'application/json',
-          maxOutputTokens: 8192,
+          maxOutputTokens: 24576,
           responseSchema: {
             type: 'OBJECT',
             properties: {
@@ -797,6 +797,654 @@ export async function extractBayColumnSummaryFromImage(
   }
 
   return lastResult as GeminiBayColumnSummaryResult;
+}
+
+export interface ShipProfileBoundingBox {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+export interface ShipProfileBoundingBoxResult {
+  box: ShipProfileBoundingBox | null;
+  confidence: number;
+  error?: string;
+}
+
+/**
+ * Usado SOMENTE como fallback quando o PDF não tem texto nativo suficiente
+ * para localizar as âncoras (DS-DECK/LD-DECK/DS-HOLD/LD-HOLD + linha de bays)
+ * por posição. A IA aqui NUNCA lê números de contêiner — só devolve as
+ * coordenadas (normalizadas 0-1) do retângulo do perfil longitudinal do
+ * navio, para o código recortar a imagem. Temperature 0 para reprodutibilidade.
+ */
+async function detectShipProfileBoundingBoxOnce(
+  imageBase64: string,
+  mimeType: string
+): Promise<ShipProfileBoundingBoxResult> {
+  try {
+    const apiKey = validateGeminiApiKey();
+
+    const prompt = `Esta é a página 1 de um documento operacional portuário (Split de plano de estiva).
+
+Localize APENAS a região que contém o PERFIL LONGITUDINAL DO NAVIO (o desenho do casco do navio
+visto de lado, dividido em colunas verticais por BAY). Essa região (parte do "QC Plan") contém,
+de cima para baixo: uma linha de CAIXAS BRANCAS com o total de movimentos de cada bay, DS-DECK,
+LD-DECK, (linha do navio — um DESENHO/SILHUETA colorida do casco do navio aparece à direita dessas
+duas linhas), DS-HOLD, LD-HOLD, e uma linha de números de BAY (ex: 70, 66, 62, 58, ... 02).
+INCLUA a linha de caixas brancas do total no topo da região.
+
+ATENÇÃO — ARMADILHA COMUM: logo ABAIXO dessa linha de números de bay, quase colada, existe uma
+SEGUNDA tabela com os MESMOS rótulos (DS-DECK/DS-HOLD/LD-DECK/LD-HOLD, possivelmente em outra
+ordem) — mas essa segunda tabela é de atribuição de guindaste/turno, tem células cinza com
+padrão de hachura em X e números pequenos, e NÃO tem a silhueta do navio ao lado. NÃO inclua essa
+segunda tabela na região retornada — pare exatamente na linha de números de bay que vem logo
+depois de DS-HOLD/LD-HOLD da região correta (a que tem a silhueta do navio).
+
+NÃO inclua nesta região: a segunda tabela de guindaste/turno descrita acima, Crane Coverage,
+gráfico de horários, tabelas de Discharging/Loading, tabelas laterais, BBK, Embarque Direto, ou
+qualquer texto fora do perfil do navio.
+
+Retorne SOMENTE JSON válido, sem texto adicional, neste formato:
+{
+  "box": { "x0": number, "y0": number, "x1": number, "y1": number },
+  "confidence": number de 0 a 1
+}
+
+As coordenadas x0,y0 (canto superior-esquerdo) e x1,y1 (canto inferior-direito) devem ser
+NORMALIZADAS entre 0 e 1 em relação à largura/altura da imagem inteira.
+
+IMPORTANTE: SEMPRE retorne sua MELHOR ESTIMATIVA da região, mesmo que não tenha certeza absoluta
+das bordas exatas — é preferível uma estimativa aproximada (com confidence baixo refletindo a
+incerteza) a retornar "box": null. Só retorne "box": null se o perfil do navio genuinamente NÃO
+estiver visível em nenhuma parte desta imagem.`;
+
+    const response = await fetch(GEMINI_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              { inlineData: { mimeType, data: imageBase64 } },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: 'application/json',
+          maxOutputTokens: 1024,
+          responseSchema: {
+            type: 'OBJECT',
+            properties: {
+              box: {
+                type: 'OBJECT',
+                nullable: true,
+                properties: {
+                  x0: { type: 'NUMBER' },
+                  y0: { type: 'NUMBER' },
+                  x1: { type: 'NUMBER' },
+                  y1: { type: 'NUMBER' },
+                },
+              },
+              confidence: { type: 'NUMBER' },
+            },
+            required: ['confidence'],
+          },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      return { box: null, confidence: 0, error: `Gemini API error: HTTP ${response.status}` };
+    }
+
+    const data = await response.json();
+    const parts = data?.candidates?.[0]?.content?.parts;
+    const text = Array.isArray(parts) ? parts.map((part: any) => part?.text || '').join('') : '';
+    if (!text) {
+      return { box: null, confidence: 0, error: 'Resposta vazia da IA ao localizar o perfil do navio.' };
+    }
+
+    const parsed = JSON.parse(text);
+    const rawBox = parsed?.box;
+    const isValidBox =
+      rawBox &&
+      [rawBox.x0, rawBox.y0, rawBox.x1, rawBox.y1].every((v) => typeof v === 'number' && v >= 0 && v <= 1) &&
+      rawBox.x1 > rawBox.x0 &&
+      rawBox.y1 > rawBox.y0;
+
+    return {
+      box: isValidBox ? { x0: rawBox.x0, y0: rawBox.y0, x1: rawBox.x1, y1: rawBox.y1 } : null,
+      confidence: typeof parsed?.confidence === 'number' ? parsed.confidence : 0,
+    };
+  } catch (error) {
+    return {
+      box: null,
+      confidence: 0,
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao localizar o perfil do navio.',
+    };
+  }
+}
+
+/**
+ * Tenta até 3 vezes: assim como as demais leituras de visão desta pipeline,
+ * essa chamada falha de forma intermitente (às vezes devolve box null, às
+ * vezes acerta, na MESMA imagem, sem nenhuma mudança). Sem retry, um PDF
+ * podia cair no fallback de "página inteira" só por azar da rodada.
+ */
+export async function detectShipProfileBoundingBox(
+  imageBase64: string,
+  mimeType: string = 'image/png'
+): Promise<ShipProfileBoundingBoxResult> {
+  const maxAttempts = 3;
+  let lastResult: ShipProfileBoundingBoxResult | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const result = await detectShipProfileBoundingBoxOnce(imageBase64, mimeType);
+    lastResult = result;
+
+    if (result.box) {
+      return result;
+    }
+
+    console.warn(`[geminiService] detectShipProfileBoundingBox: tentativa ${attempt}/${maxAttempts} sem região identificada.`, result.error);
+
+    if (attempt < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, 1500 * attempt));
+    }
+  }
+
+  return lastResult as ShipProfileBoundingBoxResult;
+}
+
+export type SplitBayArea = 'DS-DECK' | 'LD-DECK' | 'DS-HOLD' | 'LD-HOLD';
+
+export interface SplitBayReading {
+  columnIndex: number;
+  area: SplitBayArea;
+  quantidade: number | null;
+  confidence: number;
+}
+
+export interface SplitBayReadingsResult {
+  readings: SplitBayReading[];
+  bayLabelsDetected: string[];
+  confidence: number;
+  error?: string;
+}
+
+const SPLIT_BAY_AREAS: SplitBayArea[] = ['DS-DECK', 'LD-DECK', 'DS-HOLD', 'LD-HOLD'];
+
+/**
+ * Lê os números de contêiner das 4 faixas (DS-DECK/LD-DECK/DS-HOLD/LD-HOLD) de
+ * uma imagem JÁ RECORTADA contendo somente o perfil longitudinal do navio.
+ *
+ * IMPORTANTE (determinismo/segurança):
+ * - temperature 0 (sem variação criativa).
+ * - A IA NUNCA soma, divide ou associa número->bay: ela só devolve o número
+ *   que enxerga em cada coluna/área, na ORDEM posicional esquerda->direita
+ *   (columnIndex). A associação columnIndex -> rótulo de bay é feita pelo
+ *   código (buildBaySplitAnalysis), usando a lista de bays já detectada por
+ *   âncoras de texto (ou, na falta delas, pela própria ordem que a IA lista
+ *   as colunas, mas o código quem decide o rótulo final).
+ * - Se não conseguir confirmar um número, deve retornar quantidade: null e
+ *   confidence baixa — nunca estimar ou inventar.
+ */
+async function extractBaySplitReadingsOnce(
+  imageBase64: string,
+  mimeType: string,
+  bayOrderHint: string[]
+): Promise<SplitBayReadingsResult> {
+  try {
+    const apiKey = validateGeminiApiKey();
+
+    const hintText = bayOrderHint.length > 0
+      ? `A lista de bays já identificada nesta imagem, da ESQUERDA para a DIREITA, é: ${bayOrderHint.join(', ')}. Use essa quantidade de colunas como referência, mas leia os números que realmente aparecem em cada coluna.`
+      : 'Identifique você mesmo os rótulos de bay na linha inferior, da esquerda para a direita.';
+
+    const prompt = `Esta imagem é um recorte contendo o perfil longitudinal de um navio em um documento
+operacional portuário (Split de plano de estiva). Pode existir, no topo do recorte, uma linha de
+CAIXAS BRANCAS com o TOTAL de cada bay — IGNORE essa linha nesta tarefa (ela é lida separadamente).
+Abaixo dela ficam as 4 faixas horizontais empilhadas que você deve ler aqui:
+1) DS-DECK (primeira faixa colorida)
+2) LD-DECK
+--- linha do casco do navio ---
+3) DS-HOLD
+4) LD-HOLD (base, acima da numeração de bays)
+
+${hintText}
+
+Para CADA coluna de bay (da esquerda para a direita, começando em columnIndex=0) e para CADA uma das
+4 áreas (DS-DECK, LD-DECK, DS-HOLD, LD-HOLD), leia o número visível naquela célula.
+
+IMPORTANTE sobre a letra "C" dentro de uma célula: "C" significa "Completo" — ou seja, aquela
+sequência de trabalho já foi CONCLUÍDA. "C" NÃO significa célula vazia e NÃO significa quantidade
+zero. Uma célula marcada com "C" ainda representa uma quantidade real de contêineres que foi
+movimentada; o número da quantidade pode aparecer junto com o "C" (leia esse número normalmente,
+ignorando apenas a letra "C" ao lado dele) ou pode ter sido substituído visualmente pelo "C". Se você
+conseguir ler algum dígito numérico na célula (mesmo ao lado de "C"), retorne esse número. Se a célula
+mostrar SOMENTE a letra "C" sem nenhum dígito visível, NÃO retorne 0 — retorne quantidade: null e
+confidence abaixo de 0.5, sinalizando que o valor real precisa ser confirmado manualmente (célula
+concluída, mas quantidade não visível para leitura).
+
+Também podem aparecer pequenos números de sequência de trabalho (1, 2, 3, 4, 5...) na parte inferior
+de cada bay — esses são a ORDEM das etapas de operação daquela bay, não a quantidade de contêineres.
+IGNORE esses números de sequência nesta tarefa; leia apenas a quantidade de contêineres de cada célula
+DS-DECK/LD-DECK/DS-HOLD/LD-HOLD.
+
+Regras OBRIGATÓRIAS:
+- NUNCA invente ou estime um número que não esteja visualmente presente.
+- Se a célula estiver GENUINAMENTE vazia (sem número, sem "C", sem nenhuma marca), retorne
+  quantidade: 0 com confidence 0.95+.
+- Se houver um número mas ele estiver ilegível/ambíguo, retorne quantidade: null e confidence abaixo de 0.5.
+- NÃO calcule somas, totais ou médias. Apenas leia célula por célula.
+- NÃO pule colunas: inclua todas as colunas visíveis na imagem, mesmo vazias.
+- NÃO leia a linha de caixas brancas do total — apenas as 4 faixas DS-DECK/LD-DECK/DS-HOLD/LD-HOLD.
+
+Retorne SOMENTE JSON válido, sem texto adicional:
+{
+  "bayLabelsDetected": ["70", "66", "62", ...],
+  "readings": [
+    { "columnIndex": 0, "area": "DS-DECK", "quantidade": number|null, "confidence": number },
+    { "columnIndex": 0, "area": "LD-DECK", "quantidade": number|null, "confidence": number },
+    { "columnIndex": 0, "area": "DS-HOLD", "quantidade": number|null, "confidence": number },
+    { "columnIndex": 0, "area": "LD-HOLD", "quantidade": number|null, "confidence": number }
+  ],
+  "confidence": number de 0 a 1 (confiança geral da leitura)
+}`;
+
+    const response = await fetch(GEMINI_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              { inlineData: { mimeType, data: imageBase64 } },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0,
+          responseMimeType: 'application/json',
+          maxOutputTokens: 32768,
+          responseSchema: {
+            type: 'OBJECT',
+            properties: {
+              bayLabelsDetected: { type: 'ARRAY', items: { type: 'STRING' } },
+              readings: {
+                type: 'ARRAY',
+                items: {
+                  type: 'OBJECT',
+                  properties: {
+                    columnIndex: { type: 'NUMBER' },
+                    area: { type: 'STRING' },
+                    quantidade: { type: 'NUMBER', nullable: true },
+                    confidence: { type: 'NUMBER' },
+                  },
+                  required: ['columnIndex', 'area', 'confidence'],
+                },
+              },
+              confidence: { type: 'NUMBER' },
+            },
+            required: ['readings', 'bayLabelsDetected', 'confidence'],
+          },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      let errorDetail = `HTTP ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorDetail = `HTTP ${response.status} - ${JSON.stringify(errorData)}`;
+      } catch {
+        // resposta sem corpo JSON
+      }
+      return { readings: [], bayLabelsDetected: [], confidence: 0, error: `Gemini API error: ${errorDetail}` };
+    }
+
+    const data = await response.json();
+    const finishReason = data?.candidates?.[0]?.finishReason;
+    const parts = data?.candidates?.[0]?.content?.parts;
+    const text = Array.isArray(parts) ? parts.map((part: any) => part?.text || '').join('') : '';
+
+    if (!text) {
+      return {
+        readings: [],
+        bayLabelsDetected: [],
+        confidence: 0,
+        error: `Resposta vazia da IA ao ler o perfil de bays. finishReason: ${finishReason || 'desconhecido'}`,
+      };
+    }
+
+    if (finishReason && finishReason !== 'STOP') {
+      return {
+        readings: [],
+        bayLabelsDetected: [],
+        confidence: 0,
+        error: `Geração interrompida antes de terminar (finishReason: ${finishReason}).`,
+      };
+    }
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(text);
+    } catch (firstError) {
+      try {
+        const jsonBlockMatch = text.match(/\{[\s\S]*\}/);
+        const candidate = (jsonBlockMatch ? jsonBlockMatch[0] : text)
+          .replace(/```json/gi, '')
+          .replace(/```/g, '')
+          .replace(/,(\s*[}\]])/g, '$1');
+        parsed = JSON.parse(candidate);
+      } catch (secondError) {
+        return {
+          readings: [],
+          bayLabelsDetected: [],
+          confidence: 0,
+          error: `Falha ao interpretar JSON da IA: ${firstError instanceof Error ? firstError.message : 'erro desconhecido'}.`,
+        };
+      }
+    }
+
+    const validAreas = new Set(SPLIT_BAY_AREAS);
+    const readings: SplitBayReading[] = Array.isArray(parsed?.readings)
+      ? parsed.readings
+          .filter((raw: any) => validAreas.has(raw?.area))
+          .map((raw: any) => {
+            const quantidade = typeof raw?.quantidade === 'number' && Number.isFinite(raw.quantidade) && raw.quantidade >= 0
+              ? Math.round(raw.quantidade)
+              : null;
+            return {
+              columnIndex: typeof raw?.columnIndex === 'number' ? raw.columnIndex : -1,
+              area: raw.area as SplitBayArea,
+              quantidade,
+              confidence: typeof raw?.confidence === 'number' ? raw.confidence : 0,
+            };
+          })
+          .filter((reading: SplitBayReading) => reading.columnIndex >= 0)
+      : [];
+
+    const bayLabelsDetected: string[] = Array.isArray(parsed?.bayLabelsDetected)
+      ? parsed.bayLabelsDetected.map((label: any) => String(label))
+      : [];
+
+    return {
+      readings,
+      bayLabelsDetected,
+      confidence: typeof parsed?.confidence === 'number' ? parsed.confidence : 0,
+    };
+  } catch (error) {
+    return {
+      readings: [],
+      bayLabelsDetected: [],
+      confidence: 0,
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao ler o perfil de bays.',
+    };
+  }
+}
+
+/**
+ * Uma única tentativa "limpa" por padrão (temperature 0 já é reprodutível).
+ * Só repete em caso de FALHA DE TRANSPORTE/PARSE (erro/resposta vazia) — nunca
+ * por "baixa confiança", para não aceitar silenciosamente um resultado
+ * diferente do primeiro em cima do mesmo arquivo.
+ */
+export async function extractBaySplitReadings(
+  imageBase64: string,
+  mimeType: string = 'image/png',
+  bayOrderHint: string[] = []
+): Promise<SplitBayReadingsResult> {
+  const maxAttempts = 2;
+  let lastResult: SplitBayReadingsResult | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const result = await extractBaySplitReadingsOnce(imageBase64, mimeType, bayOrderHint);
+    lastResult = result;
+
+    if (!result.error) {
+      return result;
+    }
+
+    console.warn(`[geminiService] extractBaySplitReadings: tentativa ${attempt}/${maxAttempts} falhou.`, result.error);
+
+    if (attempt < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, 1500 * attempt));
+    }
+  }
+
+  return lastResult as SplitBayReadingsResult;
+}
+
+export interface BayTotalReading {
+  columnIndex: number;
+  quantidade: number | null;
+  confidence: number;
+}
+
+export interface BayTotalRowResult {
+  totals: BayTotalReading[];
+  bayLabelsDetected: string[];
+  confidence: number;
+  error?: string;
+}
+
+/**
+ * Lê a LINHA DE CAIXAS BRANCAS com o TOTAL OFICIAL de cada bay, localizada
+ * imediatamente ACIMA da faixa DS-DECK no perfil longitudinal do navio.
+ *
+ * Esse total é a referência OFICIAL da bay (não é DS-DECK+LD-DECK+DS-HOLD+LD-HOLD
+ * somados pela IA) — ele já vem impresso na própria caixa branca do documento.
+ * Usado apenas quando o texto nativo do PDF não permite ler essa linha
+ * diretamente (ver `detectRegionFromTextAnchors` em splitBayReaderService.ts,
+ * que é sempre preferido por ser 100% determinístico). temperature 0.
+ */
+async function extractBayTotalRowOnce(
+  imageBase64: string,
+  mimeType: string,
+  bayOrderHint: string[]
+): Promise<BayTotalRowResult> {
+  try {
+    const apiKey = validateGeminiApiKey();
+
+    const hintText = bayOrderHint.length > 0
+      ? `A lista de bays já identificada nesta imagem, da ESQUERDA para a DIREITA, é: ${bayOrderHint.join(', ')}. Use essa quantidade de colunas como referência.`
+      : 'Identifique você mesmo quantas colunas de bay existem, da esquerda para a direita.';
+
+    const prompt = `Esta imagem é um recorte da página 1 de um documento operacional portuário (Split de plano de estiva).
+
+Existe uma LINHA DE CAIXAS BRANCAS com borda preta, uma caixa por coluna de bay, localizada
+IMEDIATAMENTE ACIMA da primeira faixa colorida (DS-DECK) do perfil longitudinal do navio.
+Cada caixa branca contém o NÚMERO TOTAL DE MOVIMENTOS daquela bay (descarga + embarque já somados).
+
+Leia SOMENTE essa linha de caixas brancas. NÃO leia DS-DECK/LD-DECK/DS-HOLD/LD-HOLD nesta tarefa.
+
+${hintText}
+
+Regras OBRIGATÓRIAS:
+- Para cada coluna, da esquerda para a direita (columnIndex começando em 0), leia o número dentro
+  da caixa branca correspondente.
+- Caixa vazia = quantidade 0, confidence 0.95+ (célula vazia = zero, não é dúvida).
+- Número ilegível/ambíguo = quantidade null, confidence abaixo de 0.5.
+- NUNCA calcule, some ou infira esse total a partir de outras faixas — leia SOMENTE o número já
+  impresso na própria caixa branca.
+- NÃO pule colunas: inclua todas as colunas visíveis, mesmo vazias.
+
+Retorne SOMENTE JSON válido, sem texto adicional:
+{
+  "bayLabelsDetected": ["70", "66", "62", ...],
+  "totals": [ { "columnIndex": 0, "quantidade": number|null, "confidence": number } ],
+  "confidence": number de 0 a 1 (confiança geral da leitura)
+}`;
+
+    const response = await fetch(GEMINI_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              { inlineData: { mimeType, data: imageBase64 } },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0,
+          responseMimeType: 'application/json',
+          maxOutputTokens: 16384,
+          responseSchema: {
+            type: 'OBJECT',
+            properties: {
+              bayLabelsDetected: { type: 'ARRAY', items: { type: 'STRING' } },
+              totals: {
+                type: 'ARRAY',
+                items: {
+                  type: 'OBJECT',
+                  properties: {
+                    columnIndex: { type: 'NUMBER' },
+                    quantidade: { type: 'NUMBER', nullable: true },
+                    confidence: { type: 'NUMBER' },
+                  },
+                  required: ['columnIndex', 'confidence'],
+                },
+              },
+              confidence: { type: 'NUMBER' },
+            },
+            required: ['totals', 'bayLabelsDetected', 'confidence'],
+          },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      let errorDetail = `HTTP ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorDetail = `HTTP ${response.status} - ${JSON.stringify(errorData)}`;
+      } catch {
+        // resposta sem corpo JSON
+      }
+      return { totals: [], bayLabelsDetected: [], confidence: 0, error: `Gemini API error: ${errorDetail}` };
+    }
+
+    const data = await response.json();
+    const finishReason = data?.candidates?.[0]?.finishReason;
+    const parts = data?.candidates?.[0]?.content?.parts;
+    const text = Array.isArray(parts) ? parts.map((part: any) => part?.text || '').join('') : '';
+
+    if (!text) {
+      return {
+        totals: [],
+        bayLabelsDetected: [],
+        confidence: 0,
+        error: `Resposta vazia da IA ao ler a linha de totais das bays. finishReason: ${finishReason || 'desconhecido'}`,
+      };
+    }
+
+    if (finishReason && finishReason !== 'STOP') {
+      return {
+        totals: [],
+        bayLabelsDetected: [],
+        confidence: 0,
+        error: `Geração interrompida antes de terminar (finishReason: ${finishReason}).`,
+      };
+    }
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(text);
+    } catch (firstError) {
+      try {
+        const jsonBlockMatch = text.match(/\{[\s\S]*\}/);
+        const candidate = (jsonBlockMatch ? jsonBlockMatch[0] : text)
+          .replace(/```json/gi, '')
+          .replace(/```/g, '')
+          .replace(/,(\s*[}\]])/g, '$1');
+        parsed = JSON.parse(candidate);
+      } catch (secondError) {
+        return {
+          totals: [],
+          bayLabelsDetected: [],
+          confidence: 0,
+          error: `Falha ao interpretar JSON da IA: ${firstError instanceof Error ? firstError.message : 'erro desconhecido'}.`,
+        };
+      }
+    }
+
+    const totals: BayTotalReading[] = Array.isArray(parsed?.totals)
+      ? parsed.totals
+          .map((raw: any) => {
+            const quantidade = typeof raw?.quantidade === 'number' && Number.isFinite(raw.quantidade) && raw.quantidade >= 0
+              ? Math.round(raw.quantidade)
+              : null;
+            return {
+              columnIndex: typeof raw?.columnIndex === 'number' ? raw.columnIndex : -1,
+              quantidade,
+              confidence: typeof raw?.confidence === 'number' ? raw.confidence : 0,
+            };
+          })
+          .filter((reading: BayTotalReading) => reading.columnIndex >= 0)
+      : [];
+
+    const bayLabelsDetected: string[] = Array.isArray(parsed?.bayLabelsDetected)
+      ? parsed.bayLabelsDetected.map((label: any) => String(label))
+      : [];
+
+    return {
+      totals,
+      bayLabelsDetected,
+      confidence: typeof parsed?.confidence === 'number' ? parsed.confidence : 0,
+    };
+  } catch (error) {
+    return {
+      totals: [],
+      bayLabelsDetected: [],
+      confidence: 0,
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao ler a linha de totais das bays.',
+    };
+  }
+}
+
+/** Mesma política de retry das demais leituras determinísticas: só repete em falha de transporte/parse. */
+export async function extractBayTotalRow(
+  imageBase64: string,
+  mimeType: string = 'image/png',
+  bayOrderHint: string[] = []
+): Promise<BayTotalRowResult> {
+  const maxAttempts = 2;
+  let lastResult: BayTotalRowResult | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const result = await extractBayTotalRowOnce(imageBase64, mimeType, bayOrderHint);
+    lastResult = result;
+
+    if (!result.error) {
+      return result;
+    }
+
+    console.warn(`[geminiService] extractBayTotalRow: tentativa ${attempt}/${maxAttempts} falhou.`, result.error);
+
+    if (attempt < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, 1500 * attempt));
+    }
+  }
+
+  return lastResult as BayTotalRowResult;
 }
 
 export default extractTextFromImageWithGemini;

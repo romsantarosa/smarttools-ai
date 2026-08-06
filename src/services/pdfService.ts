@@ -399,6 +399,72 @@ function setProgress(onProgress: ((pct: number) => void) | undefined, pct: numbe
   }
 }
 
+export interface Page1TextItem {
+  str: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface Page1RenderResult {
+  imageDataUrl: string;
+  width: number;
+  height: number;
+  scale: number;
+  textItems: Page1TextItem[];
+}
+
+/**
+ * Renderiza SOMENTE a página 1 do PDF (nunca as demais) e retorna os itens de
+ * texto nativo já convertidos para o mesmo espaço de coordenadas em pixels da
+ * imagem renderizada (origem no canto superior-esquerdo). Usado pelo leitor
+ * determinístico de SPLIT, que não deve analisar o documento inteiro.
+ */
+export async function extractFirstPageForBayProfile(file: File, scale: number = 3.0): Promise<Page1RenderResult> {
+  const doc = await loadPdfDocument(file);
+  const page = await doc.getPage(1);
+  const viewport = page.getViewport({ scale });
+
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    throw new Error('Não foi possível obter contexto 2D do canvas.');
+  }
+
+  await page.render({ canvasContext: context, viewport }).promise;
+  const imageDataUrl = canvas.toDataURL('image/png', 0.95);
+
+  const content = await page.getTextContent();
+  const textItems: Page1TextItem[] = content.items
+    .map((item: any) => {
+      const text = String(item.str || '').trim();
+      if (!text) return null;
+      const transform = Array.isArray(item.transform) ? item.transform : [0, 0, 0, 0, 0, 0];
+      const [vx, vy] = viewport.convertToViewportPoint(transform[4] || 0, transform[5] || 0);
+      const itemHeight = Math.hypot(transform[2] || 0, transform[3] || 0) * scale || 10 * scale;
+      const itemWidth = (item.width || text.length * 4) * scale;
+      return {
+        str: text,
+        x: vx,
+        y: vy - itemHeight,
+        width: itemWidth,
+        height: itemHeight,
+      };
+    })
+    .filter((item): item is Page1TextItem => item !== null);
+
+  return {
+    imageDataUrl,
+    width: viewport.width,
+    height: viewport.height,
+    scale,
+    textItems,
+  };
+}
+
 /**
  * Função legada para compatibilidade com código existente
  */
