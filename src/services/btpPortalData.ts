@@ -276,6 +276,32 @@ export function getStatusRank(status: string): number {
   return 5;
 }
 
+export const BTP_BERTHS = ['BTP 1', 'BTP 2', 'BTP 3'] as const;
+
+export interface BerthSlot {
+  berco: string;
+  atracado: BtpScheduleRecord | null;
+  proximo: BtpScheduleRecord | null;
+}
+
+export function getBerthSlots(records: BtpScheduleRecord[]): BerthSlot[] {
+  return BTP_BERTHS.map((berco) => {
+    const forThisBerth = records.filter((record) => getDisplayBerco(record) === berco);
+
+    const atracado = forThisBerth.find((record) => getPortalStatusLabel(record) === 'Atracado') || null;
+
+    const proximo =
+      forThisBerth
+        .filter((record) => {
+          const status = getPortalStatusLabel(record);
+          return (status === 'Previsto' || status === 'Na Barra') && Boolean(parsePortalDateTime(record.etb));
+        })
+        .sort((a, b) => parsePortalDateTime(a.etb)!.getTime() - parsePortalDateTime(b.etb)!.getTime())[0] || null;
+
+    return { berco, atracado, proximo };
+  });
+}
+
 export function toOperationalShipSnapshot(record: BtpScheduleRecord): BtpOperationalShipSnapshot {
   return {
     ...record,
