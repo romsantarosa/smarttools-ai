@@ -10,7 +10,7 @@ import {
 import {
   fetchSharedBtpSchedule,
   formatPortalDateTime,
-  getDisplayBerco,
+  getBerthSlots,
   getPortalStatusLabel,
   useSharedBtpSchedule,
 } from '../services/btpPortalData';
@@ -21,21 +21,12 @@ export const AtracacaoSaida: React.FC = () => {
 
   const records = sharedState.records || [];
 
-  const atracados = useMemo(() => {
-    return records
-      .filter((record) => getPortalStatusLabel(record) === 'Atracado')
-      .sort((a, b) => {
-        const rankA = Number((getDisplayBerco(a).match(/(\d+)/)?.[1] || '999'));
-        const rankB = Number((getDisplayBerco(b).match(/(\d+)/)?.[1] || '999'));
+  const berthSlots = useMemo(() => getBerthSlots(records), [records]);
 
-        if (rankA !== rankB) return rankA - rankB;
-        return (a.navio || '').localeCompare(b.navio || '');
-      });
-  }, [records]);
-
-  const occupiedBerths = useMemo(() => {
-    return new Set(atracados.map((ship) => getDisplayBerco(ship)).filter(Boolean)).size;
-  }, [atracados]);
+  const occupiedBerths = useMemo(
+    () => berthSlots.filter((slot) => slot.atracado !== null).length,
+    [berthSlots]
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -78,7 +69,7 @@ export const AtracacaoSaida: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Navios atracados</p>
-          <p className="text-xl font-black text-slate-900 dark:text-white">{atracados.length}</p>
+          <p className="text-xl font-black text-slate-900 dark:text-white">{occupiedBerths}</p>
         </div>
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Berços ocupados</p>
@@ -102,76 +93,90 @@ export const AtracacaoSaida: React.FC = () => {
         </div>
       )}
 
-      {!loading && !error && atracados.length === 0 && (
-        <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-400 font-semibold text-[11px]">
-          Nenhum navio atracado encontrado no momento.
-        </div>
-      )}
+      {!loading && !error && (
+        <div>
+          <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4">
+            Navios Atracados
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {berthSlots.map((slot) => {
+              const ship = slot.atracado;
 
-      {!loading && !error && atracados.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {atracados.map((ship, index) => {
-            const atracacao = formatPortalDateTime(`${ship.dataatracacao || ''} ${ship.horaatracacao || ''}`.trim());
-            const previsaoSaida = formatPortalDateTime(ship.etd || ship.saidaPrevista || '');
-            const inicioOperacao = formatPortalDateTime(ship.inicioOperacao || '');
-
-            return (
-              <div
-                key={`${ship.navio}-${ship.viagem}-${index}`}
-                className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">Navio</p>
-                    <h3 className="font-black text-sm text-slate-900 dark:text-white">{ship.navio || '-'}</h3>
+              if (!ship) {
+                return (
+                  <div
+                    key={slot.berco}
+                    className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-5 flex flex-col items-center justify-center text-center gap-2 min-h-[220px]"
+                  >
+                    <Anchor className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                    <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">{slot.berco}</p>
+                    <p className="text-sm font-black text-slate-400 dark:text-slate-500">Berço livre</p>
                   </div>
-                  <span className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[11px] font-black">
-                    ATRACADO
-                  </span>
+                );
+              }
+
+              const atracacao = formatPortalDateTime(`${ship.dataatracacao || ''} ${ship.horaatracacao || ''}`.trim());
+              const previsaoSaida = formatPortalDateTime(ship.etd || ship.saidaPrevista || '');
+              const inicioOperacao = formatPortalDateTime(ship.inicioOperacao || '');
+
+              return (
+                <div
+                  key={slot.berco}
+                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">Navio</p>
+                      <h3 className="font-black text-sm text-slate-900 dark:text-white">{ship.navio || '-'}</h3>
+                    </div>
+                    <span className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[11px] font-black">
+                      ATRACADO
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-[11px] text-slate-600 dark:text-slate-300">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">Armador</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{ship.armador || '-'}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">Berço</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{slot.berco}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">Viagem</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{ship.viagem || '-'}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 p-3 text-[11px]">
+                    <div className="flex items-center gap-2 text-slate-500">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span className="font-semibold">Atracação</span>
+                    </div>
+                    <div className="font-bold text-slate-900 dark:text-white">{atracacao || '-'}</div>
+
+                    <div className="flex items-center gap-2 text-slate-500 mt-2">
+                      <Anchor className="w-3.5 h-3.5" />
+                      <span className="font-semibold">Início operação</span>
+                    </div>
+                    <div className="font-bold text-slate-900 dark:text-white">{inicioOperacao || '-'}</div>
+
+                    <div className="flex items-center gap-2 text-slate-500 mt-2">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span className="font-semibold">Saída prevista</span>
+                    </div>
+                    <div className="font-bold text-slate-900 dark:text-white">{previsaoSaida || '-'}</div>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3 text-[11px] text-slate-500">
+                    <span>Status</span>
+                    <span className="font-black text-slate-900 dark:text-white">{getPortalStatusLabel(ship)}</span>
+                  </div>
                 </div>
-
-                <div className="space-y-2 text-[11px] text-slate-600 dark:text-slate-300">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">Armador</span>
-                    <span className="font-bold text-slate-900 dark:text-white">{ship.armador || '-'}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">Berço</span>
-                    <span className="font-bold text-slate-900 dark:text-white">{getDisplayBerco(ship)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">Viagem</span>
-                    <span className="font-bold text-slate-900 dark:text-white">{ship.viagem || '-'}</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 p-3 text-[11px]">
-                  <div className="flex items-center gap-2 text-slate-500">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span className="font-semibold">Atracação</span>
-                  </div>
-                  <div className="font-bold text-slate-900 dark:text-white">{atracacao || '-'}</div>
-
-                  <div className="flex items-center gap-2 text-slate-500 mt-2">
-                    <Anchor className="w-3.5 h-3.5" />
-                    <span className="font-semibold">Início operação</span>
-                  </div>
-                  <div className="font-bold text-slate-900 dark:text-white">{inicioOperacao || '-'}</div>
-
-                  <div className="flex items-center gap-2 text-slate-500 mt-2">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span className="font-semibold">Saída prevista</span>
-                  </div>
-                  <div className="font-bold text-slate-900 dark:text-white">{previsaoSaida || '-'}</div>
-                </div>
-
-                <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3 text-[11px] text-slate-500">
-                  <span>Status</span>
-                  <span className="font-black text-slate-900 dark:text-white">{getPortalStatusLabel(ship)}</span>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
