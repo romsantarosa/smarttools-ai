@@ -28,6 +28,11 @@ export const AtracacaoSaida: React.FC = () => {
     [berthSlots]
   );
 
+  const atracadosTotal = useMemo(
+    () => records.filter((record) => getPortalStatusLabel(record) === 'Atracado').length,
+    [records]
+  );
+
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -51,7 +56,7 @@ export const AtracacaoSaida: React.FC = () => {
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Atracação / Saída de Navios</h1>
             <p className="text-xs sm:text-sm text-slate-300 font-medium">
-              Exibe apenas os navios efetivamente atracados no terminal, com base na mesma fonte do Portal BTP usada pela Programação BTP.
+              Painel dos 3 berços do terminal: navio atracado agora e próximo navio previsto em cada berço, com base na mesma fonte do Portal BTP usada pela Programação BTP.
             </p>
           </div>
 
@@ -69,7 +74,7 @@ export const AtracacaoSaida: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Navios atracados</p>
-          <p className="text-xl font-black text-slate-900 dark:text-white">{occupiedBerths}</p>
+          <p className="text-xl font-black text-slate-900 dark:text-white">{atracadosTotal}</p>
         </div>
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Berços ocupados</p>
@@ -77,11 +82,19 @@ export const AtracacaoSaida: React.FC = () => {
         </div>
       </div>
 
+      {!loading && !error && atracadosTotal > occupiedBerths && (
+        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+          <p className="text-[11px] text-amber-800 dark:text-amber-300 font-semibold">
+            {atracadosTotal - occupiedBerths} navio(s) atracado(s) sem berço identificado — verifique a integração com o Portal BTP.
+          </p>
+        </div>
+      )}
 
       {loading && (
         <div className="p-10 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
           <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-3" />
-          <p className="text-xs font-bold text-slate-500">Carregando navios atracados do Portal BTP...</p>
+          <p className="text-xs font-bold text-slate-500">Carregando dados do Portal BTP...</p>
         </div>
       )}
 
