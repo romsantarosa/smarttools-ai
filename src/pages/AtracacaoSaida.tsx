@@ -179,6 +179,69 @@ export const AtracacaoSaida: React.FC = () => {
           </div>
         </div>
       )}
+
+      {!loading && !error && (
+        <div>
+          <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4">
+            Próximo Navio
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {berthSlots.map((slot) => {
+              const ship = slot.proximo;
+
+              if (!ship) {
+                return (
+                  <div
+                    key={`proximo-${slot.berco}`}
+                    className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-5 flex flex-col items-center justify-center text-center gap-2 min-h-[180px]"
+                  >
+                    <Clock className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                    <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">{slot.berco}</p>
+                    <p className="text-sm font-black text-slate-400 dark:text-slate-500">Nenhum navio previsto</p>
+                  </div>
+                );
+              }
+
+              const etb = formatPortalDateTime(ship.etb);
+              const status = getPortalStatusLabel(ship);
+
+              return (
+                <div
+                  key={`proximo-${slot.berco}`}
+                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">{slot.berco}</p>
+                      <h3 className="font-black text-sm text-slate-900 dark:text-white">{ship.navio || '-'}</h3>
+                    </div>
+                    <span className="px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 text-[11px] font-black">
+                      {status.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-[11px] text-slate-600 dark:text-slate-300">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">Armador</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{ship.armador || '-'}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">Viagem</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{ship.viagem || '-'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 border-t border-slate-100 dark:border-slate-800 pt-3 text-[11px] text-slate-500">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span className="font-semibold">ETB previsto</span>
+                    <span className="ml-auto font-black text-slate-900 dark:text-white">{etb || '-'}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
