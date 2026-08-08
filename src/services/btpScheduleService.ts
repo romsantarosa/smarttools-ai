@@ -210,6 +210,13 @@ async function fetchRapDetailsMap(page: Page, records: BtpScheduleRecord[]): Pro
   return detailMap;
 }
 
+// Rótulos das colunas de cabeçalho, para comparação EXATA (célula inteira),
+// não por substring: um teste de substring (ex.: /rap/i.test(cell)) também
+// casa com nomes de navio reais como "SAN RAPHAEL MAERSK" (contém "RAP"
+// dentro de "RAPHAEL"), fazendo a linha inteira ser descartada como se fosse
+// o cabeçalho da tabela — bug real já confirmado com esse navio específico.
+const HEADER_CELL_LABELS = new Set(['rap', 'navio', 'viagem', 'agência', 'agencia', 'serviço', 'servico']);
+
 export function parseBtpScheduleRows(rows: string[][]): BtpScheduleRecord[] {
   const records: BtpScheduleRecord[] = [];
 
@@ -218,7 +225,7 @@ export function parseBtpScheduleRows(rows: string[][]): BtpScheduleRecord[] {
     const hasData = normalizedCells.some((cell) => cell.length > 0);
     if (!hasData) return;
 
-    const isHeader = normalizedCells.some((cell) => /navio|viagem|agência|serviço|rap/i.test(cell));
+    const isHeader = normalizedCells.some((cell) => HEADER_CELL_LABELS.has(cell.toLowerCase()));
     if (isHeader) return;
 
     const [rap, navio, viagem, armador, eta, chegada, etb, atracacao, etd, saida, gateDry, gateReefer, deadline, servico] = normalizedCells;
