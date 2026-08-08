@@ -141,22 +141,62 @@ se mostrar mais, é sinal de bug na classificação de status (ver seção
   "boa", com a silhueta do navio), existe uma SEGUNDA tabela quase colada
   com os MESMOS rótulos DS-DECK/DS-HOLD/LD-DECK/LD-HOLD** — é uma tabela de
   atribuição de guindaste/turno, com células cinza em hachura X e números
-  pequenos, sem a silhueta do navio ao lado. Confirmado presente em pelo
-  menos dois documentos reais de operadores diferentes — parece ser padrão
-  do formato, não coincidência de um documento só. Essa ambiguidade visual
-  já causou falha real de localização por IA (`detectShipProfileBoundingBox`
-  em `geminiService.ts`, usado só quando não há âncoras de texto nativo):
-  confiança baixa/região errada levando ao fallback de página inteira, que
-  por sua vez gerou leitura completamente errada (total lido 1720 quando o
-  documento mostrava 1658 no resumo lateral). O prompt já foi ajustado para
-  descrever essa armadilha explicitamente; se voltar a acontecer, o próximo
-  passo é revisar o crop de fato enviado (`croppedImageDataUrl` no resultado
-  da análise) para confirmar se a região ainda inclui a tabela errada.
+  pequenos, sem a silhueta do navio ao lado. Confirmado presente em vários
+  documentos reais de operadores diferentes (BREMERHAVEN EXPRESS, MAERSK
+  LETICIA) — é padrão do formato, não coincidência de um documento só.
+  **Só descrever a armadilha em texto no prompt de localização
+  (`detectShipProfileBoundingBoxOnce`) NÃO é suficiente** — confirmado
+  reproduzindo em dois documentos diferentes que o recorte devolvido
+  continuava incluindo a tabela inteira mesmo com a instrução explícita
+  ("NÃO inclua..."), e a IA chegava a ler os números pequenos de sequência
+  dessa tabela como se fossem quantidade real de contêiner (contaminando
+  DS-DECK/DS-HOLD com valores errados). A correção definitiva foi
+  **programática, não só de prompt**: depois do recorte inicial, quando a
+  região não veio das âncoras de texto (`regionSource !== 'text-anchors'`),
+  `analyzeSplitFromFile` roda uma segunda checagem dedicada
+  (`detectDecoyGridBoundary` em `geminiService.ts`) perguntando SÓ "essa
+  tabela de guindaste apareceu aqui, e em que altura ela começa" — uma
+  pergunta de identificação positiva isolada, bem mais confiável que uma
+  instrução negativa dentro de um prompt de localização maior — e o CÓDIGO
+  recorta a imagem nessa fronteira antes de mandar pra leitura. Lição geral:
+  **quando uma instrução negativa dentro de um prompt maior falhar de forma
+  repetível, isolar em uma segunda chamada dedicada de identificação
+  positiva tende a resolver onde o prompt-engineering sozinho não resolveu.**
+- **Quando não há âncoras de texto nativo (`bayOrderHint` vazio), as leituras
+  de composição (`extractBaySplitReadings`) e de totais oficiais
+  (`extractBayTotalRow`) NUNCA podem rodar em paralelo cada uma adivinhando
+  sozinha a lista de bays** — bug real já confirmado: como bays sem carga
+  (total 0) podem ser puladas por uma chamada e não pela outra, os
+  `columnIndex` das duas leituras saem de sincronia, e como `buildBayRows`
+  junta os resultados só por posição, isso cola o total oficial na bay
+  ERRADA (confirmado comparando com a soma "ALL" impressa no próprio
+  documento — o app fechava em 1720, o documento mostrava 1658, e totais
+  individuais como o da bay 50 apareciam colados em outra bay). Corrigido em
+  `analyzeSplitFromFile` (`splitBayReaderService.ts`): quando falta
+  `bayOrderHint`, as chamadas agora rodam em SEQUÊNCIA — primeiro
+  `extractBaySplitReadings`, depois usa o `bayLabelsDetected` dela como hint
+  (agora com linguagem "use EXATAMENTE essas colunas, não pule/reordene") da
+  chamada de totais, garantindo que as duas usem a mesma indexação. Só
+  paraleliza quando já existe um `bayOrderHint` confiável vindo de âncoras de
+  texto (mesmo hint pras duas chamadas, sem risco de desalinhamento).
 - **"C" dentro de uma célula do perfil do navio (DS-DECK/LD-DECK/DS-HOLD/
   LD-HOLD) significa "Completo"** (a sequência de trabalho já terminou) —
   **não** significa célula vazia nem quantidade zero.
 - Pequenos números (1, 2, 3, 4, 5...) na parte inferior de cada bay são a
   **ordem das etapas de trabalho**, não quantidade de contêiner.
+- **Células "twin" (dois números lado a lado DENTRO da mesma célula, ex.:
+  "14 | 14", "24 | 24", "8 | 8") representam dois contêineres de 20' dividindo
+  o mesmo slot da bay (twin-lock)** — a quantidade real da célula é a SOMA dos
+  dois números, não um dos dois isolado. Confirmado visualmente na linha
+  LD-HOLD de um documento real (BREMERHAVEN EXPRESS). O prompt de
+  `extractBaySplitReadingsOnce` (`geminiService.ts`) pedia só "leia o número
+  da célula" (singular) — sem instrução explícita pra somar os dois lados do
+  twin, a IA provavelmente lia só um lado, o que é mais uma causa (além do
+  bug de desalinhamento de `columnIndex` acima) da composição
+  (DS-DECK+LD-DECK+DS-HOLD+LD-HOLD) sair sistematicamente menor que o total
+  oficial. Prompt já ajustado para somar os dois lados do twin; ainda não
+  confirmado em produção (chave do Gemini no `.env` está inválida/placeholder
+  no momento — não deu pra testar contra a API real).
 - Tabelas de alerta (carga sensível, reefers, embarque de flat vazio,
   excessos, descarga direta — geralmente páginas 4-5) cobrem **só os
   contêineres com alguma flag especial**, não o navio inteiro — não usar como

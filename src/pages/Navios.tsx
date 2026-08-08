@@ -200,28 +200,28 @@ export const Navios: React.FC = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-      {/* Header Banner - SAP Fiori Style */}
-      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-slate-800">
-        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
-        
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 dark:from-tc-bg dark:via-tc-surface-1 dark:to-tc-bg rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-slate-800 dark:border-tc-border">
+        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-blue-600/10 dark:bg-tc-accent/10 rounded-full blur-3xl pointer-events-none" />
+
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <span className="px-3 py-1 rounded-full bg-blue-500/20 dark:bg-tc-accent-soft text-blue-300 dark:text-tc-accent border border-blue-400/30 dark:border-tc-border text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <Database className="w-3.5 h-3.5" />
                 Base de Dados Operacional BTP
               </span>
-              <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold">
+              <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 dark:bg-tc-good-soft text-emerald-300 dark:text-tc-good border border-emerald-500/30 dark:border-tc-good-line text-[11px] font-bold font-mono dark:font-mono-tc">
                 {totalShips > 0 ? `${totalShips} navios cadastrados` : 'Nenhum navio cadastrado'}
               </span>
             </div>
 
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-3">
-              <Ship className="w-8 h-8 text-blue-400" />
+              <Ship className="w-8 h-8 text-blue-400 dark:text-tc-accent" />
               <span>Guia & Ficha Técnica de Navios</span>
             </h1>
 
-            <p className="text-[11px] sm:text-xs text-slate-300 max-w-2xl font-medium leading-relaxed">
+            <p className="text-[11px] sm:text-xs text-slate-300 dark:text-tc-ink-2 max-w-2xl font-medium leading-relaxed">
               Consulte especificações de peação, tipo de castanha, modelo de macaco e alertas de segurança para o trancamento e destrancamento seguro a bordo dos navios atracados no Terminal BTP.
             </p>
           </div>
@@ -229,14 +229,14 @@ export const Navios: React.FC = () => {
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={handleOpenAddModal}
-              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-[11px] rounded-xl transition-all shadow-md flex items-center gap-2 hover:scale-102 active:scale-98"
+              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 dark:bg-tc-accent dark:hover:opacity-90 dark:text-tc-bg text-white font-black text-[11px] rounded-xl transition-all shadow-md flex items-center gap-2 hover:scale-102 active:scale-98"
             >
               <Plus className="w-4 h-4" />
               <span>Cadastrar Novo Navio</span>
             </button>
             <button
               onClick={() => navigate('/')}
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] rounded-xl border border-slate-700 transition-all flex items-center gap-2"
+              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 dark:bg-tc-surface-2 dark:hover:bg-tc-surface-3 text-slate-200 dark:text-tc-ink-2 font-bold text-[11px] rounded-xl border border-slate-700 dark:border-tc-border transition-all flex items-center gap-2"
             >
               <span>Ir para Painel Operacional</span>
               <ChevronRight className="w-4 h-4" />
@@ -246,8 +246,8 @@ export const Navios: React.FC = () => {
 
         {/* Dock Notification Banner */}
         {dockNotification && (
-          <div className="mt-4 p-3 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-emerald-200 text-[11px] font-bold flex items-center gap-2 animate-fade-in">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div className="mt-4 p-3 bg-emerald-500/20 dark:bg-tc-good-soft border border-emerald-500/40 dark:border-tc-good-line rounded-xl text-emerald-200 dark:text-tc-good text-[11px] font-bold flex items-center gap-2 animate-fade-in">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 dark:text-tc-good shrink-0" />
             <span>{dockNotification}</span>
           </div>
         )}
@@ -255,64 +255,64 @@ export const Navios: React.FC = () => {
 
       {/* Stats Summary Widgets */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-          <div className="p-3 bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-xl">
+        <div className="p-4 rounded-2xl bg-white dark:bg-tc-surface-2 border border-slate-200 dark:border-tc-border shadow-xs flex items-center gap-3">
+          <div className="p-3 bg-blue-100 dark:bg-tc-accent-soft text-blue-600 dark:text-tc-accent rounded-xl">
             <Ship className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Navios</span>
-            <span className="text-lg font-black text-slate-900 dark:text-white">{totalShips}</span>
+            <span className="text-[10px] font-bold text-slate-400 dark:text-tc-ink-3 uppercase tracking-wider block">Total Navios</span>
+            <span className="text-lg font-black text-slate-900 dark:text-tc-ink-1 font-mono dark:font-mono-tc">{totalShips}</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-          <div className="p-3 bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 rounded-xl">
+        <div className="p-4 rounded-2xl bg-white dark:bg-tc-surface-2 border border-slate-200 dark:border-tc-border shadow-xs flex items-center gap-3">
+          <div className="p-3 bg-amber-100 dark:bg-tc-warning-soft text-amber-600 dark:text-tc-warning rounded-xl">
             <Anchor className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pé de Galinha</span>
-            <span className="text-lg font-black text-slate-900 dark:text-white">{countPeDeGalinha}</span>
+            <span className="text-[10px] font-bold text-slate-400 dark:text-tc-ink-3 uppercase tracking-wider block">Pé de Galinha</span>
+            <span className="text-lg font-black text-slate-900 dark:text-tc-ink-1 font-mono dark:font-mono-tc">{countPeDeGalinha}</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-          <div className="p-3 bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-xl">
+        <div className="p-4 rounded-2xl bg-white dark:bg-tc-surface-2 border border-slate-200 dark:border-tc-border shadow-xs flex items-center gap-3">
+          <div className="p-3 bg-indigo-100 dark:bg-tc-accent-soft text-indigo-600 dark:text-tc-accent rounded-xl">
             <RefreshCw className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Automática</span>
-            <span className="text-lg font-black text-slate-900 dark:text-white">{countAutomatica}</span>
+            <span className="text-[10px] font-bold text-slate-400 dark:text-tc-ink-3 uppercase tracking-wider block">Automática</span>
+            <span className="text-lg font-black text-slate-900 dark:text-tc-ink-1 font-mono dark:font-mono-tc">{countAutomatica}</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-          <div className="p-3 bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 rounded-xl">
+        <div className="p-4 rounded-2xl bg-white dark:bg-tc-surface-2 border border-slate-200 dark:border-tc-border shadow-xs flex items-center gap-3">
+          <div className="p-3 bg-rose-100 dark:bg-tc-critical-soft text-rose-600 dark:text-tc-critical rounded-xl">
             <ShieldAlert className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Com Alertas</span>
-            <span className="text-lg font-black text-slate-900 dark:text-white">{countWithWarnings}</span>
+            <span className="text-[10px] font-bold text-slate-400 dark:text-tc-ink-3 uppercase tracking-wider block">Com Alertas</span>
+            <span className="text-lg font-black text-slate-900 dark:text-tc-ink-1 font-mono dark:font-mono-tc">{countWithWarnings}</span>
           </div>
         </div>
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+      <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-tc-border shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
           {/* Search Input Field */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-tc-ink-3" />
             <input
               type="text"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder="Pesquisar navio por nome, tipo de castanha, macaco ou detalhes (ex: AMERICO, MAERSK, MSC, SAN, ZIM)..."
-              className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-[11px] font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-slate-900 dark:text-tc-ink-1 text-[11px] font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-tc-accent transition-all"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-tc-ink-3 hover:text-slate-600 dark:hover:text-tc-ink-1"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -321,15 +321,15 @@ export const Navios: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
             {/* Filter by Castanha */}
-            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
-              <span className="text-[11px] font-bold text-slate-500 pl-2">Castanha:</span>
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-tc-surface-1 p-1.5 rounded-xl border border-slate-200 dark:border-tc-border">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-tc-ink-3 pl-2">Castanha:</span>
               <select
                 value={selectedCastanhaFilter}
                 onChange={e => setSelectedCastanhaFilter(e.target.value)}
-                className="bg-transparent text-slate-900 dark:text-white font-bold text-xs focus:outline-none cursor-pointer pr-1"
+                className="bg-transparent text-slate-900 dark:text-tc-ink-1 font-bold text-xs focus:outline-none cursor-pointer pr-1"
               >
                 {castanhaOptions.map(opt => (
-                  <option key={opt} value={opt} className="bg-white dark:bg-slate-900">
+                  <option key={opt} value={opt} className="bg-white dark:bg-tc-surface-1">
                     {opt}
                   </option>
                 ))}
@@ -337,15 +337,15 @@ export const Navios: React.FC = () => {
             </div>
 
             {/* Filter by Macaco */}
-            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
-              <span className="text-[11px] font-bold text-slate-500 pl-2">Macaco:</span>
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-tc-surface-1 p-1.5 rounded-xl border border-slate-200 dark:border-tc-border">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-tc-ink-3 pl-2">Macaco:</span>
               <select
                 value={selectedMacacoFilter}
                 onChange={e => setSelectedMacacoFilter(e.target.value)}
-                className="bg-transparent text-slate-900 dark:text-white font-bold text-xs focus:outline-none cursor-pointer pr-1"
+                className="bg-transparent text-slate-900 dark:text-tc-ink-1 font-bold text-xs focus:outline-none cursor-pointer pr-1"
               >
                 {macacoOptions.map(opt => (
-                  <option key={opt} value={opt} className="bg-white dark:bg-slate-900">
+                  <option key={opt} value={opt} className="bg-white dark:bg-tc-surface-1">
                     {opt}
                   </option>
                 ))}
@@ -355,13 +355,13 @@ export const Navios: React.FC = () => {
         </div>
 
         {/* Toggle Filter Badges */}
-        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100 dark:border-tc-border-soft">
           <button
             onClick={() => setOnlyPeDeGalinhaFilter(!onlyPeDeGalinhaFilter)}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
               onlyPeDeGalinhaFilter
-                ? 'bg-amber-600 text-white shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                ? 'bg-amber-600 dark:bg-tc-warning dark:text-tc-bg text-white shadow-xs'
+                : 'bg-slate-100 dark:bg-tc-surface-1 text-slate-600 dark:text-tc-ink-2 hover:bg-slate-200 dark:hover:bg-tc-surface-3'
             }`}
           >
             <Anchor className="w-3.5 h-3.5" />
@@ -372,8 +372,8 @@ export const Navios: React.FC = () => {
             onClick={() => setOnlyWarningsFilter(!onlyWarningsFilter)}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
               onlyWarningsFilter
-                ? 'bg-rose-600 text-white shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                ? 'bg-rose-600 dark:bg-tc-critical dark:text-white text-white shadow-xs'
+                : 'bg-slate-100 dark:bg-tc-surface-1 text-slate-600 dark:text-tc-ink-2 hover:bg-slate-200 dark:hover:bg-tc-surface-3'
             }`}
           >
             <AlertTriangle className="w-3.5 h-3.5" />
@@ -389,7 +389,7 @@ export const Navios: React.FC = () => {
                 setOnlyPeDeGalinhaFilter(false);
                 setOnlyWarningsFilter(false);
               }}
-              className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline ml-auto"
+              className="text-xs text-blue-600 dark:text-tc-accent font-bold hover:underline ml-auto"
             >
               Limpar Filtros
             </button>
@@ -398,9 +398,9 @@ export const Navios: React.FC = () => {
       </div>
 
       {/* Results Count Bar */}
-      <div className="flex items-center justify-between text-xs text-slate-500 font-bold px-1">
+      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-tc-ink-3 font-bold px-1">
         <span>Exibindo {filteredShips.length} de {totalShips} navios cadastrados</span>
-        <span className="font-mono text-[11px] text-slate-400">Firebase Collection: ships_btp</span>
+        <span className="font-mono dark:font-mono-tc text-[11px] text-slate-400 dark:text-tc-ink-3">Firebase Collection: ships_btp</span>
       </div>
 
       {/* Ships Grid */}
@@ -409,20 +409,20 @@ export const Navios: React.FC = () => {
           {filteredShips.map(ship => (
             <div
               key={ship.id}
-              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-4 group"
+              className="bg-white dark:bg-tc-surface-2 rounded-2xl border border-slate-200 dark:border-tc-border p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-4 group"
             >
               {/* Ship Card Header */}
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-tc-accent-soft text-blue-600 dark:text-tc-accent flex items-center justify-center shrink-0">
                       <Ship className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-black text-sm text-slate-900 dark:text-white tracking-tight group-hover:text-blue-600 transition-colors">
+                      <h3 className="font-black text-sm text-slate-900 dark:text-tc-ink-1 tracking-tight group-hover:text-blue-600 dark:group-hover:text-tc-accent transition-colors">
                         {getShipCompany(ship)} • {ship.name}
                       </h3>
-                      <span className="text-[10px] text-slate-400 font-mono block">
+                      <span className="text-[10px] text-slate-400 dark:text-tc-ink-3 font-mono dark:font-mono-tc block">
                         ID: {ship.id}
                       </span>
                     </div>
@@ -432,7 +432,7 @@ export const Navios: React.FC = () => {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleOpenEditModal(ship)}
-                      className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      className="p-1.5 text-slate-400 dark:text-tc-ink-3 hover:text-blue-600 dark:hover:text-tc-accent rounded-lg hover:bg-slate-100 dark:hover:bg-tc-surface-3 transition-colors"
                       title="Editar navio"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
@@ -440,7 +440,7 @@ export const Navios: React.FC = () => {
                     {canDeleteRecord() && (
                       <button
                         onClick={() => handleDeleteShip(ship.id, ship.name)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        className="p-1.5 text-slate-400 dark:text-tc-ink-3 hover:text-rose-600 dark:hover:text-tc-critical rounded-lg hover:bg-slate-100 dark:hover:bg-tc-surface-3 transition-colors"
                         title="Excluir navio (Apenas Supervisor)"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -452,37 +452,37 @@ export const Navios: React.FC = () => {
                 {/* Technical Badges */}
                 <div className="flex flex-wrap gap-1.5">
                   {/* Castanha Badge */}
-                  <span className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-extrabold text-[11px] border border-blue-200 dark:border-blue-800">
+                  <span className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-tc-accent-soft text-blue-700 dark:text-tc-accent font-extrabold text-[11px] border border-blue-200 dark:border-tc-border">
                     🔩 {ship.castanha}
                   </span>
 
                   {/* Macaco Badge */}
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-extrabold text-[11px] border border-slate-200 dark:border-slate-700">
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-tc-surface-1 text-slate-700 dark:text-tc-ink-2 font-extrabold text-[11px] border border-slate-200 dark:border-tc-border">
                     🔧 {ship.macaco}
                   </span>
 
                   {/* Pé de Galinha Badge */}
                   {ship.hasPeDeGalinha ? (
-                    <span className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 font-extrabold text-[11px] border border-amber-200 dark:border-amber-800">
+                    <span className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-tc-warning-soft text-amber-700 dark:text-tc-warning font-extrabold text-[11px] border border-amber-200 dark:border-tc-warning-line">
                       ⚓ Pé de Galinha
                     </span>
                   ) : (
-                    <span className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-extrabold text-[11px] border border-emerald-200 dark:border-emerald-800">
+                    <span className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-tc-good-soft text-emerald-700 dark:text-tc-good font-extrabold text-[11px] border border-emerald-200 dark:border-tc-good-line">
                       ✓ Peação Simples
                     </span>
                   )}
 
                   {/* Twin Status */}
                   {ship.twinStatus && (
-                    <span className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-black text-[10px] border border-purple-200 dark:border-purple-800">
+                    <span className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-tc-accent-soft text-purple-700 dark:text-tc-accent font-black text-[10px] border border-purple-200 dark:border-tc-border">
                       Twin: {ship.twinStatus}
                     </span>
                   )}
                 </div>
 
                 {/* Full Specification Description */}
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 space-y-1">
-                  <span className="font-bold text-[10px] uppercase text-slate-400 block tracking-wider">
+                <div className="p-3 bg-slate-50 dark:bg-tc-surface-1 rounded-xl border border-slate-200/80 dark:border-tc-border-soft text-xs text-slate-700 dark:text-tc-ink-2 space-y-1">
+                  <span className="font-bold text-[10px] uppercase text-slate-400 dark:text-tc-ink-3 block tracking-wider">
                     Ficha Técnica Completa:
                   </span>
                   <p className="font-medium text-xs leading-relaxed">
@@ -492,8 +492,8 @@ export const Navios: React.FC = () => {
 
                 {/* Warnings Section */}
                 {ship.warnings && ship.warnings.length > 0 && (
-                  <div className="p-2.5 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 rounded-xl space-y-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-400 flex items-center gap-1">
+                  <div className="p-2.5 bg-rose-50 dark:bg-tc-critical-soft border border-rose-200 dark:border-tc-critical-line rounded-xl space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-tc-critical flex items-center gap-1">
                       <AlertTriangle className="w-3 h-3" />
                       <span>Alertas / Atenção Operacional:</span>
                     </span>
@@ -501,7 +501,7 @@ export const Navios: React.FC = () => {
                       {ship.warnings.map((warn, wIdx) => (
                         <span
                           key={wIdx}
-                          className="px-2 py-0.5 bg-rose-200/80 dark:bg-rose-900/80 text-rose-800 dark:text-rose-200 rounded-md font-bold text-[10px]"
+                          className="px-2 py-0.5 bg-rose-200/80 dark:bg-tc-critical/20 text-rose-800 dark:text-tc-critical rounded-md font-bold text-[10px]"
                         >
                           ⚠️ {warn}
                         </span>
@@ -512,13 +512,13 @@ export const Navios: React.FC = () => {
               </div>
 
               {/* Card Footer Quick Dock Action */}
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <span className="text-[10px] text-slate-400 font-mono">
+              <div className="pt-2 border-t border-slate-100 dark:border-tc-border-soft flex items-center justify-between">
+                <span className="text-[10px] text-slate-400 dark:text-tc-ink-3 font-mono dark:font-mono-tc">
                   Ref: {ship.updatedAt || '-'}
                 </span>
                 <button
                   onClick={() => setDockingShip(ship)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-slate-800 hover:bg-blue-600 dark:hover:bg-blue-600 text-white font-bold text-[11px] transition-all flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-tc-good hover:bg-blue-600 dark:hover:opacity-90 text-white dark:text-tc-bg font-bold text-[11px] transition-all flex items-center gap-1.5"
                 >
                   <Anchor className="w-3.5 h-3.5" />
                   <span>Atracar no Ponto</span>
@@ -528,15 +528,15 @@ export const Navios: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
-          <Ship className="w-12 h-12 text-slate-300 mx-auto" />
-          <h4 className="font-bold text-slate-700 dark:text-slate-300 text-base">Nenhum navio cadastrado.</h4>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">
+        <div className="p-12 text-center bg-white dark:bg-tc-surface-2 rounded-2xl border border-slate-200 dark:border-tc-border space-y-3">
+          <Ship className="w-12 h-12 text-slate-300 dark:text-tc-ink-3 mx-auto" />
+          <h4 className="font-bold text-slate-700 dark:text-tc-ink-1 text-base">Nenhum navio cadastrado.</h4>
+          <p className="text-xs text-slate-400 dark:text-tc-ink-3 max-w-md mx-auto">
             Cadastre o primeiro navio para iniciar o controle operacional.
           </p>
           <button
             onClick={() => setSearchTerm('')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold"
+            className="px-4 py-2 bg-blue-600 dark:bg-tc-accent dark:text-tc-bg text-white rounded-xl text-xs font-bold"
           >
             Limpar Busca
           </button>
@@ -546,15 +546,15 @@ export const Navios: React.FC = () => {
       {/* MODAL: Cadastrar / Editar Navio */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 space-y-5 border border-slate-200 dark:border-slate-800 shadow-2xl animate-scale-up">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-              <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
-                <Ship className="w-5 h-5 text-blue-600" />
+          <div className="bg-white dark:bg-tc-surface-1 rounded-3xl max-w-lg w-full p-6 space-y-5 border border-slate-200 dark:border-tc-border shadow-2xl animate-scale-up">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-tc-border pb-4">
+              <h3 className="font-black text-slate-900 dark:text-tc-ink-1 text-base flex items-center gap-2">
+                <Ship className="w-5 h-5 text-blue-600 dark:text-tc-accent" />
                 <span>{editingShip ? 'Editar Navio' : 'Cadastrar Novo Navio'}</span>
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="text-slate-400 dark:text-tc-ink-3 hover:text-slate-600 dark:hover:text-tc-ink-1"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -562,7 +562,7 @@ export const Navios: React.FC = () => {
 
             <form onSubmit={handleSaveShip} className="space-y-4 text-xs font-bold">
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-slate-700 dark:text-tc-ink-2 mb-1">
                   Nome do Navio:
                 </label>
                 <input
@@ -571,13 +571,13 @@ export const Navios: React.FC = () => {
                   value={formName}
                   onChange={e => setFormName(e.target.value)}
                   placeholder="EX: MAERSK LETICIA, MSC ADONIS..."
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white uppercase font-extrabold"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-2 text-slate-900 dark:text-tc-ink-1 uppercase font-extrabold"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-slate-700 dark:text-tc-ink-2 mb-1">
                     Tipo de Castanha:
                   </label>
                   <input
@@ -586,12 +586,12 @@ export const Navios: React.FC = () => {
                     value={formCastanha}
                     onChange={e => setFormCastanha(e.target.value)}
                     placeholder="Ex: Automática, Pino, Pino duplo..."
-                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-2 text-slate-900 dark:text-tc-ink-1"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-slate-700 dark:text-tc-ink-2 mb-1">
                     Tipo de Macaco:
                   </label>
                   <input
@@ -600,13 +600,13 @@ export const Navios: React.FC = () => {
                     value={formMacaco}
                     onChange={e => setFormMacaco(e.target.value)}
                     placeholder="Ex: Normal, Trava móvel, Sem trava..."
-                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-2 text-slate-900 dark:text-tc-ink-1"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-slate-700 dark:text-tc-ink-2 mb-1">
                   Descrição da Peação / Varão:
                 </label>
                 <input
@@ -615,7 +615,7 @@ export const Navios: React.FC = () => {
                   value={formPeacao}
                   onChange={e => setFormPeacao(e.target.value)}
                   placeholder="Ex: Pé de galinha dobrado, Simples 2 andares, Varão pesado..."
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-2 text-slate-900 dark:text-tc-ink-1"
                 />
               </div>
 
@@ -625,13 +625,13 @@ export const Navios: React.FC = () => {
                     type="checkbox"
                     checked={formHasPeDeGalinha}
                     onChange={e => setFormHasPeDeGalinha(e.target.checked)}
-                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                    className="w-4 h-4 rounded text-blue-600 dark:text-tc-accent focus:ring-blue-500 dark:focus:ring-tc-accent"
                   />
-                  <span className="text-slate-700 dark:text-slate-300 font-bold">Possui Pé de Galinha?</span>
+                  <span className="text-slate-700 dark:text-tc-ink-2 font-bold">Possui Pé de Galinha?</span>
                 </label>
 
                 <div>
-                  <label className="block text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-slate-700 dark:text-tc-ink-2 mb-1">
                     Status do Twin (Opcional):
                   </label>
                   <input
@@ -639,13 +639,13 @@ export const Navios: React.FC = () => {
                     value={formTwinStatus}
                     onChange={e => setFormTwinStatus(e.target.value)}
                     placeholder="Ex: Aberto, Fechado..."
-                    className="w-full p-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                    className="w-full p-2 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-2 text-slate-900 dark:text-tc-ink-1"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-slate-700 dark:text-tc-ink-2 mb-1">
                   Alertas / Avisos de Segurança (Separar por vírgula):
                 </label>
                 <input
@@ -653,12 +653,12 @@ export const Navios: React.FC = () => {
                   value={formWarnings}
                   onChange={e => setFormWarnings(e.target.value)}
                   placeholder="Ex: Graxa até altas horas, Navio perigoso, Falta material..."
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-2 text-slate-900 dark:text-tc-ink-1"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-slate-700 dark:text-tc-ink-2 mb-1">
                   Resumo / Ficha Técnica Completa:
                 </label>
                 <textarea
@@ -666,7 +666,7 @@ export const Navios: React.FC = () => {
                   value={formDetails}
                   onChange={e => setFormDetails(e.target.value)}
                   placeholder="Texto livre de especificações técnicas..."
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-2 text-slate-900 dark:text-tc-ink-1"
                 />
               </div>
 
@@ -674,13 +674,13 @@ export const Navios: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold"
+                  className="px-4 py-2 rounded-xl border border-slate-300 dark:border-tc-border text-slate-600 dark:text-tc-ink-2 font-bold"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black flex items-center gap-2 shadow-md"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 dark:bg-tc-accent dark:hover:opacity-90 dark:text-tc-bg text-white font-black flex items-center gap-2 shadow-md"
                 >
                   <Save className="w-4 h-4" />
                   <span>Salvar Navio</span>
@@ -694,28 +694,28 @@ export const Navios: React.FC = () => {
       {/* MODAL: Quick Dock to Berth */}
       {dockingShip && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 space-y-4 border border-slate-200 dark:border-slate-800 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-              <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
-                <Anchor className="w-5 h-5 text-blue-600" />
+          <div className="bg-white dark:bg-tc-surface-1 rounded-3xl max-w-md w-full p-6 space-y-4 border border-slate-200 dark:border-tc-border shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-tc-border pb-3">
+              <h3 className="font-black text-slate-900 dark:text-tc-ink-1 text-base flex items-center gap-2">
+                <Anchor className="w-5 h-5 text-blue-600 dark:text-tc-accent" />
                 <span>Atracar Navio em Ponto Operacional</span>
               </h3>
               <button
                 onClick={() => setDockingShip(null)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="text-slate-400 dark:text-tc-ink-3 hover:text-slate-600 dark:hover:text-tc-ink-1"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-3 bg-blue-50 dark:bg-blue-950/80 rounded-xl border border-blue-200 dark:border-blue-800 space-y-1">
-              <span className="text-[10px] text-blue-500 uppercase font-black">Navio Selecionado:</span>
-              <p className="font-black text-sm text-blue-900 dark:text-blue-200">{getShipCompany(dockingShip)} • {dockingShip.name}</p>
-              <p className="text-xs text-blue-700 dark:text-blue-300">{dockingShip.details}</p>
+            <div className="p-3 bg-blue-50 dark:bg-tc-accent-soft rounded-xl border border-blue-200 dark:border-tc-border space-y-1">
+              <span className="text-[10px] text-blue-500 dark:text-tc-accent uppercase font-black">Navio Selecionado:</span>
+              <p className="font-black text-sm text-blue-900 dark:text-tc-ink-1">{getShipCompany(dockingShip)} • {dockingShip.name}</p>
+              <p className="text-xs text-blue-700 dark:text-tc-ink-2">{dockingShip.details}</p>
             </div>
 
             <div className="space-y-2 text-xs font-bold">
-              <label className="block text-slate-700 dark:text-slate-300">
+              <label className="block text-slate-700 dark:text-tc-ink-2">
                 Selecione o Ponto Operacional no Terminal:
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -726,8 +726,8 @@ export const Navios: React.FC = () => {
                     onClick={() => setTargetBerth(ponto)}
                     className={`py-2.5 rounded-xl font-black text-xs transition-all border ${
                       targetBerth === ponto
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                        ? 'bg-blue-600 dark:bg-tc-accent text-white dark:text-tc-bg border-blue-600 dark:border-tc-accent shadow-md'
+                        : 'bg-slate-100 dark:bg-tc-surface-2 text-slate-700 dark:text-tc-ink-2 border-slate-200 dark:border-tc-border'
                     }`}
                   >
                     {ponto}
@@ -739,13 +739,13 @@ export const Navios: React.FC = () => {
             <div className="pt-3 flex items-center justify-end gap-3">
               <button
                 onClick={() => setDockingShip(null)}
-                className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs"
+                className="px-4 py-2 rounded-xl border border-slate-300 dark:border-tc-border text-slate-600 dark:text-tc-ink-2 font-bold text-xs"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleDockShip}
-                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md"
+                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 dark:bg-tc-accent dark:hover:opacity-90 dark:text-tc-bg text-white font-black text-xs flex items-center gap-1.5 shadow-md"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Confirmar Atracação</span>

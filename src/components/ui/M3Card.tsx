@@ -14,13 +14,13 @@ export const M3Card: React.FC<M3CardProps> = ({
   onClick,
 }) => {
   const variantStyles = {
-    elevated: 'bg-white dark:bg-slate-900 shadow-sm border border-slate-200/80 dark:border-slate-800/90',
-    outlined: 'bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/80 shadow-xs',
-    filled: 'bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800/60',
+    elevated: 'bg-white dark:bg-tc-surface-2 shadow-sm border border-slate-200/80 dark:border-tc-border',
+    outlined: 'bg-white dark:bg-tc-surface-2 border border-slate-200/90 dark:border-tc-border shadow-xs',
+    filled: 'bg-slate-50/90 dark:bg-tc-surface-1/60 border border-slate-200/60 dark:border-tc-border-soft',
   };
 
   const interactiveStyle = onClick
-    ? 'cursor-pointer hover:shadow-md hover:border-blue-400 dark:hover:border-blue-600 transition-all duration-200 active:scale-[0.99]'
+    ? 'cursor-pointer hover:shadow-md hover:border-blue-400 dark:hover:border-tc-accent-line transition-all duration-200 active:scale-[0.99]'
     : '';
 
   return (

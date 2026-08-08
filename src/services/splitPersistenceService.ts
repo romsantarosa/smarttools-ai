@@ -17,6 +17,11 @@ export interface SplitRecordBayData {
   ldDeck: number | null;
   dsHold: number | null;
   ldHold: number | null;
+  /** Presente só quando a célula correspondente é "twin" (2 contêineres de 20' no mesmo slot) — os dois valores lado a lado. Opcional: registros salvos antes desse recurso não têm esses campos. */
+  dsDeckParts?: number[] | null;
+  ldDeckParts?: number[] | null;
+  dsHoldParts?: number[] | null;
+  ldHoldParts?: number[] | null;
   discharge: number;
   load: number;
   total: number;

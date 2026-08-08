@@ -83,14 +83,14 @@ export const Compras: React.FC = () => {
             <ShoppingCart className="w-7 h-7 text-purple-600" />
             Solicitação de Compras de Ferramentas
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+          <p className="text-xs text-slate-500 dark:text-tc-ink-3 mt-1 font-medium">
             Aquisição de novas varas e spanners para manter o estoque operacional
           </p>
         </div>
 
         <button
           onClick={() => setShowModal(true)}
-          className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs shadow-md shadow-purple-600/20 flex items-center gap-2 transition-all cursor-pointer"
+          className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs shadow-md shadow-purple-600/20 flex items-center gap-2 transition-all cursor-pointer dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
         >
           <Plus className="w-4 h-4" />
           <span>Nova Solicitação de Compra</span>
@@ -98,25 +98,25 @@ export const Compras: React.FC = () => {
       </div>
 
       {/* Main Table Card */}
-      <M3Card className="p-0 overflow-hidden border border-slate-200 dark:border-slate-800">
-        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center">
+      <M3Card className="p-0 overflow-hidden border border-slate-200 dark:border-tc-border">
+        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-tc-border bg-slate-50/50 dark:bg-tc-surface-2/50 flex justify-between items-center">
           <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
             Pedidos de Compra Registrados
           </h3>
-          <span className="text-xs text-purple-600 dark:text-purple-400 font-bold bg-purple-50 dark:bg-purple-950 px-3 py-1 rounded-full border border-purple-200 dark:border-purple-800">
+          <span className="text-xs text-purple-600 dark:text-tc-accent font-bold bg-purple-50 dark:bg-tc-accent-soft px-3 py-1 rounded-full border border-purple-200 dark:border-tc-accent-line">
             {purchases.length} pedidos no fluxo
           </span>
         </div>
 
         {/* Mobile Card List (No Horizontal Scrollbar) */}
-        <div className="block md:hidden divide-y divide-slate-200 dark:divide-slate-800">
+        <div className="block md:hidden divide-y divide-slate-200 dark:divide-tc-border-soft">
           {purchases.length === 0 && (
-            <div className="p-6 text-center text-xs font-bold text-slate-500 bg-white dark:bg-slate-900">
+            <div className="p-6 text-center text-xs font-bold text-slate-500 bg-white dark:bg-tc-surface-2">
               Nenhuma solicitação pendente.
             </div>
           )}
           {purchases.map(p => (
-            <div key={p.id} className="p-4 space-y-3 bg-white dark:bg-slate-900">
+            <div key={p.id} className="p-4 space-y-3 bg-white dark:bg-tc-surface-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <ShoppingBag className="w-4 h-4 text-purple-600 shrink-0" />
@@ -124,20 +124,20 @@ export const Compras: React.FC = () => {
                 </div>
                 {getStatusBadge(p.status)}
               </div>
-              <p className="text-xs text-slate-600 dark:text-slate-300">
-                <span className="font-bold text-slate-700 dark:text-slate-200">Justificativa:</span> {p.reason}
+              <p className="text-xs text-slate-600 dark:text-tc-ink-2">
+                <span className="font-bold text-slate-700 dark:text-tc-ink-1">Justificativa:</span> {p.reason}
               </p>
               <div className="flex items-center justify-between text-xs text-slate-500">
-                <span>Qtd: <strong className="text-purple-600 dark:text-purple-400">{p.quantity} unid.</strong></span>
+                <span>Qtd: <strong className="text-purple-600 dark:text-tc-accent">{p.quantity} unid.</strong></span>
                 <div>{getUrgencyBadge(p.urgency)}</div>
               </div>
-              <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100 dark:border-slate-800/80">
+              <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100 dark:border-tc-border/80">
                 <span className="text-slate-400 font-mono text-[11px]">{p.date}</span>
                 <div className="flex items-center gap-1.5">
                   {p.status === 'Solicitado' && (
                     <button
                       onClick={() => updatePurchaseStatus(p.id, 'Aprovado')}
-                      className="px-2.5 py-1 text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
+                      className="px-2.5 py-1 text-xs font-bold text-blue-600 bg-blue-50 dark:bg-tc-accent-soft hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
                     >
                       Aprovar
                     </button>
@@ -146,7 +146,7 @@ export const Compras: React.FC = () => {
                   {p.status === 'Aprovado' && (
                     <button
                       onClick={() => updatePurchaseStatus(p.id, 'Comprado')}
-                      className="px-2.5 py-1 text-xs font-bold text-amber-700 bg-amber-50 dark:bg-amber-950 hover:bg-amber-100 rounded-lg transition-colors cursor-pointer"
+                      className="px-2.5 py-1 text-xs font-bold text-amber-700 bg-amber-50 dark:bg-tc-warning-soft hover:bg-amber-100 rounded-lg transition-colors cursor-pointer"
                     >
                       Marcar Comprado
                     </button>
@@ -155,7 +155,7 @@ export const Compras: React.FC = () => {
                   {p.status === 'Comprado' && (
                     <button
                       onClick={() => updatePurchaseStatus(p.id, 'Recebido')}
-                      className="px-2.5 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition-colors flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition-colors flex items-center gap-1 cursor-pointer dark:bg-tc-good dark:text-tc-bg dark:hover:opacity-90"
                       title="Dar entrada automática no estoque disponível"
                     >
                       <PackageCheck className="w-3.5 h-3.5" />
@@ -171,7 +171,7 @@ export const Compras: React.FC = () => {
         {/* Desktop View Table (Fit without horizontal scrollbar) */}
         <div className="hidden md:block w-full">
           <table className="w-full text-left text-xs table-fixed">
-            <thead className="bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-extrabold uppercase tracking-wider text-[11px] border-b border-slate-200 dark:border-slate-700">
+            <thead className="bg-slate-100 dark:bg-tc-surface-1/80 text-slate-700 dark:text-tc-ink-2 font-extrabold uppercase tracking-wider text-[11px] border-b border-slate-200 dark:border-tc-border">
               <tr>
                 <th className="px-3.5 py-3 w-[22%]">Ferramenta</th>
                 <th className="px-3.5 py-3 text-center w-[10%]">Qtd</th>
@@ -182,7 +182,7 @@ export const Compras: React.FC = () => {
                 <th className="px-3.5 py-3 text-right w-[10%]">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-800 dark:text-slate-200 font-medium">
+            <tbody className="divide-y divide-slate-200 dark:divide-tc-border-soft text-slate-800 dark:text-tc-ink-1 font-medium">
               {purchases.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-3.5 py-6 text-center font-bold text-slate-500">
@@ -193,19 +193,19 @@ export const Compras: React.FC = () => {
                 purchases.map(p => (
                 <tr
                   key={p.id}
-                  className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
+                  className="hover:bg-slate-50/80 dark:hover:bg-tc-surface-3/50 transition-colors"
                 >
                   <td className="px-3.5 py-3 font-bold text-slate-900 dark:text-white truncate">
                     {p.toolName}
                   </td>
 
-                  <td className="px-3.5 py-3 text-center font-extrabold text-purple-600 dark:text-purple-400">
+                  <td className="px-3.5 py-3 text-center font-extrabold text-purple-600 dark:text-tc-accent">
                     {p.quantity} un
                   </td>
 
                   <td className="px-3.5 py-3 text-center">{getUrgencyBadge(p.urgency)}</td>
 
-                  <td className="px-3.5 py-3 text-slate-600 dark:text-slate-300 truncate" title={p.reason}>
+                  <td className="px-3.5 py-3 text-slate-600 dark:text-tc-ink-2 truncate" title={p.reason}>
                     {p.reason}
                   </td>
 
@@ -218,7 +218,7 @@ export const Compras: React.FC = () => {
                       {p.status === 'Solicitado' && (
                         <button
                           onClick={() => updatePurchaseStatus(p.id, 'Aprovado')}
-                          className="px-2 py-1 text-[11px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
+                          className="px-2 py-1 text-[11px] font-bold text-blue-600 bg-blue-50 dark:bg-tc-accent-soft hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
                         >
                           Aprovar
                         </button>
@@ -227,7 +227,7 @@ export const Compras: React.FC = () => {
                       {p.status === 'Aprovado' && (
                         <button
                           onClick={() => updatePurchaseStatus(p.id, 'Comprado')}
-                          className="px-2 py-1 text-[11px] font-bold text-amber-700 bg-amber-50 dark:bg-amber-950 hover:bg-amber-100 rounded-lg transition-colors cursor-pointer"
+                          className="px-2 py-1 text-[11px] font-bold text-amber-700 bg-amber-50 dark:bg-tc-warning-soft hover:bg-amber-100 rounded-lg transition-colors cursor-pointer"
                         >
                           Comprado
                         </button>
@@ -236,7 +236,7 @@ export const Compras: React.FC = () => {
                       {p.status === 'Comprado' && (
                         <button
                           onClick={() => updatePurchaseStatus(p.id, 'Recebido')}
-                          className="px-2 py-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition-colors flex items-center gap-1 cursor-pointer"
+                          className="px-2 py-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition-colors flex items-center gap-1 cursor-pointer dark:bg-tc-good dark:text-tc-bg dark:hover:opacity-90"
                           title="Dar entrada automática no estoque disponível"
                         >
                           <PackageCheck className="w-3.5 h-3.5" />
@@ -256,8 +256,8 @@ export const Compras: React.FC = () => {
       {/* CREATE PURCHASE REQUEST MODAL */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-xs p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-scale-in">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+          <div className="bg-white dark:bg-tc-surface-2 rounded-3xl p-6 max-w-md w-full border border-slate-200 dark:border-tc-border shadow-2xl space-y-4 animate-scale-in">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-tc-border pb-3">
               <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
                 Nova Solicitação de Compra
               </h3>
@@ -268,13 +268,13 @@ export const Compras: React.FC = () => {
 
             <form onSubmit={handleCreateRequest} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Ferramenta Solicitada
                 </label>
                 <select
                   value={selectedToolId}
                   onChange={e => setSelectedToolId(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs font-bold"
                 >
                   {tools.length === 0 ? (
                     <option value="">Nenhuma ferramenta cadastrada</option>
@@ -289,7 +289,7 @@ export const Compras: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Quantidade Desejada
                 </label>
                 <input
@@ -308,18 +308,18 @@ export const Compras: React.FC = () => {
                   onBlur={() => {
                     if (quantity === '' || (typeof quantity === 'number' && quantity < 1)) setQuantity(1);
                   }}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-purple-600"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs font-bold text-purple-600"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Nível de Urgência
                 </label>
                 <select
                   value={urgency}
                   onChange={e => setUrgency(e.target.value as UrgencyLevel)}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs font-bold"
                 >
                   <option value="Baixa">Baixa Urgência</option>
                   <option value="Média">Média Urgência</option>
@@ -328,7 +328,7 @@ export const Compras: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Justificativa Operacional
                 </label>
                 <textarea
@@ -337,21 +337,21 @@ export const Compras: React.FC = () => {
                   value={reason}
                   onChange={e => setReason(e.target.value)}
                   placeholder="Ex: Escala de navios Post-Panamax prevista para a próxima semana exige reposição imediata..."
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-tc-border">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 font-bold text-slate-600 dark:text-slate-400"
+                  className="px-4 py-2 font-bold text-slate-600 dark:text-tc-ink-3"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-xl shadow-md"
+                  className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-xl shadow-md dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
                 >
                   Enviar Pedido
                 </button>

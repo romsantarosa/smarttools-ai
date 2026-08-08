@@ -90,7 +90,7 @@ export const Colaboradores: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8 text-slate-800 dark:text-slate-100 transition-colors">
+    <div className="min-h-screen bg-slate-50 dark:bg-tc-bg p-4 md:p-8 text-slate-800 dark:text-tc-ink-1 transition-colors">
       {status && (
         <div
           className={`fixed top-4 left-1/2 -translate-x-1/2 z-[200] px-5 py-2.5 rounded-full text-sm font-bold shadow-lg ${
@@ -102,14 +102,14 @@ export const Colaboradores: React.FC = () => {
       )}
 
       <div className="max-w-6xl mx-auto">
-        <header className="mb-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+        <header className="mb-6 rounded-2xl bg-white dark:bg-tc-surface-1 border border-slate-200 dark:border-tc-border p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl bg-[#003366] text-white flex items-center justify-center">
               <Users className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-[#003366] dark:text-blue-400">Colaboradores de Bordo</h1>
-              <p className="text-sm text-slate-500 dark:text-slate-300">
+              <h1 className="text-xl font-black text-[#003366] dark:text-tc-accent">Colaboradores de Bordo</h1>
+              <p className="text-sm text-slate-500 dark:text-tc-ink-2">
                 Cadastro manual em JSON para alimentar a Escala BTP.
               </p>
             </div>
@@ -117,8 +117,8 @@ export const Colaboradores: React.FC = () => {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <section className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300 mb-3">
+          <section className="rounded-2xl bg-white dark:bg-tc-surface-1 border border-slate-200 dark:border-tc-border p-5 shadow-sm">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-slate-600 dark:text-tc-ink-2 mb-3">
               Inserção Manual
             </h2>
 
@@ -127,32 +127,32 @@ export const Colaboradores: React.FC = () => {
                 value={mat}
                 onChange={(e) => setMat(e.target.value)}
                 placeholder="Matrícula"
-                className="p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                className="p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-2"
               />
               <input
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
                 placeholder="Nome completo"
-                className="p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                className="p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-2"
               />
               <button
                 type="button"
                 onClick={addManual}
-                className="px-3 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-2 justify-center"
+                className="px-3 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-2 justify-center dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
               >
                 <Plus className="w-4 h-4" />
                 Adicionar
               </button>
             </div>
 
-            <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-300 mb-2">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-tc-ink-2 mb-2">
               Adição em Lote (uma linha por colaborador)
             </h3>
             <textarea
               value={bulkInput}
               onChange={(e) => setBulkInput(e.target.value)}
               placeholder="475 MANOEL MESSIAS DOS REIS VITOR"
-              className="w-full min-h-[140px] p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs"
+              className="w-full min-h-[140px] p-3 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-2 font-mono text-xs"
             />
             <button
               type="button"
@@ -163,9 +163,9 @@ export const Colaboradores: React.FC = () => {
             </button>
           </section>
 
-          <section className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+          <section className="rounded-2xl bg-white dark:bg-tc-surface-1 border border-slate-200 dark:border-tc-border p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-slate-600 dark:text-tc-ink-2">
                 JSON Gerado
               </h2>
               <span className="text-xs font-bold text-slate-500">{lista.length} colaboradores</span>
@@ -173,13 +173,13 @@ export const Colaboradores: React.FC = () => {
             <textarea
               value={jsonPreview}
               readOnly
-              className="w-full min-h-[240px] p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-mono text-xs"
+              className="w-full min-h-[240px] p-3 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-bg font-mono text-xs"
             />
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={saveList}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-2"
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-2 dark:bg-tc-good dark:text-tc-bg dark:hover:opacity-90"
               >
                 <Save className="w-4 h-4" />
                 Salvar na Escala
@@ -187,7 +187,7 @@ export const Colaboradores: React.FC = () => {
               <button
                 type="button"
                 onClick={restoreDefault}
-                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold flex items-center gap-2"
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold flex items-center gap-2 dark:bg-tc-warning dark:text-tc-bg dark:hover:opacity-90"
               >
                 <RotateCcw className="w-4 h-4" />
                 Restaurar Padrão
@@ -196,13 +196,13 @@ export const Colaboradores: React.FC = () => {
           </section>
         </div>
 
-        <section className="mt-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300 mb-3">
+        <section className="mt-5 rounded-2xl bg-white dark:bg-tc-surface-1 border border-slate-200 dark:border-tc-border p-5 shadow-sm">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-slate-600 dark:text-tc-ink-2 mb-3">
             Lista Atual de Colaboradores
           </h2>
-          <div className="overflow-auto max-h-[420px] rounded-xl border border-slate-200 dark:border-slate-700">
+          <div className="overflow-auto max-h-[420px] rounded-xl border border-slate-200 dark:border-tc-border">
             <table className="w-full text-sm">
-              <thead className="bg-slate-100 dark:bg-slate-900 sticky top-0">
+              <thead className="bg-slate-100 dark:bg-tc-surface-2 sticky top-0">
                 <tr>
                   <th className="text-left p-2.5">Matrícula</th>
                   <th className="text-left p-2.5">Nome Completo</th>
@@ -211,8 +211,8 @@ export const Colaboradores: React.FC = () => {
               </thead>
               <tbody>
                 {lista.map((op) => (
-                  <tr key={op.mat} className="border-t border-slate-100 dark:border-slate-700">
-                    <td className="p-2.5 font-mono font-bold text-blue-700 dark:text-blue-400">{op.mat}</td>
+                  <tr key={op.mat} className="border-t border-slate-100 dark:border-tc-border">
+                    <td className="p-2.5 font-mono font-bold text-blue-700 dark:text-tc-accent">{op.mat}</td>
                     <td className="p-2.5">{op.nome}</td>
                     <td className="p-2.5 text-right">
                       <button
@@ -236,7 +236,7 @@ export const Colaboradores: React.FC = () => {
               </tbody>
             </table>
           </div>
-          <p className="mt-3 text-xs text-slate-500 dark:text-slate-300 flex items-center gap-1">
+          <p className="mt-3 text-xs text-slate-500 dark:text-tc-ink-2 flex items-center gap-1">
             <FileJson className="w-4 h-4" />
             O select Primeiro do trabalho na Escala usa esta lista e inicia no colaborador 475 quando disponível.
           </p>

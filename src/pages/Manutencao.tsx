@@ -70,14 +70,14 @@ export const Manutencao: React.FC = () => {
             <Cog className="w-7 h-7 text-amber-500" />
             Controle de Manutenção de Ferramentas
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+          <p className="text-xs text-slate-500 dark:text-tc-ink-3 mt-1 font-medium">
             Gestão de reparos e devolução automática ao estoque operacional
           </p>
         </div>
 
         <button
           onClick={() => setShowModal(true)}
-          className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 flex items-center gap-2 transition-all cursor-pointer"
+          className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 flex items-center gap-2 transition-all cursor-pointer dark:bg-tc-warning dark:hover:opacity-90"
         >
           <Plus className="w-4 h-4" />
           <span>Enviar Ferramenta para Manutenção</span>
@@ -85,25 +85,25 @@ export const Manutencao: React.FC = () => {
       </div>
 
       {/* Main Table Card */}
-      <M3Card className="p-0 overflow-hidden border border-slate-200 dark:border-slate-800">
-        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center">
+      <M3Card className="p-0 overflow-hidden border border-slate-200 dark:border-tc-border">
+        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-tc-border bg-slate-50/50 dark:bg-tc-surface-2/50 flex justify-between items-center">
           <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
             Ordens de Manutenção & Reparo
           </h3>
-          <span className="text-xs text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-800">
+          <span className="text-xs text-amber-600 dark:text-tc-warning font-bold bg-amber-50 dark:bg-tc-warning-soft px-3 py-1 rounded-full border border-amber-200 dark:border-tc-warning-line">
             {maintenances.length} ordens registradas
           </span>
         </div>
 
         {/* Mobile Card List (No Horizontal Scrollbar) */}
-        <div className="block md:hidden divide-y divide-slate-200 dark:divide-slate-800">
+        <div className="block md:hidden divide-y divide-slate-200 dark:divide-tc-border-soft">
           {maintenances.length === 0 && (
-            <div className="p-6 text-center text-xs font-bold text-slate-500 bg-white dark:bg-slate-900">
+            <div className="p-6 text-center text-xs font-bold text-slate-500 bg-white dark:bg-tc-surface-2">
               Nenhuma manutenção registrada.
             </div>
           )}
           {maintenances.map(m => (
-            <div key={m.id} className="p-4 space-y-3 bg-white dark:bg-slate-900">
+            <div key={m.id} className="p-4 space-y-3 bg-white dark:bg-tc-surface-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <Wrench className="w-4 h-4 text-amber-500 shrink-0" />
@@ -111,20 +111,20 @@ export const Manutencao: React.FC = () => {
                 </div>
                 {getStatusBadge(m.status)}
               </div>
-              <p className="text-xs text-slate-600 dark:text-slate-300">
-                <span className="font-bold text-slate-700 dark:text-slate-200">Motivo:</span> {m.reason}
+              <p className="text-xs text-slate-600 dark:text-tc-ink-2">
+                <span className="font-bold text-slate-700 dark:text-tc-ink-1">Motivo:</span> {m.reason}
               </p>
               <div className="flex items-center justify-between text-xs text-slate-500">
-                <span>Qtd: <strong className="text-amber-600 dark:text-amber-400">{m.quantity} unid.</strong></span>
+                <span>Qtd: <strong className="text-amber-600 dark:text-tc-warning">{m.quantity} unid.</strong></span>
                 <span>Resp: {m.responsible}</span>
               </div>
-              <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100 dark:border-slate-800/80">
+              <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100 dark:border-tc-border/80">
                 <span className="text-slate-400 font-mono text-[11px]">{m.date}</span>
                 <div className="flex items-center gap-1.5">
                   {m.status !== 'Concluído' && (
                     <button
                       onClick={() => updateMaintenanceStatus(m.id, 'Concluído')}
-                      className="px-2.5 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition-all flex items-center gap-1 cursor-pointer dark:bg-tc-good dark:text-tc-bg dark:hover:opacity-90"
                       title="Concluir e devolver automaticamente ao estoque disponível"
                     >
                       <CheckSquare className="w-3.5 h-3.5" />
@@ -135,7 +135,7 @@ export const Manutencao: React.FC = () => {
                   {m.status === 'Aguardando' && (
                     <button
                       onClick={() => updateMaintenanceStatus(m.id, 'Em manutenção')}
-                      className="px-2.5 py-1 text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
+                      className="px-2.5 py-1 text-xs font-bold text-blue-600 bg-blue-50 dark:bg-tc-accent-soft hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
                     >
                       Iniciar
                     </button>
@@ -144,7 +144,7 @@ export const Manutencao: React.FC = () => {
                   {canDeleteRecord() && (
                     <button
                       onClick={() => deleteMaintenance(m.id)}
-                      className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors cursor-pointer"
+                      className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-tc-critical-soft rounded-lg transition-colors cursor-pointer"
                       title="Excluir Ordem (Apenas Supervisor)"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -159,7 +159,7 @@ export const Manutencao: React.FC = () => {
         {/* Desktop View Table (Fit without horizontal scrollbar) */}
         <div className="hidden md:block w-full">
           <table className="w-full text-left text-xs table-fixed">
-            <thead className="bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-extrabold uppercase tracking-wider text-[11px] border-b border-slate-200 dark:border-slate-700">
+            <thead className="bg-slate-100 dark:bg-tc-surface-1/80 text-slate-700 dark:text-tc-ink-2 font-extrabold uppercase tracking-wider text-[11px] border-b border-slate-200 dark:border-tc-border">
               <tr>
                 <th className="px-3.5 py-3 w-[20%]">Ferramenta</th>
                 <th className="px-3.5 py-3 text-center w-[10%]">Qtd</th>
@@ -170,7 +170,7 @@ export const Manutencao: React.FC = () => {
                 <th className="px-3.5 py-3 text-right w-[18%]">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-800 dark:text-slate-200 font-medium">
+            <tbody className="divide-y divide-slate-200 dark:divide-tc-border-soft text-slate-800 dark:text-tc-ink-1 font-medium">
               {maintenances.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-3.5 py-6 text-center font-bold text-slate-500">
@@ -181,7 +181,7 @@ export const Manutencao: React.FC = () => {
                 maintenances.map(m => (
                 <tr
                   key={m.id}
-                  className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
+                  className="hover:bg-slate-50/80 dark:hover:bg-tc-surface-3/50 transition-colors"
                 >
                   <td className="px-3.5 py-3 font-bold text-slate-900 dark:text-white truncate">
                     <div className="flex items-center gap-2 truncate">
@@ -190,15 +190,15 @@ export const Manutencao: React.FC = () => {
                     </div>
                   </td>
 
-                  <td className="px-3.5 py-3 text-center font-extrabold text-amber-600 dark:text-amber-400">
+                  <td className="px-3.5 py-3 text-center font-extrabold text-amber-600 dark:text-tc-warning">
                     {m.quantity} un
                   </td>
 
-                  <td className="px-3.5 py-3 text-slate-600 dark:text-slate-300 truncate" title={m.reason}>
+                  <td className="px-3.5 py-3 text-slate-600 dark:text-tc-ink-2 truncate" title={m.reason}>
                     {m.reason}
                   </td>
 
-                  <td className="px-3.5 py-3 font-semibold text-slate-700 dark:text-slate-300 truncate" title={m.responsible}>
+                  <td className="px-3.5 py-3 font-semibold text-slate-700 dark:text-tc-ink-2 truncate" title={m.responsible}>
                     {m.responsible}
                   </td>
 
@@ -213,7 +213,7 @@ export const Manutencao: React.FC = () => {
                       {m.status !== 'Concluído' && (
                         <button
                           onClick={() => updateMaintenanceStatus(m.id, 'Concluído')}
-                          className="px-2 py-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                          className="px-2 py-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition-all flex items-center gap-1 cursor-pointer dark:bg-tc-good dark:text-tc-bg dark:hover:opacity-90"
                           title="Concluir e devolver ao estoque"
                         >
                           <CheckSquare className="w-3.5 h-3.5" />
@@ -224,7 +224,7 @@ export const Manutencao: React.FC = () => {
                       {m.status === 'Aguardando' && (
                         <button
                           onClick={() => updateMaintenanceStatus(m.id, 'Em manutenção')}
-                          className="px-2 py-1 text-[11px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
+                          className="px-2 py-1 text-[11px] font-bold text-blue-600 bg-blue-50 dark:bg-tc-accent-soft hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
                         >
                           Iniciar
                         </button>
@@ -233,7 +233,7 @@ export const Manutencao: React.FC = () => {
                       {canDeleteRecord() && (
                         <button
                           onClick={() => deleteMaintenance(m.id)}
-                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors cursor-pointer"
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-tc-critical-soft rounded-lg transition-colors cursor-pointer"
                           title="Excluir Ordem (Apenas Supervisor)"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -252,8 +252,8 @@ export const Manutencao: React.FC = () => {
       {/* CREATE MAINTENANCE MODAL */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-xs p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-scale-in">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+          <div className="bg-white dark:bg-tc-surface-2 rounded-3xl p-6 max-w-md w-full border border-slate-200 dark:border-tc-border shadow-2xl space-y-4 animate-scale-in">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-tc-border pb-3">
               <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
                 Nova Ordem de Manutenção
               </h3>
@@ -264,13 +264,13 @@ export const Manutencao: React.FC = () => {
 
             <form onSubmit={handleCreateMaintenance} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Ferramenta com Avaria
                 </label>
                 <select
                   value={selectedToolId}
                   onChange={e => setSelectedToolId(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs font-bold"
                 >
                   {tools.length === 0 ? (
                     <option value="">Nenhuma ferramenta cadastrada</option>
@@ -285,7 +285,7 @@ export const Manutencao: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Quantidade Retirada para Manutenção
                 </label>
                 <input
@@ -304,12 +304,12 @@ export const Manutencao: React.FC = () => {
                   onBlur={() => {
                     if (quantity === '' || (typeof quantity === 'number' && quantity < 1)) setQuantity(1);
                   }}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-amber-600"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs font-bold text-amber-600"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Motivo / Diagnóstico Preliminar
                 </label>
                 <textarea
@@ -318,12 +318,12 @@ export const Manutencao: React.FC = () => {
                   value={reason}
                   onChange={e => setReason(e.target.value)}
                   placeholder="Ex: Fissura na ponteira, trava pneumática travada, haste curvada..."
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Oficina / Técnico Responsável
                 </label>
                 <input
@@ -332,35 +332,35 @@ export const Manutencao: React.FC = () => {
                   value={responsible}
                   onChange={e => setResponsible(e.target.value)}
                   placeholder="Ex: Oficina Central BTP - Técnico Ricardo"
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Status Inicial
                 </label>
                 <select
                   value={status}
                   onChange={e => setStatus(e.target.value as MaintenanceItem['status'])}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs font-bold"
                 >
                   <option value="Aguardando">Aguardando Avaliação</option>
                   <option value="Em manutenção">Em Manutenção Ativa</option>
                 </select>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-tc-border">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 font-bold text-slate-600 dark:text-slate-400"
+                  className="px-4 py-2 font-bold text-slate-600 dark:text-tc-ink-3"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl shadow-md"
+                  className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl shadow-md dark:bg-tc-warning dark:hover:opacity-90"
                 >
                   Registrar Ordem
                 </button>

@@ -204,19 +204,19 @@ export const Relatorios: React.FC = () => {
     switch (status) {
       case 'Aprovado':
         return {
-          bg: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700',
+          bg: 'bg-emerald-100 text-emerald-800 dark:bg-tc-good-soft/80 dark:text-tc-good border-emerald-300 dark:border-tc-good-line',
           icon: <CheckCircle className="w-4 h-4 text-emerald-600" />,
           label: 'APROVADO',
         };
       case 'Aguardando Aprovação':
         return {
-          bg: 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border-amber-300 dark:border-amber-700',
+          bg: 'bg-amber-100 text-amber-800 dark:bg-tc-warning-soft/80 dark:text-tc-warning border-amber-300 dark:border-tc-warning-line',
           icon: <AlertTriangle className="w-4 h-4 text-amber-600" />,
           label: 'AGUARDANDO APROVAÇÃO',
         };
       case 'Reprovado':
         return {
-          bg: 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border-rose-300 dark:border-rose-700',
+          bg: 'bg-rose-100 text-rose-800 dark:bg-tc-critical-soft/80 dark:text-tc-critical border-rose-300 dark:border-tc-critical-line',
           icon: <XCircle className="w-4 h-4 text-rose-600" />,
           label: 'REPROVADO',
         };
@@ -586,7 +586,7 @@ export const Relatorios: React.FC = () => {
             <FileText className="w-7 h-7 text-blue-600" />
             Relatórios Operacionais BTP SmartTools
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+          <p className="text-xs text-slate-500 dark:text-tc-ink-3 mt-1 font-medium">
             Selecione o tipo de relatório desejado e personalize dados, navios, responsável e parecer de aprovação
           </p>
         </div>
@@ -594,7 +594,7 @@ export const Relatorios: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleGeneratePDF}
-            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all cursor-pointer dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
           >
             <Download className="w-4 h-4" />
             <span>Gerar PDF Oficial</span>
@@ -602,7 +602,7 @@ export const Relatorios: React.FC = () => {
 
           <button
             onClick={handleExportExcel}
-            className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
+            className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer dark:bg-tc-good dark:text-tc-bg dark:hover:opacity-90"
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span>Exportar Excel</span>
@@ -610,7 +610,7 @@ export const Relatorios: React.FC = () => {
 
           <button
             onClick={handlePrint}
-            className="px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
+            className="px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-tc-border hover:bg-slate-100 dark:hover:bg-tc-surface-3 text-slate-700 dark:text-tc-ink-1 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             <span>Imprimir</span>
@@ -618,7 +618,7 @@ export const Relatorios: React.FC = () => {
 
           <button
             onClick={handleShare}
-            className="px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
+            className="px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-tc-border hover:bg-slate-100 dark:hover:bg-tc-surface-3 text-slate-700 dark:text-tc-ink-1 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
           >
             <Share2 className="w-4 h-4" />
             <span>{shareCopied ? 'Link Copiado!' : 'Compartilhar'}</span>
@@ -628,9 +628,9 @@ export const Relatorios: React.FC = () => {
 
       {/* Report Type Tabs */}
       {!hasReportBaseData && (
-        <M3Card className="print:hidden border border-dashed border-slate-300 dark:border-slate-700 text-center">
-          <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Nenhum relatório disponível.</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+        <M3Card className="print:hidden border border-dashed border-slate-300 dark:border-tc-border text-center">
+          <p className="text-sm font-bold text-slate-700 dark:text-tc-ink-1">Nenhum relatório disponível.</p>
+          <p className="text-xs text-slate-500 dark:text-tc-ink-3 mt-1">
             Cadastre dados operacionais para habilitar a geração de relatórios.
           </p>
         </M3Card>
@@ -641,21 +641,21 @@ export const Relatorios: React.FC = () => {
           onClick={() => setReportType('ship_equipments')}
           className={`p-4 rounded-2xl border-2 transition-all text-left flex items-start gap-3 cursor-pointer ${
             reportType === 'ship_equipments'
-              ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-600 dark:border-blue-500 shadow-md'
-              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 opacity-70 hover:opacity-100'
+              ? 'bg-blue-50/80 dark:bg-tc-accent-soft/40 border-blue-600 dark:border-tc-accent shadow-md'
+              : 'bg-white dark:bg-tc-surface-2 border-slate-200 dark:border-tc-border opacity-70 hover:opacity-100'
           }`}
         >
-          <div className="p-2.5 rounded-xl bg-blue-600 text-white shrink-0">
+          <div className="p-2.5 rounded-xl bg-blue-600 text-white shrink-0 dark:bg-tc-accent dark:text-tc-bg">
             <Ship className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 tracking-wider block">
+            <span className="text-[10px] font-black uppercase text-blue-600 dark:text-tc-accent tracking-wider block">
               Relatório Tipo 1
             </span>
             <h3 className="font-black text-sm text-slate-900 dark:text-white">
               Equipamentos a Bordo dos Navios
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-tc-ink-3 mt-0.5">
               Exibe quantidades totais de materiais alocados em cada ponto operacional e navio
             </p>
           </div>
@@ -665,21 +665,21 @@ export const Relatorios: React.FC = () => {
           onClick={() => setReportType('inventory_purchases')}
           className={`p-4 rounded-2xl border-2 transition-all text-left flex items-start gap-3 cursor-pointer ${
             reportType === 'inventory_purchases'
-              ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-600 dark:border-emerald-500 shadow-md'
-              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 opacity-70 hover:opacity-100'
+              ? 'bg-emerald-50/80 dark:bg-tc-good-soft/40 border-emerald-600 dark:border-tc-good shadow-md'
+              : 'bg-white dark:bg-tc-surface-2 border-slate-200 dark:border-tc-border opacity-70 hover:opacity-100'
           }`}
         >
-          <div className="p-2.5 rounded-xl bg-emerald-600 text-white shrink-0">
+          <div className="p-2.5 rounded-xl bg-emerald-600 text-white shrink-0 dark:bg-tc-good dark:text-tc-bg">
             <Building2 className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider block">
+            <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-tc-good tracking-wider block">
               Relatório Tipo 2
             </span>
             <h3 className="font-black text-sm text-slate-900 dark:text-white">
               Estoque, Manutenção e Compras
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-tc-ink-3 mt-0.5">
               Controle geral de ferramentas em estoque, itens em manutenção e requisições com aprovação
             </p>
           </div>
@@ -688,7 +688,7 @@ export const Relatorios: React.FC = () => {
 
       {/* Filters Card */}
       <M3Card className="space-y-4 print:hidden border-l-4 border-l-blue-600">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-tc-border pb-3">
           <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
             <Users className="w-4 h-4 text-blue-600" />
             <span>Filtros e Configuração do Relatório ({reportType === 'ship_equipments' ? 'Equipamentos no Navio' : 'Estoque / Compras'})</span>
@@ -701,7 +701,7 @@ export const Relatorios: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
           {/* Data do Serviço */}
           <div>
-            <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+            <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1 flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-blue-600" />
               <span>Data do Serviço</span>
             </label>
@@ -709,20 +709,20 @@ export const Relatorios: React.FC = () => {
               type="date"
               value={selectedDate}
               onChange={e => setSelectedDate(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-slate-900 dark:text-white"
+              className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 font-bold text-slate-900 dark:text-white"
             />
           </div>
 
           {/* Turno Operacional */}
           <div>
-            <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+            <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1 flex items-center gap-1">
               <Clock className="w-3.5 h-3.5 text-blue-600" />
               <span>Turno Operacional</span>
             </label>
             <select
               value={selectedTurn}
               onChange={e => setSelectedTurn(e.target.value as ShiftTurn)}
-              className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold"
+              className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 font-bold"
             >
               <option value="07-13">Turno 1 (07:00 - 13:00)</option>
               <option value="13-19">Turno 2 (13:00 - 19:00)</option>
@@ -733,14 +733,14 @@ export const Relatorios: React.FC = () => {
 
           {/* Turma (A, B, C, D, E) */}
           <div>
-            <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+            <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1 flex items-center gap-1">
               <Users className="w-3.5 h-3.5 text-purple-600" />
               <span>Turma</span>
             </label>
             <select
               value={selectedTurma}
               onChange={e => handleTurmaChange(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-extrabold text-purple-700 dark:text-purple-300"
+              className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 font-extrabold text-purple-700 dark:text-tc-accent"
             >
               <option value="Turma A">Turma A</option>
               <option value="Turma B">Turma B</option>
@@ -752,14 +752,14 @@ export const Relatorios: React.FC = () => {
 
           {/* Facilitador */}
           <div>
-            <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+            <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1 flex items-center gap-1">
               <User className="w-3.5 h-3.5 text-emerald-600" />
               <span>Facilitador (Nome)</span>
             </label>
             <select
               value={selectedFacilitador}
               onChange={e => handleFacilitadorChange(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-extrabold text-emerald-700 dark:text-emerald-300"
+              className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 font-extrabold text-emerald-700 dark:text-tc-good"
             >
               <option value="">Selecione</option>
               <option value="Facilitador A">Facilitador A (Turma A)</option>
@@ -772,19 +772,19 @@ export const Relatorios: React.FC = () => {
         </div>
 
         {/* Dynamic Filters depending on Report Type */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs pt-2 border-t border-slate-200 dark:border-slate-800">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs pt-2 border-t border-slate-200 dark:border-tc-border">
           {reportType === 'ship_equipments' ? (
             <>
               {/* Ponto Operacional */}
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1 flex items-center gap-1">
                   <Anchor className="w-3.5 h-3.5 text-amber-600" />
                   <span>Ponto Operacional</span>
                 </label>
                 <select
                   value={selectedBerth}
                   onChange={e => setSelectedBerth(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 font-bold"
                 >
                   <option value="Ponto 1">Ponto 1</option>
                   <option value="Ponto 2">Ponto 2</option>
@@ -795,12 +795,12 @@ export const Relatorios: React.FC = () => {
 
               {/* Navio em Operação (Puxa do Banco de Navios) */}
               <div className="sm:col-span-2 space-y-2">
-                <label className="block font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <label className="block font-bold text-slate-700 dark:text-tc-ink-2 flex items-center justify-between">
                   <span className="flex items-center gap-1">
                     <Ship className="w-3.5 h-3.5 text-blue-600" />
                     <span>Navio em Operação no {selectedBerth}</span>
                   </span>
-                  <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded">
+                  <span className="text-[10px] font-extrabold text-emerald-600 dark:text-tc-good bg-emerald-100 dark:bg-tc-good-soft px-2 py-0.5 rounded">
                     {ships.length} Cadastrados na Base de Dados
                   </span>
                 </label>
@@ -810,7 +810,7 @@ export const Relatorios: React.FC = () => {
                   value={selectedShip}
                   onChange={e => handleShipNameChange(e.target.value)}
                   placeholder="Digite ou selecione o navio (ex: Cap San Augustin, AMERICO VESPUCIO...)"
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-extrabold text-blue-700 dark:text-blue-300"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 font-extrabold text-blue-700 dark:text-tc-accent"
                 />
                 <datalist id="ships-datalist">
                   {ships.map(s => (
@@ -831,7 +831,7 @@ export const Relatorios: React.FC = () => {
             <>
               {/* Supervisor Responsável */}
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1 flex items-center gap-1">
                   <User className="w-3.5 h-3.5 text-blue-600" />
                   <span>Supervisor Responsável</span>
                 </label>
@@ -840,20 +840,20 @@ export const Relatorios: React.FC = () => {
                   value={supervisorName}
                   onChange={e => setSupervisorName(e.target.value)}
                   placeholder="Nome do Supervisor..."
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-extrabold"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 font-extrabold"
                 />
               </div>
 
               {/* Status de Aprovação */}
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1 flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Status de Aprovação do Relatório</span>
                 </label>
                 <select
                   value={approvalStatus}
                   onChange={e => setApprovalStatus(e.target.value as any)}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-black text-slate-900 dark:text-white"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 font-black text-slate-900 dark:text-white"
                 >
                   <option value="Aprovado">Aprovado</option>
                   <option value="Aguardando Aprovação">Aguardando Aprovação</option>
@@ -874,11 +874,11 @@ export const Relatorios: React.FC = () => {
       </M3Card>
 
       {/* DOCUMENT PREVIEW CARD */}
-      <M3Card className="p-6 md:p-8 space-y-6 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 shadow-xl">
+      <M3Card className="p-6 md:p-8 space-y-6 bg-white dark:bg-tc-surface-2 border-2 border-slate-200 dark:border-tc-border shadow-xl">
         {/* Document Header */}
-        <div className="border-b-2 border-slate-800 dark:border-slate-700 pb-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+        <div className="border-b-2 border-slate-800 dark:border-tc-border pb-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-lg shadow-md">
+            <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-lg shadow-md dark:bg-tc-accent dark:text-tc-bg">
               BTP
             </div>
             <div>
@@ -890,14 +890,14 @@ export const Relatorios: React.FC = () => {
               <p className="text-xs text-slate-500 font-bold">{config.companyName} | {config.terminalName}</p>
             </div>
           </div>
-          <div className="text-right text-xs text-slate-500 font-mono bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+          <div className="text-right text-xs text-slate-500 font-mono bg-slate-50 dark:bg-tc-surface-1/80 p-2.5 rounded-xl border border-slate-200 dark:border-tc-border">
             <p><span className="font-bold">Data do Serviço:</span> {formatDateBR(selectedDate)}</p>
             <p><span className="font-bold">Turno:</span> {selectedTurn}</p>
           </div>
         </div>
 
         {/* Operational Metadata Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 text-xs border border-slate-200 dark:border-slate-800">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-4 rounded-xl bg-slate-50 dark:bg-tc-surface-1/60 text-xs border border-slate-200 dark:border-tc-border">
           <div>
             <span className="text-slate-400 font-bold block uppercase text-[10px]">Data</span>
             <span className="font-black text-slate-900 dark:text-white text-sm">{formatDateBR(selectedDate)}</span>
@@ -908,17 +908,17 @@ export const Relatorios: React.FC = () => {
           </div>
           <div>
             <span className="text-slate-400 font-bold block uppercase text-[10px]">Facilitador</span>
-            <span className="font-black text-emerald-700 dark:text-emerald-300 text-sm">{selectedFacilitador}</span>
+            <span className="font-black text-emerald-700 dark:text-tc-good text-sm">{selectedFacilitador}</span>
           </div>
           <div>
             <span className="text-slate-400 font-bold block uppercase text-[10px]">Turma</span>
-            <span className="font-black text-purple-700 dark:text-purple-300 text-sm">{selectedTurma}</span>
+            <span className="font-black text-purple-700 dark:text-tc-accent text-sm">{selectedTurma}</span>
           </div>
 
           {reportType === 'ship_equipments' ? (
             <div>
               <span className="text-slate-400 font-bold block uppercase text-[10px]">Navio em Operação</span>
-              <span className="font-black text-blue-700 dark:text-blue-300 text-sm truncate block">
+              <span className="font-black text-blue-700 dark:text-tc-accent text-sm truncate block">
                 {selectedBerth !== 'Todos' ? (selectedShip || 'Não informado') : 'Ver por Ponto'}
               </span>
             </div>
@@ -935,8 +935,8 @@ export const Relatorios: React.FC = () => {
         {/* PREVIEW CONTENT FOR REPORT 1: SHIP EQUIPMENTS */}
         {reportType === 'ship_equipments' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
-              <h4 className="font-black text-xs text-amber-800 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-tc-border pb-2">
+              <h4 className="font-black text-xs text-amber-800 dark:text-tc-warning uppercase tracking-wider flex items-center gap-1.5">
                 <Package className="w-4 h-4 text-amber-600" />
                 <span>Quantidades Totais de Materiais pelos Respectivos Pontos ({selectedBerth})</span>
               </h4>
@@ -951,30 +951,30 @@ export const Relatorios: React.FC = () => {
                 const currentPointShip = rec.shipName || 'Sem Navio Atracado';
 
                 return (
-                  <div key={rec.id || idx} className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+                  <div key={rec.id || idx} className="border border-slate-200 dark:border-tc-border rounded-2xl overflow-hidden shadow-xs">
                     {/* Header bar per point */}
-                    <div className="bg-slate-100 dark:bg-slate-800/90 px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                    <div className="bg-slate-100 dark:bg-tc-surface-1/90 px-4 py-3 border-b border-slate-200 dark:border-tc-border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                       <div className="flex items-center gap-2.5">
-                        <span className="px-3 py-1 bg-amber-600 text-white font-black rounded-lg text-xs">
+                        <span className="px-3 py-1 bg-amber-600 text-white font-black rounded-lg text-xs dark:bg-tc-warning dark:text-tc-bg">
                           {rec.berth}
                         </span>
                         <span className="font-bold text-slate-900 dark:text-white">
-                          Navio: <span className="text-blue-600 dark:text-blue-400 font-black text-sm">{currentPointShip}</span>
+                          Navio: <span className="text-blue-600 dark:text-tc-accent font-black text-sm">{currentPointShip}</span>
                         </span>
                       </div>
                       <div className="flex items-center gap-3 text-slate-500 font-semibold">
                         <span>{rec.numTernos} Ternos de Trabalho</span>
                         <span>•</span>
-                        <span className="font-black text-blue-700 dark:text-blue-300 px-2.5 py-0.5 bg-blue-100 dark:bg-blue-950/80 rounded-md">
+                        <span className="font-black text-blue-700 dark:text-tc-accent px-2.5 py-0.5 bg-blue-100 dark:bg-tc-accent-soft/80 rounded-md">
                           {totals.totalPieces} Peças Totais no Ponto
                         </span>
                       </div>
                     </div>
 
                     {/* Point Material Aggregated Total Section */}
-                    <div className="p-4 bg-white dark:bg-slate-900 space-y-3">
+                    <div className="p-4 bg-white dark:bg-tc-surface-2 space-y-3">
                       <div className="flex items-center justify-between">
-                        <h5 className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                        <h5 className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-tc-ink-2 flex items-center gap-1.5">
                           <Package className="w-4 h-4 text-amber-600" />
                           <span>Quantidade Total de Materiais Alocados no {rec.berth}:</span>
                         </h5>
@@ -986,10 +986,10 @@ export const Relatorios: React.FC = () => {
                           {Object.entries(totals.aggregatedMap).map(([toolName, qty]) => (
                             <div
                               key={toolName}
-                              className="px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center gap-2 shadow-2xs"
+                              className="px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-tc-surface-1 border border-slate-200 dark:border-tc-border flex items-center gap-2 shadow-2xs"
                             >
-                              <span className="font-extrabold text-slate-800 dark:text-slate-200 text-xs">{toolName}:</span>
-                              <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white font-black text-xs font-mono">
+                              <span className="font-extrabold text-slate-800 dark:text-tc-ink-1 text-xs">{toolName}:</span>
+                              <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white font-black text-xs font-mono dark:bg-tc-accent dark:text-tc-bg">
                                 {qty} un
                               </span>
                             </div>
@@ -1007,12 +1007,12 @@ export const Relatorios: React.FC = () => {
             </div>
 
             {/* AI Parecer Box */}
-            <div className="p-4 rounded-xl bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-slate-700 space-y-1">
-              <span className="text-xs font-black text-blue-900 dark:text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="p-4 rounded-xl bg-blue-50 dark:bg-tc-surface-1 border border-blue-200 dark:border-tc-border space-y-1">
+              <span className="text-xs font-black text-blue-900 dark:text-tc-accent uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 Parecer do Facilitador IA (Gemini Engine)
               </span>
-              <p className="text-xs italic text-slate-800 dark:text-slate-200 font-medium leading-relaxed">
+              <p className="text-xs italic text-slate-800 dark:text-tc-ink-1 font-medium leading-relaxed">
                 "{latestAIOpinion}"
               </p>
             </div>
@@ -1024,13 +1024,13 @@ export const Relatorios: React.FC = () => {
           <div className="space-y-6">
             {/* Table 1: Inventory */}
             <div className="space-y-2">
-              <h4 className="font-black text-xs text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+              <h4 className="font-black text-xs text-slate-800 dark:text-tc-ink-1 uppercase tracking-wider flex items-center gap-1.5">
                 <Building2 className="w-4 h-4 text-blue-600" />
                 <span>1. Quantidade de Materiais em Estoque Disponível no Almoxarifado</span>
               </h4>
-              <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+              <div className="overflow-x-auto border border-slate-200 dark:border-tc-border rounded-xl">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">
+                  <thead className="bg-slate-100 dark:bg-tc-surface-1 text-slate-700 dark:text-tc-ink-2 font-bold">
                     <tr>
                       <th className="p-2.5">Ferramenta / Equipamento</th>
                       <th className="p-2.5">Categoria</th>
@@ -1041,10 +1041,10 @@ export const Relatorios: React.FC = () => {
                       <th className="p-2.5 text-center">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                  <tbody className="divide-y divide-slate-200 dark:divide-tc-border-soft">
                     {tools.map(t => (
                       <tr key={t.id}>
-                        <td className="p-2.5 font-bold text-slate-900 dark:text-slate-100">{t.name}</td>
+                        <td className="p-2.5 font-bold text-slate-900 dark:text-tc-ink-1">{t.name}</td>
                         <td className="p-2.5 text-slate-500 font-medium">{t.category}</td>
                         <td className="p-2.5 text-center font-black text-emerald-600">{t.available}</td>
                         <td className="p-2.5 text-center font-black text-amber-600">{t.inMaintenance}</td>
@@ -1052,11 +1052,11 @@ export const Relatorios: React.FC = () => {
                         <td className="p-2.5 text-center text-slate-500">{t.minStock}</td>
                         <td className="p-2.5 text-center">
                           {t.available <= t.minStock ? (
-                            <span className="px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 font-black text-[10px]">
+                            <span className="px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 dark:bg-tc-critical-soft/80 dark:text-tc-critical font-black text-[10px]">
                               ATENÇÃO
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 font-black text-[10px]">
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 dark:bg-tc-good-soft/80 dark:text-tc-good font-black text-[10px]">
                               NORMAL
                             </span>
                           )}
@@ -1070,13 +1070,13 @@ export const Relatorios: React.FC = () => {
 
             {/* Table 2: Maintenance */}
             <div className="space-y-2">
-              <h4 className="font-black text-xs text-amber-800 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+              <h4 className="font-black text-xs text-amber-800 dark:text-tc-warning uppercase tracking-wider flex items-center gap-1.5">
                 <Wrench className="w-4 h-4 text-amber-600" />
                 <span>2. Materiais e Equipamentos em Manutenção / Reparo</span>
               </h4>
-              <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+              <div className="overflow-x-auto border border-slate-200 dark:border-tc-border rounded-xl">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">
+                  <thead className="bg-slate-100 dark:bg-tc-surface-1 text-slate-700 dark:text-tc-ink-2 font-bold">
                     <tr>
                       <th className="p-2.5">Equipamento</th>
                       <th className="p-2.5 text-center">Qtd</th>
@@ -1086,17 +1086,17 @@ export const Relatorios: React.FC = () => {
                       <th className="p-2.5 text-center">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                  <tbody className="divide-y divide-slate-200 dark:divide-tc-border-soft">
                     {maintenances.length > 0 ? (
                       maintenances.map(m => (
                         <tr key={m.id}>
                           <td className="p-2.5 font-bold text-slate-900 dark:text-white">{m.toolName}</td>
                           <td className="p-2.5 text-center font-black text-amber-600">{m.quantity}</td>
-                          <td className="p-2.5 text-slate-600 dark:text-slate-300">{m.reason}</td>
+                          <td className="p-2.5 text-slate-600 dark:text-tc-ink-2">{m.reason}</td>
                           <td className="p-2.5 text-slate-500">{m.responsible}</td>
                           <td className="p-2.5 text-center text-slate-500">{formatDateBR(m.date)}</td>
                           <td className="p-2.5 text-center">
-                            <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 font-black text-[10px]">
+                            <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-tc-warning-soft/80 dark:text-tc-warning font-black text-[10px]">
                               {m.status}
                             </span>
                           </td>
@@ -1116,13 +1116,13 @@ export const Relatorios: React.FC = () => {
 
             {/* Table 3: Purchase Requests */}
             <div className="space-y-2">
-              <h4 className="font-black text-xs text-emerald-800 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+              <h4 className="font-black text-xs text-emerald-800 dark:text-tc-good uppercase tracking-wider flex items-center gap-1.5">
                 <ShoppingCart className="w-4 h-4 text-emerald-600" />
                 <span>3. Materiais em Processo de Compra e Requisição</span>
               </h4>
-              <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+              <div className="overflow-x-auto border border-slate-200 dark:border-tc-border rounded-xl">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">
+                  <thead className="bg-slate-100 dark:bg-tc-surface-1 text-slate-700 dark:text-tc-ink-2 font-bold">
                     <tr>
                       <th className="p-2.5">Item Solicitado</th>
                       <th className="p-2.5 text-center">Qtd</th>
@@ -1133,7 +1133,7 @@ export const Relatorios: React.FC = () => {
                       <th className="p-2.5 text-center">Status Compra</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                  <tbody className="divide-y divide-slate-200 dark:divide-tc-border-soft">
                     {purchases.length > 0 ? (
                       purchases.map(p => (
                         <tr key={p.id}>
@@ -1143,20 +1143,20 @@ export const Relatorios: React.FC = () => {
                             <span
                               className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${
                                 p.urgency === 'Alta'
-                                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300'
-                                  : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                  ? 'bg-rose-100 text-rose-700 dark:bg-tc-critical-soft/80 dark:text-tc-critical'
+                                  : 'bg-slate-100 text-slate-700 dark:bg-tc-surface-1 dark:text-tc-ink-2'
                               }`}
                             >
                               {p.urgency}
                             </span>
                           </td>
-                          <td className="p-2.5 text-slate-600 dark:text-slate-300">{p.reason}</td>
+                          <td className="p-2.5 text-slate-600 dark:text-tc-ink-2">{p.reason}</td>
                           <td className="p-2.5 text-slate-500">{p.requestedBy}</td>
                           <td className="p-2.5 text-right font-mono font-bold text-slate-900 dark:text-white">
                             {p.estimatedCost ? `R$ ${p.estimatedCost.toLocaleString('pt-BR')}` : 'Sob cotação'}
                           </td>
                           <td className="p-2.5 text-center">
-                            <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 font-black text-[10px]">
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-tc-good-soft/80 dark:text-tc-good font-black text-[10px]">
                               {p.status}
                             </span>
                           </td>
@@ -1191,18 +1191,18 @@ export const Relatorios: React.FC = () => {
         )}
 
         {/* Signatures Footer */}
-        <div className="pt-8 grid grid-cols-1 sm:grid-cols-2 gap-8 text-center text-xs font-bold text-slate-600 dark:text-slate-400">
+        <div className="pt-8 grid grid-cols-1 sm:grid-cols-2 gap-8 text-center text-xs font-bold text-slate-600 dark:text-tc-ink-3">
           <div className="space-y-1">
-            <div className="border-t-2 border-slate-400 dark:border-slate-600 pt-2" />
+            <div className="border-t-2 border-slate-400 dark:border-tc-border pt-2" />
             <p className="font-extrabold text-slate-900 dark:text-white">Assinatura do Facilitador</p>
-            <p className="text-emerald-600 dark:text-emerald-400">{selectedFacilitador} ({selectedTurma})</p>
+            <p className="text-emerald-600 dark:text-tc-good">{selectedFacilitador} ({selectedTurma})</p>
             <p className="text-[10px] text-slate-400 font-mono">Data: {formatDateBR(selectedDate)}</p>
           </div>
 
           <div className="space-y-1">
-            <div className="border-t-2 border-slate-400 dark:border-slate-600 pt-2" />
+            <div className="border-t-2 border-slate-400 dark:border-tc-border pt-2" />
             <p className="font-extrabold text-slate-900 dark:text-white">Assinatura do Supervisor de Operações</p>
-            <p className="text-blue-600 dark:text-blue-400">{supervisorName}</p>
+            <p className="text-blue-600 dark:text-tc-accent">{supervisorName}</p>
             <p className="text-[10px] text-slate-400 font-mono">Status: {approvalStatus}</p>
           </div>
         </div>

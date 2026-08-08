@@ -15,12 +15,15 @@
 
 import { extractFirstPageForBayProfile, type Page1TextItem } from './pdfService';
 import {
+  detectDecoyGridBoundary,
   detectShipProfileBoundingBox,
   extractBaySplitReadings,
   extractBayTotalRow,
   type BayTotalReading,
+  type BayTotalRowResult,
   type SplitBayArea,
   type SplitBayReading,
+  type SplitBayReadingsResult,
 } from './geminiService';
 
 export interface SplitBayRow {
@@ -33,6 +36,11 @@ export interface SplitBayRow {
   ldDeck: number | null;
   dsHold: number | null;
   ldHold: number | null;
+  /** Presente só quando a célula correspondente é "twin" (2 contêineres de 20' no mesmo slot) — os dois valores lado a lado, na ordem visual. Só para exibição (2 quadradinhos); a soma já está no campo principal (dsDeck/ldDeck/dsHold/ldHold). */
+  dsDeckParts: number[] | null;
+  ldDeckParts: number[] | null;
+  dsHoldParts: number[] | null;
+  ldHoldParts: number[] | null;
   /** Descarga/embarque calculados a partir das faixas coloridas — apenas composição, nunca sobrescrevem `total`. */
   discharge: number;
   load: number;
@@ -358,6 +366,11 @@ function buildBayRows(
     const dsHold = dsHoldReading?.quantidade ?? null;
     const ldHold = ldHoldReading?.quantidade ?? null;
 
+    const dsDeckParts = dsDeckReading?.parts ?? null;
+    const ldDeckParts = ldDeckReading?.parts ?? null;
+    const dsHoldParts = dsHoldReading?.parts ?? null;
+    const ldHoldParts = ldHoldReading?.parts ?? null;
+
     const cellReadings = [dsDeckReading, ldDeckReading, dsHoldReading, ldHoldReading];
     const confidences = cellReadings.map((r) => r?.confidence ?? 0);
     const rowConfidence = confidences.length > 0 ? confidences.reduce((a, b) => a + b, 0) / confidences.length : 0;
@@ -387,6 +400,10 @@ function buildBayRows(
       ldDeck,
       dsHold,
       ldHold,
+      dsDeckParts,
+      ldDeckParts,
+      dsHoldParts,
+      ldHoldParts,
       discharge,
       load,
       compositionMismatch,
@@ -450,8 +467,32 @@ export async function analyzeSplitFromFile(file: File): Promise<SplitBayAnalysis
     }
   }
 
-  const croppedImageDataUrl = await cropImageDataUrl(page1.imageDataUrl, region, page1.width, page1.height);
-  const croppedBase64 = dataUrlToBase64(croppedImageDataUrl);
+  let croppedImageDataUrl = await cropImageDataUrl(page1.imageDataUrl, region, page1.width, page1.height);
+  let croppedBase64 = dataUrlToBase64(croppedImageDataUrl);
+
+  if (regionSource !== 'text-anchors') {
+    // O caminho de âncoras de texto já para exatamente na linha de números de
+    // bay (determinístico). Nos caminhos de visão, pedir pra IA "não incluir"
+    // a tabela de guindaste/turno como parte do prompt de localização maior
+    // não é suficiente na prática — o recorte devolvido às vezes continua
+    // incluindo essa segunda tabela inteira (já observado em mais de um
+    // documento real). Por isso, aqui SEMPRE fazemos uma segunda verificação
+    // dedicada e recortamos programaticamente se ela for detectada.
+    const decoyCheckImage = await downscaleImageDataUrl(croppedImageDataUrl, 1200);
+    const decoyResult = await detectDecoyGridBoundary(dataUrlToBase64(decoyCheckImage), 'image/png');
+
+    if (decoyResult.hasDecoyGrid && decoyResult.boundaryY) {
+      const trimmedRegion = {
+        ...region,
+        y1: region.y0 + (region.y1 - region.y0) * decoyResult.boundaryY,
+      };
+      croppedImageDataUrl = await cropImageDataUrl(page1.imageDataUrl, trimmedRegion, page1.width, page1.height);
+      croppedBase64 = dataUrlToBase64(croppedImageDataUrl);
+      warnings.push('Detectada e removida automaticamente uma segunda tabela (atribuição de guindaste/turno) que apareceu colada abaixo do perfil do navio no recorte inicial.');
+    } else if (decoyResult.error) {
+      warnings.push(`Não foi possível verificar se havia uma segunda tabela (guindaste/turno) coladas ao recorte: ${decoyResult.error}`);
+    }
+  }
 
   // Total oficial de cada bay vem da linha de caixas brancas acima do DS-DECK.
   // Preferimos SEMPRE o texto nativo do PDF (100% determinístico); a IA só é
@@ -460,11 +501,34 @@ export async function analyzeSplitFromFile(file: File): Promise<SplitBayAnalysis
 
   let totalReadings: BayTotalReading[];
   let totalsSource: SplitBayAnalysisResult['totalsSource'];
+  let readingResult: SplitBayReadingsResult;
+  let totalRowResult: BayTotalRowResult | null;
 
-  const [readingResult, totalRowResult] = await Promise.all([
-    extractBaySplitReadings(croppedBase64, 'image/png', bayOrderHint),
-    totalsFromText ? Promise.resolve(null) : extractBayTotalRow(croppedBase64, 'image/png', bayOrderHint),
-  ]);
+  if (bayOrderHint.length > 0) {
+    // A lista de bays já é confiável (âncoras de texto) — as duas leituras
+    // podem rodar em paralelo com segurança, pois ambas recebem o MESMO hint.
+    const [readingRes, totalRes] = await Promise.all([
+      extractBaySplitReadings(croppedBase64, 'image/png', bayOrderHint),
+      totalsFromText ? Promise.resolve(null) : extractBayTotalRow(croppedBase64, 'image/png', bayOrderHint),
+    ]);
+    readingResult = readingRes;
+    totalRowResult = totalRes;
+  } else {
+    // Sem âncoras de texto, NENHUMA das duas chamadas tem de antemão uma
+    // lista confiável de colunas/bays — cada uma teria que adivinhar sozinha
+    // quantas colunas existem e em que ordem. Bays sem carga (total 0) podem
+    // ser puladas por uma chamada e não pela outra, e as duas leituras saem
+    // de sincronia: o código junta os resultados só por columnIndex
+    // (posição), então um desalinhamento de 1 coluna já cola o total oficial
+    // na bay ERRADA — bug real já observado (ex.: total de uma bay aparecendo
+    // em outra, soma geral batendo errado). Por isso, aqui SEMPRE lemos
+    // primeiro DS-DECK/LD-DECK/DS-HOLD/LD-HOLD e usamos a lista de bays que
+    // essa leitura detectou como hint da segunda chamada — garantindo que as
+    // duas leituras usem a MESMA indexação de colunas.
+    readingResult = await extractBaySplitReadings(croppedBase64, 'image/png', bayOrderHint);
+    const sharedBayOrder = readingResult.bayLabelsDetected.length > 0 ? readingResult.bayLabelsDetected : bayOrderHint;
+    totalRowResult = totalsFromText ? null : await extractBayTotalRow(croppedBase64, 'image/png', sharedBayOrder);
+  }
 
   if (totalsFromText) {
     totalsSource = 'native-text';

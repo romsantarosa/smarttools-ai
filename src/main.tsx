@@ -37,7 +37,17 @@ async function registerLaunchQueue(): Promise<void> {
   });
 }
 
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && import.meta.env.DEV) {
+  // The service worker caches `.tsx`/`.ts` module requests cache-first (see public/sw.js),
+  // which silently serves stale source files during development — a previously-registered
+  // SW would otherwise keep intercepting Vite's dev requests forever. Drop it in dev so
+  // every reload always hits the live dev server, matching what's actually on disk.
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((registration) => registration.unregister());
+  });
+}
+
+if ('serviceWorker' in navigator && !import.meta.env.DEV) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch((error) => {
       console.warn('[PWA] Service worker registration failed:', error);

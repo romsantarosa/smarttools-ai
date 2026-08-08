@@ -15,11 +15,11 @@ export const DocumentationCard: React.FC<DocumentationCardProps> = ({
   className = '',
 }) => {
   return (
-    <M3Card className={`border border-slate-200 dark:border-slate-800 shadow-sm ${className}`}>
+    <M3Card className={`border border-slate-200 dark:border-tc-border shadow-sm ${className}`}>
       <div className="space-y-3">
         <div>
           <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">{title}</h3>
-          {subtitle ? <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{subtitle}</p> : null}
+          {subtitle ? <p className="text-xs text-slate-500 dark:text-tc-ink-3 mt-1">{subtitle}</p> : null}
         </div>
         {children}
       </div>

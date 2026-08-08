@@ -107,14 +107,14 @@ export const Configuracoes: React.FC = () => {
             <Settings className="w-7 h-7 text-blue-600" />
             Configurações do Sistema
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+          <p className="text-xs text-slate-500 dark:text-tc-ink-3 mt-1 font-medium">
             Parâmetros do terminal BTP, nível de segurança do usuário e conexões
           </p>
         </div>
       </div>
 
       {savedMsg && (
-        <div className="p-4 bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200 rounded-2xl font-bold text-xs flex items-center gap-2">
+        <div className="p-4 bg-emerald-50 text-emerald-800 dark:bg-tc-good-soft dark:text-tc-good rounded-2xl font-bold text-xs flex items-center gap-2">
           <CheckCircle2 className="w-5 h-5 text-emerald-600" />
           <span>{savedMsg}</span>
         </div>
@@ -122,20 +122,20 @@ export const Configuracoes: React.FC = () => {
 
       {/* Alterar Senha / Segurança de Acesso Firebase */}
       <M3Card className="space-y-4">
-        <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+        <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-tc-border pb-3">
           <KeyRound className="w-4 h-4 text-amber-500" />
           Segurança da Conta & Alteração de Senha (Firebase)
         </h3>
 
         {user && (
-          <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 rounded-2xl flex items-center justify-between text-xs">
+          <div className="p-3 bg-blue-50 dark:bg-tc-accent-soft/40 border border-blue-200 dark:border-tc-accent-line/60 rounded-2xl flex items-center justify-between text-xs">
             <div className="flex items-center gap-2.5">
-              <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+              <Shield className="w-4 h-4 text-blue-600 dark:text-tc-accent shrink-0" />
               <div>
                 <span className="font-bold text-slate-900 dark:text-white block">
                   Usuário Logado: {user.name}
                 </span>
-                <span className="text-slate-500 dark:text-slate-400 text-[11px]">
+                <span className="text-slate-500 dark:text-tc-ink-3 text-[11px]">
                   E-mail: {user.email} • Perfil: {user.role}
                 </span>
               </div>
@@ -145,7 +145,7 @@ export const Configuracoes: React.FC = () => {
               type="button"
               onClick={handleSendEmailReset}
               disabled={pwdLoading}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[11px] rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[11px] rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50 dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
             >
               <Mail className="w-3.5 h-3.5" />
               <span>Enviar E-mail de Troca</span>
@@ -154,14 +154,14 @@ export const Configuracoes: React.FC = () => {
         )}
 
         {pwdError && (
-          <div className="p-3 bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 text-xs rounded-xl flex items-center gap-2">
+          <div className="p-3 bg-red-50 dark:bg-tc-critical-soft/50 text-red-700 dark:text-tc-critical text-xs rounded-xl flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{pwdError}</span>
           </div>
         )}
 
         {pwdSuccess && (
-          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-xs rounded-xl font-bold flex items-center gap-2">
+          <div className="p-3 bg-emerald-50 dark:bg-tc-good-soft/50 text-emerald-800 dark:text-tc-good text-xs rounded-xl font-bold flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
             <span>{pwdSuccess}</span>
           </div>
@@ -170,7 +170,7 @@ export const Configuracoes: React.FC = () => {
         <form onSubmit={handleChangePasswordSubmit} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                 Nova Senha
               </label>
               <div className="relative">
@@ -181,13 +181,13 @@ export const Configuracoes: React.FC = () => {
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
                   placeholder="Mínimo 6 caracteres"
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 font-medium text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                 Confirmar Nova Senha
               </label>
               <div className="relative">
@@ -198,7 +198,7 @@ export const Configuracoes: React.FC = () => {
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
                   placeholder="Repita a nova senha"
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 font-medium text-xs focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
                 />
               </div>
             </div>
@@ -207,7 +207,7 @@ export const Configuracoes: React.FC = () => {
           <button
             type="submit"
             disabled={pwdLoading}
-            className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs rounded-xl flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+            className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs rounded-xl flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50 dark:bg-tc-warning dark:hover:opacity-90"
           >
             <KeyRound className="w-4 h-4" />
             <span>{pwdLoading ? 'Atualizando Senha...' : 'Alterar Senha no Firebase'}</span>
@@ -217,53 +217,53 @@ export const Configuracoes: React.FC = () => {
 
       {/* Empresa & Terminal Parameters */}
       <M3Card className="space-y-4">
-        <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+        <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-tc-border pb-3">
           <Building className="w-4 h-4 text-blue-600" />
           Dados da Empresa e Terminal Portuário
         </h3>
 
         <form onSubmit={handleSaveConfig} className="space-y-4 text-xs">
           <div>
-            <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
               Razão Social / Empresa
             </label>
             <input
               type="text"
               value={companyName}
               onChange={e => setCompanyName(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium"
+              className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 font-medium"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                 CNPJ da Unidade
               </label>
               <input
                 type="text"
                 value={cnpj}
                 onChange={e => setCnpj(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium"
+                className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 font-medium"
               />
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                 Nome do Terminal
               </label>
               <input
                 type="text"
                 value={terminalName}
                 onChange={e => setTerminalName(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium"
+                className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 font-medium"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl flex items-center gap-2 cursor-pointer shadow-md"
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl flex items-center gap-2 cursor-pointer shadow-md dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
           >
             <Save className="w-4 h-4" />
             <span>Salvar Parâmetros</span>
@@ -273,12 +273,12 @@ export const Configuracoes: React.FC = () => {
 
       {/* Theme & Visual Identity Card */}
       <M3Card className="space-y-4">
-        <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+        <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-tc-border pb-3">
           <Sliders className="w-4 h-4 text-purple-600" />
           Aparência do Sistema (Material Design 3)
         </h3>
 
-        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xs">
+        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-tc-surface-1 rounded-2xl text-xs">
           <div>
             <span className="font-bold text-slate-900 dark:text-white block">
               Modo do Tema
@@ -290,7 +290,7 @@ export const Configuracoes: React.FC = () => {
 
           <button
             onClick={toggleTheme}
-            className="px-4 py-2 rounded-xl bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-xs font-bold flex items-center gap-2 shadow-xs cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-white dark:bg-tc-surface-3 border border-slate-300 dark:border-tc-border text-xs font-bold flex items-center gap-2 shadow-xs cursor-pointer"
           >
             {config.themeMode === 'light' ? (
               <>
@@ -309,22 +309,22 @@ export const Configuracoes: React.FC = () => {
 
       {/* Firebase & Storage Status */}
       <M3Card className="space-y-4">
-        <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+        <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-tc-border pb-3">
           <Database className="w-4 h-4 text-emerald-600" />
           Integração Banco de Dados & Firebase Cloud Firestore
         </h3>
 
-        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 space-y-2 text-xs">
+        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-tc-surface-1 space-y-2 text-xs">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-slate-800 dark:text-slate-200">
+            <span className="font-bold text-slate-800 dark:text-tc-ink-1">
               Status da Conexão Firebase:
             </span>
             {isFirebaseConfigured ? (
-              <span className="text-emerald-600 font-extrabold bg-emerald-100 dark:bg-emerald-950 px-2.5 py-0.5 rounded-full">
+              <span className="text-emerald-600 font-extrabold bg-emerald-100 dark:bg-tc-good-soft px-2.5 py-0.5 rounded-full">
                 Conectado (Cloud Firestore & Auth Ativos)
               </span>
             ) : (
-              <span className="text-blue-600 font-extrabold bg-blue-100 dark:bg-blue-950 px-2.5 py-0.5 rounded-full">
+              <span className="text-blue-600 font-extrabold bg-blue-100 dark:bg-tc-accent-soft px-2.5 py-0.5 rounded-full">
                 Modo Local Ativo
               </span>
             )}
@@ -337,7 +337,7 @@ export const Configuracoes: React.FC = () => {
         <div className="pt-2">
           <button
             onClick={resetToDefaultData}
-            className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-red-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors flex items-center gap-2"
+            className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-red-600 dark:text-tc-ink-3 hover:bg-slate-100 dark:hover:bg-tc-surface-3 rounded-xl transition-colors flex items-center gap-2"
           >
             <RefreshCw className="w-4 h-4" />
             <span>Restaurar Dados Padrão do Terminal BTP</span>

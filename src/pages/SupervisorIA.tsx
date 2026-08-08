@@ -123,7 +123,7 @@ export const SupervisorIA: React.FC = () => {
     <div className="space-y-6 animate-fade-in max-w-5xl mx-auto">
       {/* Header Panel */}
       <div className="text-center space-y-3 bg-gradient-to-b from-blue-900 to-slate-900 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden border border-blue-800/50">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none dark:bg-tc-accent" />
 
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20 mb-1">
           <Bot className="w-10 h-10" />
@@ -159,10 +159,10 @@ export const SupervisorIA: React.FC = () => {
 
       {/* Main Opinion Result Card */}
       {currentAnalysis && (
-        <M3Card className="border-2 border-blue-500/30 dark:border-blue-700/40 shadow-xl space-y-5 bg-gradient-to-b from-white to-blue-50/30 dark:from-slate-900 dark:to-slate-900/90">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
+        <M3Card className="border-2 border-blue-500/30 dark:border-tc-accent-line/40 shadow-xl space-y-5 bg-gradient-to-b from-white to-blue-50/30 dark:from-tc-ink-1 dark:to-tc-ink-1/90">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-tc-border pb-4">
             <div className="flex items-center gap-2.5">
-              <Cpu className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <Cpu className="w-6 h-6 text-blue-600 dark:text-tc-accent" />
               <div>
                 <h3 className="font-black text-base text-slate-900 dark:text-white">
                   Parecer Técnico do Supervisor IA
@@ -176,11 +176,11 @@ export const SupervisorIA: React.FC = () => {
           </div>
 
           {/* Parecer Text */}
-          <div className="p-4 rounded-2xl bg-blue-50/80 dark:bg-slate-800/80 border border-blue-100 dark:border-slate-700 space-y-2">
-            <h4 className="text-xs font-extrabold uppercase tracking-wider text-blue-900 dark:text-blue-300">
+          <div className="p-4 rounded-2xl bg-blue-50/80 dark:bg-tc-surface-1/80 border border-blue-100 dark:border-tc-border space-y-2">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-blue-900 dark:text-tc-accent">
               Parecer Profissional da Operação
             </h4>
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-relaxed italic">
+            <p className="text-sm font-semibold text-slate-800 dark:text-tc-ink-1 leading-relaxed italic">
               "{currentAnalysis.opinion}"
             </p>
           </div>
@@ -188,7 +188,7 @@ export const SupervisorIA: React.FC = () => {
           {/* Recommendations List */}
           {currentAnalysis.recommendations && currentAnalysis.recommendations.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+              <h4 className="text-xs font-bold text-slate-700 dark:text-tc-ink-2 flex items-center gap-2">
                 <ListOrdered className="w-4 h-4 text-blue-600" />
                 Recomendações Acionáveis para a Equipe de Turno
               </h4>
@@ -196,7 +196,7 @@ export const SupervisorIA: React.FC = () => {
                 {currentAnalysis.recommendations.map((rec, idx) => (
                   <li
                     key={idx}
-                    className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 text-xs text-slate-700 dark:text-slate-200 font-medium flex items-start gap-2.5 shadow-xs"
+                    className="p-3 rounded-xl bg-white dark:bg-tc-surface-1 border border-slate-200 dark:border-tc-border/80 text-xs text-slate-700 dark:text-tc-ink-1 font-medium flex items-start gap-2.5 shadow-xs"
                   >
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                     <span>{rec}</span>
@@ -210,7 +210,7 @@ export const SupervisorIA: React.FC = () => {
 
       {/* Interactive AI Chat Assistant */}
       <M3Card className="space-y-4">
-        <div className="flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-800 pb-3">
+        <div className="flex items-center gap-2.5 border-b border-slate-200 dark:border-tc-border pb-3">
           <Bot className="w-5 h-5 text-blue-600" />
           <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
             Pergunte ao Supervisor IA da Operação
@@ -218,7 +218,7 @@ export const SupervisorIA: React.FC = () => {
         </div>
 
         {/* Chat Messages */}
-        <div className="h-64 overflow-y-auto space-y-3 p-3 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+        <div className="h-64 overflow-y-auto space-y-3 p-3 bg-slate-50 dark:bg-tc-bg/60 rounded-2xl border border-slate-200/80 dark:border-tc-border">
           {chatHistory.map((msg, i) => (
             <div
               key={i}
@@ -230,7 +230,7 @@ export const SupervisorIA: React.FC = () => {
                 className={`max-w-xl p-3.5 rounded-2xl text-xs font-medium leading-relaxed ${
                   msg.sender === 'user'
                     ? 'bg-blue-600 text-white rounded-br-xs'
-                    : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-bl-xs shadow-xs'
+                    : 'bg-white dark:bg-tc-surface-1 text-slate-800 dark:text-tc-ink-1 border border-slate-200 dark:border-tc-border rounded-bl-xs shadow-xs'
                 }`}
               >
                 {msg.text}
@@ -253,12 +253,12 @@ export const SupervisorIA: React.FC = () => {
             value={customQuestion}
             onChange={e => setCustomQuestion(e.target.value)}
             placeholder="Ex: Qual o estoque de varas de 6m para o turno das 13h no Berço 2?"
-            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium"
+            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 text-xs font-medium"
           />
           <button
             type="submit"
             disabled={loading || !customQuestion.trim()}
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl flex items-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl flex items-center gap-2 transition-colors disabled:opacity-50 cursor-pointer dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
           >
             <span>Perguntar</span>
             <Send className="w-4 h-4" />

@@ -88,7 +88,7 @@ export const Historico: React.FC = () => {
             <History className="w-7 h-7 text-blue-600" />
             Histórico Operacional de Movimentações
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+          <p className="text-xs text-slate-500 dark:text-tc-ink-3 mt-1 font-medium">
             Rastreabilidade completa de todas as passagens de turno, reparos e compras
           </p>
         </div>
@@ -105,7 +105,7 @@ export const Historico: React.FC = () => {
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder="Pesquisar por Navio, Operador, Ferramenta..."
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium"
+              className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 text-xs font-medium"
             />
           </div>
 
@@ -114,7 +114,7 @@ export const Historico: React.FC = () => {
             <select
               value={filterType}
               onChange={e => setFilterType(e.target.value)}
-              className="w-full p-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold"
+              className="w-full p-2 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 text-xs font-bold"
             >
               <option value="todos">Todos os Eventos</option>
               <option value="Shift">Apenas Turnos / Navios</option>
@@ -128,7 +128,7 @@ export const Historico: React.FC = () => {
             <select
               value={filterTurn}
               onChange={e => setFilterTurn(e.target.value)}
-              className="w-full p-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold"
+              className="w-full p-2 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 text-xs font-bold"
             >
               <option value="todos">Todos os Turnos</option>
               <option value="07-13">Turno 07:00 - 13:00</option>
@@ -157,7 +157,7 @@ export const Historico: React.FC = () => {
                     <M3Badge label={ev.badgeLabel} variant={ev.badgeVariant} size="sm" />
                   </div>
                   <p className="text-xs text-slate-500 font-medium">{ev.subtitle}</p>
-                  <p className="text-xs text-slate-700 dark:text-slate-300 italic pt-1">
+                  <p className="text-xs text-slate-700 dark:text-tc-ink-2 italic pt-1">
                     "{ev.details}"
                   </p>
                 </div>

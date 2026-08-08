@@ -162,6 +162,36 @@ function kpi(label: string, value: number | string | null | undefined, accent = 
   );
 }
 
+function getBayFieldParts(row: SplitBayRow, field: 'dsDeck' | 'ldDeck' | 'dsHold' | 'ldHold'): number[] | null {
+  switch (field) {
+    case 'dsDeck':
+      return row.dsDeckParts;
+    case 'ldDeck':
+      return row.ldDeckParts;
+    case 'dsHold':
+      return row.dsHoldParts;
+    case 'ldHold':
+      return row.ldHoldParts;
+  }
+}
+
+/** Célula "twin" (2 contêineres de 20' no mesmo slot): mostra os 2 valores lado a lado, igual ao documento original. */
+function TwinPreview({ parts }: { parts?: number[] | null }) {
+  if (!parts || parts.length < 2) return null;
+  return (
+    <div className="flex items-center justify-end gap-0.5 mt-1">
+      {parts.map((part, i) => (
+        <span
+          key={i}
+          className="w-6 text-center text-[10px] font-black text-slate-600 dark:text-tc-ink-2 border border-slate-300 dark:border-tc-border rounded bg-slate-50 dark:bg-tc-surface-1/80 leading-tight py-0.5"
+        >
+          {part}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export const PlanejamentoSplit: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
@@ -306,6 +336,10 @@ export const PlanejamentoSplit: React.FC = () => {
     setSplitEditableBays(
       splitDuplicateRecord.bayData.map((row) => ({
         ...row,
+        dsDeckParts: row.dsDeckParts ?? null,
+        ldDeckParts: row.ldDeckParts ?? null,
+        dsHoldParts: row.dsHoldParts ?? null,
+        ldHoldParts: row.ldHoldParts ?? null,
         totalConfidence: 1,
         totalNeedsReview: false,
         compositionMismatch: row.discharge + row.load !== row.total,
@@ -412,12 +446,16 @@ export const PlanejamentoSplit: React.FC = () => {
       totalDischarge: splitComputedTotals.totalDischarge,
       totalLoad: splitComputedTotals.totalLoad,
       activeBays: splitComputedTotals.numberOfActiveBays,
-      bayData: splitEditableBays.map(({ bay, dsDeck, ldDeck, dsHold, ldHold, discharge, load, total }) => ({
+      bayData: splitEditableBays.map(({ bay, dsDeck, ldDeck, dsHold, ldHold, dsDeckParts, ldDeckParts, dsHoldParts, ldHoldParts, discharge, load, total }) => ({
         bay,
         dsDeck,
         ldDeck,
         dsHold,
         ldHold,
+        dsDeckParts,
+        ldDeckParts,
+        dsHoldParts,
+        ldHoldParts,
         discharge,
         load,
         total: total ?? 0,
@@ -457,6 +495,10 @@ export const PlanejamentoSplit: React.FC = () => {
     setEditBays(
       record.bayData.map((row) => ({
         ...row,
+        dsDeckParts: row.dsDeckParts ?? null,
+        ldDeckParts: row.ldDeckParts ?? null,
+        dsHoldParts: row.dsHoldParts ?? null,
+        ldHoldParts: row.ldHoldParts ?? null,
         totalConfidence: 1,
         totalNeedsReview: row.total === null,
         compositionMismatch: row.discharge + row.load !== row.total,
@@ -490,12 +532,16 @@ export const PlanejamentoSplit: React.FC = () => {
       totalDischarge: editComputedTotals.totalDischarge,
       totalLoad: editComputedTotals.totalLoad,
       activeBays: editComputedTotals.numberOfActiveBays,
-      bayData: editBays.map(({ bay, dsDeck, ldDeck, dsHold, ldHold, discharge, load, total }) => ({
+      bayData: editBays.map(({ bay, dsDeck, ldDeck, dsHold, ldHold, dsDeckParts, ldDeckParts, dsHoldParts, ldHoldParts, discharge, load, total }) => ({
         bay,
         dsDeck,
         ldDeck,
         dsHold,
         ldHold,
+        dsDeckParts,
+        ldDeckParts,
+        dsHoldParts,
+        ldHoldParts,
         discharge,
         load,
         total: total ?? 0,
@@ -771,7 +817,7 @@ export const PlanejamentoSplit: React.FC = () => {
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1700px] mx-auto">
       <div className="rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-cyan-300/20 bg-[radial-gradient(circle_at_0%_20%,#164e63_0%,#111827_35%,#020617_70%)]">
         <div className="space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-200 border border-cyan-300/40 text-xs font-black uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-200 border border-cyan-300/40 text-xs font-black uppercase tracking-wider dark:bg-tc-accent">
             <FileJson className="w-3.5 h-3.5" />
             Importacao Inteligente - Plano de Estiva
           </div>
@@ -797,7 +843,7 @@ export const PlanejamentoSplit: React.FC = () => {
       </div>
 
       {/* ===== Painel Operacional oficial: BTP 1 / BTP 2 / BTP 3 (navio atualmente salvo em cada berço) ===== */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+      <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-5 border border-slate-200 dark:border-tc-border">
         <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3 flex items-center gap-2">
           <Anchor className="w-4 h-4 text-cyan-600" /> Painel Operacional - Berços
         </h3>
@@ -808,19 +854,19 @@ export const PlanejamentoSplit: React.FC = () => {
               <div
                 key={berth}
                 className={`rounded-xl border p-4 ${
-                  record ? 'border-cyan-400 bg-cyan-50/60 dark:bg-cyan-950/20' : 'border-dashed border-slate-200 dark:border-slate-700 opacity-70'
+                  record ? 'border-cyan-400 bg-cyan-50/60 dark:bg-tc-accent-soft/20' : 'border-dashed border-slate-200 dark:border-tc-border opacity-70'
                 }`}
               >
-                <h4 className="font-black text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{berth}</h4>
+                <h4 className="font-black text-xs text-slate-500 dark:text-tc-ink-3 uppercase tracking-wider mb-1">{berth}</h4>
                 {record ? (
                   <div className="space-y-1">
                     <p className="font-black text-slate-900 dark:text-white text-sm truncate">{record.vessel}</p>
                     {record.voyage && <p className="text-[11px] text-slate-500">Viagem {record.voyage}</p>}
-                    <div className="flex items-center gap-3 text-[11px] font-bold text-slate-600 dark:text-slate-300 pt-1">
+                    <div className="flex items-center gap-3 text-[11px] font-bold text-slate-600 dark:text-tc-ink-2 pt-1">
                       <span>Descarga {record.totalDischarge}</span>
                       <span>Embarque {record.totalLoad}</span>
                     </div>
-                    <p className="text-xs font-black text-cyan-700 dark:text-cyan-300">Total {record.totalContainers} · {record.activeBays} bays</p>
+                    <p className="text-xs font-black text-cyan-700 dark:text-tc-accent">Total {record.totalContainers} · {record.activeBays} bays</p>
                     <p className="text-[10px] text-slate-400">
                       {record.updatedAt ? `Editado em ${new Date(record.updatedAt).toLocaleString('pt-BR')}` : new Date(record.createdAt).toLocaleString('pt-BR')}
                     </p>
@@ -831,13 +877,13 @@ export const PlanejamentoSplit: React.FC = () => {
                         <div className="flex gap-1.5">
                           <button
                             onClick={() => onConfirmDelete(record.id)}
-                            className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-black"
+                            className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-black dark:bg-tc-critical dark:text-tc-bg dark:hover:opacity-90"
                           >
                             Confirmar
                           </button>
                           <button
                             onClick={onCancelDelete}
-                            className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-[11px] font-black text-slate-600 dark:text-slate-300"
+                            className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-tc-border text-[11px] font-black text-slate-600 dark:text-tc-ink-2"
                           >
                             Cancelar
                           </button>
@@ -847,13 +893,13 @@ export const PlanejamentoSplit: React.FC = () => {
                       <div className="flex gap-1.5 pt-2">
                         <button
                           onClick={() => onStartEditRecord(record)}
-                          className="px-2.5 py-1.5 rounded-lg border border-cyan-300 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300 text-[11px] font-black flex items-center gap-1"
+                          className="px-2.5 py-1.5 rounded-lg border border-cyan-300 dark:border-tc-accent-line text-cyan-700 dark:text-tc-accent text-[11px] font-black flex items-center gap-1"
                         >
                           <Pencil className="w-3 h-3" /> Editar
                         </button>
                         <button
                           onClick={() => onRequestDelete(record.id)}
-                          className="px-2.5 py-1.5 rounded-lg border border-rose-300 dark:border-rose-900 text-rose-700 dark:text-rose-400 text-[11px] font-black flex items-center gap-1"
+                          className="px-2.5 py-1.5 rounded-lg border border-rose-300 dark:border-tc-critical-line text-rose-700 dark:text-tc-critical text-[11px] font-black flex items-center gap-1"
                         >
                           <Trash2 className="w-3 h-3" /> Apagar
                         </button>
@@ -870,7 +916,7 @@ export const PlanejamentoSplit: React.FC = () => {
       </div>
 
       {editingRecord && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-cyan-300 dark:border-cyan-800 space-y-4">
+        <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-5 border border-cyan-300 dark:border-tc-accent-line space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
               <Pencil className="w-4 h-4 text-cyan-600" /> Editando SPLIT — {editingRecord.berth}
@@ -881,26 +927,26 @@ export const PlanejamentoSplit: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label className="text-xs font-black text-slate-600 dark:text-slate-300 space-y-1 block">
+            <label className="text-xs font-black text-slate-600 dark:text-tc-ink-2 space-y-1 block">
               Navio
               <input
                 value={editVessel}
                 onChange={(e) => setEditVessel(e.target.value)}
-                className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold"
+                className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 text-sm font-bold"
               />
             </label>
-            <label className="text-xs font-black text-slate-600 dark:text-slate-300 space-y-1 block">
+            <label className="text-xs font-black text-slate-600 dark:text-tc-ink-2 space-y-1 block">
               Viagem
               <input
                 value={editVoyage}
                 onChange={(e) => setEditVoyage(e.target.value)}
-                className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold"
+                className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 text-sm font-bold"
               />
             </label>
           </div>
 
           <div>
-            <p className="text-xs font-black text-slate-600 dark:text-slate-300 mb-1.5">BERÇO DE ATRACAÇÃO</p>
+            <p className="text-xs font-black text-slate-600 dark:text-tc-ink-2 mb-1.5">BERÇO DE ATRACAÇÃO</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {SPLIT_BERTHS.map((berth) => (
                 <button
@@ -908,8 +954,8 @@ export const PlanejamentoSplit: React.FC = () => {
                   onClick={() => setEditBerth(berth)}
                   className={`px-3 py-3 rounded-xl border text-xs font-black flex items-center justify-center gap-2 ${
                     editBerth === berth
-                      ? 'border-cyan-600 bg-cyan-50 text-cyan-800 dark:bg-cyan-950/30'
-                      : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-cyan-400'
+                      ? 'border-cyan-600 bg-cyan-50 text-cyan-800 dark:bg-tc-accent-soft/30'
+                      : 'border-slate-300 dark:border-tc-border text-slate-600 dark:text-tc-ink-2 hover:border-cyan-400'
                   }`}
                 >
                   <span className={`w-3 h-3 rounded-full border ${editBerth === berth ? 'bg-cyan-600 border-cyan-600' : 'border-slate-400'}`} />
@@ -929,7 +975,7 @@ export const PlanejamentoSplit: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[820px] text-xs">
               <thead>
-                <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                <tr className="bg-slate-100 dark:bg-tc-surface-1 text-slate-600 dark:text-tc-ink-2">
                   <th className="text-left p-2">Bay</th>
                   <th className="text-right p-2">Total oficial</th>
                   <th className="text-right p-2">DS-DECK</th>
@@ -944,7 +990,7 @@ export const PlanejamentoSplit: React.FC = () => {
                 {editBays.map((row, idx) => (
                   <tr
                     key={`${row.bay}-${idx}`}
-                    className={`border-b border-slate-200 dark:border-slate-700 ${row.compositionMismatch ? 'bg-amber-50/70 dark:bg-amber-950/20' : ''}`}
+                    className={`border-b border-slate-200 dark:border-tc-border ${row.compositionMismatch ? 'bg-amber-50/70 dark:bg-tc-warning-soft/20' : ''}`}
                   >
                     <td className="p-2 font-black">BAY {row.bay}</td>
                     <td className="p-1 text-right">
@@ -954,7 +1000,7 @@ export const PlanejamentoSplit: React.FC = () => {
                         value={row.total ?? ''}
                         placeholder={row.total === null ? '?' : ''}
                         onChange={(e) => updateEditBayTotal(idx, e.target.value)}
-                        className="w-20 text-right px-1.5 py-1 rounded-lg border border-cyan-300 dark:border-cyan-800 bg-white dark:bg-slate-800 text-xs font-black"
+                        className="w-20 text-right px-1.5 py-1 rounded-lg border border-cyan-300 dark:border-tc-accent-line bg-white dark:bg-tc-surface-1 text-xs font-black"
                       />
                     </td>
                     {(['dsDeck', 'ldDeck', 'dsHold', 'ldHold'] as const).map((field) => (
@@ -965,8 +1011,9 @@ export const PlanejamentoSplit: React.FC = () => {
                           value={row[field] ?? ''}
                           placeholder={row[field] === null ? '?' : ''}
                           onChange={(e) => updateEditBayField(idx, field, e.target.value)}
-                          className="w-16 text-right px-1.5 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold"
+                          className="w-16 text-right px-1.5 py-1 rounded-lg border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 text-xs font-bold"
                         />
+                        <TwinPreview parts={getBayFieldParts(row, field)} />
                       </td>
                     ))}
                     <td className={`p-2 text-right font-bold ${row.compositionMismatch ? 'text-amber-600' : ''}`}>{row.discharge}</td>
@@ -978,13 +1025,13 @@ export const PlanejamentoSplit: React.FC = () => {
           </div>
 
           <div className="flex justify-between items-center pt-1">
-            <button onClick={onCancelEdit} className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-black text-slate-600 dark:text-slate-300">
+            <button onClick={onCancelEdit} className="px-3 py-2 rounded-xl border border-slate-300 dark:border-tc-border text-xs font-black text-slate-600 dark:text-tc-ink-2">
               Cancelar
             </button>
             <button
               disabled={!editBerth}
               onClick={onSaveEdit}
-              className="px-5 py-2.5 rounded-xl bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white text-xs font-black flex items-center gap-1.5"
+              className="px-5 py-2.5 rounded-xl bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white text-xs font-black flex items-center gap-1.5 dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
             >
               <CheckCircle2 className="w-4 h-4" /> SALVAR ALTERAÇÕES
             </button>
@@ -994,7 +1041,7 @@ export const PlanejamentoSplit: React.FC = () => {
 
       {/* ===== Novo SPLIT: analisa SOMENTE a página 1 (perfil longitudinal do navio) ===== */}
       <div
-        className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800"
+        className="bg-white dark:bg-tc-surface-2 rounded-2xl p-5 border border-slate-200 dark:border-tc-border"
         onDragOver={(e) => e.preventDefault()}
         onDrop={onSplitDrop}
       >
@@ -1018,14 +1065,14 @@ export const PlanejamentoSplit: React.FC = () => {
         </p>
 
         {!splitSavedRecord && !splitConfirmed && (
-          <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-6 text-center space-y-3 mt-3">
+          <div className="border-2 border-dashed border-slate-300 dark:border-tc-border rounded-2xl p-6 text-center space-y-3 mt-3">
             <UploadCloud className="w-10 h-10 text-cyan-700 mx-auto" />
-            <p className="text-sm font-black text-slate-700 dark:text-slate-200">Arraste o PDF de Split aqui</p>
+            <p className="text-sm font-black text-slate-700 dark:text-tc-ink-1">Arraste o PDF de Split aqui</p>
             <p className="text-xs text-slate-400">ou selecione manualmente</p>
             <div className="flex items-center justify-center gap-2 flex-wrap">
               <button
                 onClick={() => splitFileRef.current?.click()}
-                className="px-4 py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white font-black text-xs rounded-xl transition-all"
+                className="px-4 py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white font-black text-xs rounded-xl transition-all dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
               >
                 Selecionar Arquivo
               </button>
@@ -1069,7 +1116,7 @@ export const PlanejamentoSplit: React.FC = () => {
               </p>
             </div>
             <div className="flex gap-2 pt-1">
-              <button onClick={onOpenSavedDuplicate} className="px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-black">
+              <button onClick={onOpenSavedDuplicate} className="px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-black dark:bg-tc-warning dark:text-tc-bg dark:hover:opacity-90">
                 ABRIR ANÁLISE SALVA
               </button>
               <button onClick={onReanalyzeAnyway} className="px-3 py-2 rounded-lg bg-white border border-amber-400 text-amber-800 text-xs font-black">
@@ -1107,22 +1154,22 @@ export const PlanejamentoSplit: React.FC = () => {
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="text-xs font-black text-slate-600 dark:text-slate-300 space-y-1 block">
+              <label className="text-xs font-black text-slate-600 dark:text-tc-ink-2 space-y-1 block">
                 Navio
                 <input
                   value={splitVesselName}
                   onChange={(e) => setSplitVesselName(e.target.value)}
                   disabled={splitConfirmed}
-                  className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold disabled:opacity-70"
+                  className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 text-sm font-bold disabled:opacity-70"
                 />
               </label>
-              <label className="text-xs font-black text-slate-600 dark:text-slate-300 space-y-1 block">
+              <label className="text-xs font-black text-slate-600 dark:text-tc-ink-2 space-y-1 block">
                 Viagem
                 <input
                   value={splitVoyage}
                   onChange={(e) => setSplitVoyage(e.target.value)}
                   disabled={splitConfirmed}
-                  className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold disabled:opacity-70"
+                  className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 text-sm font-bold disabled:opacity-70"
                 />
               </label>
             </div>
@@ -1153,7 +1200,7 @@ export const PlanejamentoSplit: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[820px] text-xs">
                 <thead>
-                  <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                  <tr className="bg-slate-100 dark:bg-tc-surface-1 text-slate-600 dark:text-tc-ink-2">
                     <th className="text-left p-2">Bay</th>
                     <th className="text-right p-2">Total oficial</th>
                     <th className="text-right p-2">DS-DECK</th>
@@ -1168,7 +1215,7 @@ export const PlanejamentoSplit: React.FC = () => {
                   {splitEditableBays.map((row, idx) => (
                     <tr
                       key={`${row.bay}-${idx}`}
-                      className={`border-b border-slate-200 dark:border-slate-700 ${row.needsReview ? 'bg-amber-50/70 dark:bg-amber-950/20' : ''}`}
+                      className={`border-b border-slate-200 dark:border-tc-border ${row.needsReview ? 'bg-amber-50/70 dark:bg-tc-warning-soft/20' : ''}`}
                     >
                       <td className="p-2 font-black">BAY {row.bay}</td>
                       <td className="p-1 text-right">
@@ -1180,7 +1227,7 @@ export const PlanejamentoSplit: React.FC = () => {
                           disabled={splitConfirmed}
                           onChange={(e) => updateSplitBayTotal(idx, e.target.value)}
                           className={`w-20 text-right px-1.5 py-1 rounded-lg border text-xs font-black disabled:opacity-70 ${
-                            row.totalNeedsReview ? 'border-amber-400 bg-amber-50' : 'border-cyan-300 dark:border-cyan-800 bg-white dark:bg-slate-800'
+                            row.totalNeedsReview ? 'border-amber-400 bg-amber-50' : 'border-cyan-300 dark:border-tc-accent-line bg-white dark:bg-tc-surface-1'
                           }`}
                         />
                       </td>
@@ -1194,9 +1241,10 @@ export const PlanejamentoSplit: React.FC = () => {
                             disabled={splitConfirmed}
                             onChange={(e) => updateSplitBayField(idx, field, e.target.value)}
                             className={`w-16 text-right px-1.5 py-1 rounded-lg border text-xs font-bold disabled:opacity-70 ${
-                              row[field] === null ? 'border-amber-400 bg-amber-50' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800'
+                              row[field] === null ? 'border-amber-400 bg-amber-50' : 'border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1'
                             }`}
                           />
+                          <TwinPreview parts={getBayFieldParts(row, field)} />
                         </td>
                       ))}
                       <td className={`p-2 text-right font-bold ${row.compositionMismatch ? 'text-amber-600' : ''}`}>{row.discharge}</td>
@@ -1231,7 +1279,7 @@ export const PlanejamentoSplit: React.FC = () => {
                   <img
                     src={splitResult.croppedImageDataUrl}
                     alt="Perfil do navio recortado"
-                    className="mt-2 w-full rounded-xl border border-slate-200 dark:border-slate-700"
+                    className="mt-2 w-full rounded-xl border border-slate-200 dark:border-tc-border"
                   />
                 )}
               </div>
@@ -1241,14 +1289,14 @@ export const PlanejamentoSplit: React.FC = () => {
               <div className="flex justify-end">
                 <button
                   onClick={onConfirmSplitAnalysis}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5 dark:bg-tc-good dark:text-tc-bg dark:hover:opacity-90"
                 >
                   <CheckCircle2 className="w-4 h-4" /> CONFIRMAR ANÁLISE
                 </button>
               </div>
             ) : (
-              <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
-                <p className="text-xs font-black text-slate-700 dark:text-slate-200">BERÇO DE ATRACAÇÃO</p>
+              <div className="rounded-xl border border-slate-200 dark:border-tc-border p-4 space-y-3">
+                <p className="text-xs font-black text-slate-700 dark:text-tc-ink-1">BERÇO DE ATRACAÇÃO</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {SPLIT_BERTHS.map((berth) => (
                     <button
@@ -1256,8 +1304,8 @@ export const PlanejamentoSplit: React.FC = () => {
                       onClick={() => setSplitSelectedBerth(berth)}
                       className={`px-3 py-3 rounded-xl border text-xs font-black flex items-center justify-center gap-2 ${
                         splitSelectedBerth === berth
-                          ? 'border-cyan-600 bg-cyan-50 text-cyan-800 dark:bg-cyan-950/30'
-                          : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-cyan-400'
+                          ? 'border-cyan-600 bg-cyan-50 text-cyan-800 dark:bg-tc-accent-soft/30'
+                          : 'border-slate-300 dark:border-tc-border text-slate-600 dark:text-tc-ink-2 hover:border-cyan-400'
                       }`}
                     >
                       <span className={`w-3 h-3 rounded-full border ${splitSelectedBerth === berth ? 'bg-cyan-600 border-cyan-600' : 'border-slate-400'}`} />
@@ -1266,13 +1314,13 @@ export const PlanejamentoSplit: React.FC = () => {
                   ))}
                 </div>
                 <div className="flex justify-between items-center pt-2">
-                  <button onClick={onBackToReview} className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-black text-slate-600 dark:text-slate-300">
+                  <button onClick={onBackToReview} className="px-3 py-2 rounded-xl border border-slate-300 dark:border-tc-border text-xs font-black text-slate-600 dark:text-tc-ink-2">
                     Voltar e corrigir
                   </button>
                   <button
                     disabled={!splitSelectedBerth}
                     onClick={onSaveSplit}
-                    className="px-5 py-2.5 rounded-xl bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white text-xs font-black"
+                    className="px-5 py-2.5 rounded-xl bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white text-xs font-black dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
                   >
                     SALVAR SPLIT
                   </button>
@@ -1309,7 +1357,7 @@ export const PlanejamentoSplit: React.FC = () => {
       </div>
 
       {/* ===== Histórico por berço (registros independentes) ===== */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+      <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-5 border border-slate-200 dark:border-tc-border">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
           <h3 className="text-sm font-black text-slate-900 dark:text-white">SPLITS SALVOS</h3>
           <div className="flex gap-1.5 flex-wrap">
@@ -1318,7 +1366,7 @@ export const PlanejamentoSplit: React.FC = () => {
                 key={filterKey}
                 onClick={() => setSplitHistoryFilter(filterKey)}
                 className={`px-3 py-1.5 rounded-lg text-[11px] font-black ${
-                  splitHistoryFilter === filterKey ? 'bg-cyan-700 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                  splitHistoryFilter === filterKey ? 'bg-cyan-700 text-white' : 'bg-slate-100 dark:bg-tc-surface-1 text-slate-600 dark:text-tc-ink-2'
                 }`}
               >
                 {filterKey}
@@ -1332,7 +1380,7 @@ export const PlanejamentoSplit: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {splitHistoryRecords.map((record) => (
-              <div key={record.id} className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+              <div key={record.id} className="rounded-xl border border-slate-200 dark:border-tc-border p-3">
                 <p className="text-[10px] font-black uppercase tracking-wider text-cyan-700">{record.berth}</p>
                 <p className="font-black text-sm text-slate-900 dark:text-white truncate">{record.vessel}</p>
                 <p className="text-[11px] font-bold text-slate-500">
@@ -1350,13 +1398,13 @@ export const PlanejamentoSplit: React.FC = () => {
                     <div className="flex gap-1.5">
                       <button
                         onClick={() => onConfirmDelete(record.id)}
-                        className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-black"
+                        className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-black dark:bg-tc-critical dark:text-tc-bg dark:hover:opacity-90"
                       >
                         Confirmar
                       </button>
                       <button
                         onClick={onCancelDelete}
-                        className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-[11px] font-black text-slate-600 dark:text-slate-300"
+                        className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-tc-border text-[11px] font-black text-slate-600 dark:text-tc-ink-2"
                       >
                         Cancelar
                       </button>
@@ -1366,13 +1414,13 @@ export const PlanejamentoSplit: React.FC = () => {
                   <div className="flex gap-1.5 pt-2">
                     <button
                       onClick={() => onStartEditRecord(record)}
-                      className="px-2.5 py-1.5 rounded-lg border border-cyan-300 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300 text-[11px] font-black flex items-center gap-1"
+                      className="px-2.5 py-1.5 rounded-lg border border-cyan-300 dark:border-tc-accent-line text-cyan-700 dark:text-tc-accent text-[11px] font-black flex items-center gap-1"
                     >
                       <Pencil className="w-3 h-3" /> Editar
                     </button>
                     <button
                       onClick={() => onRequestDelete(record.id)}
-                      className="px-2.5 py-1.5 rounded-lg border border-rose-300 dark:border-rose-900 text-rose-700 dark:text-rose-400 text-[11px] font-black flex items-center gap-1"
+                      className="px-2.5 py-1.5 rounded-lg border border-rose-300 dark:border-tc-critical-line text-rose-700 dark:text-tc-critical text-[11px] font-black flex items-center gap-1"
                     >
                       <Trash2 className="w-3 h-3" /> Apagar
                     </button>
@@ -1387,7 +1435,7 @@ export const PlanejamentoSplit: React.FC = () => {
       <div className="flex justify-center">
         <button
           onClick={() => setShowLegacyMode((v) => !v)}
-          className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-black text-slate-500 dark:text-slate-400 flex items-center gap-1.5"
+          className="px-4 py-2 rounded-xl border border-slate-300 dark:border-tc-border text-xs font-black text-slate-500 dark:text-tc-ink-3 flex items-center gap-1.5"
         >
           <Wrench className="w-3.5 h-3.5" /> {showLegacyMode ? 'Ocultar Modo Legado' : 'Modo Legado (análise multi-página / IA — somente inspeção)'}
         </button>
@@ -1395,7 +1443,7 @@ export const PlanejamentoSplit: React.FC = () => {
 
       {showLegacyMode && (
       <>
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+      <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-5 border border-slate-200 dark:border-tc-border">
         <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Splits Salvos por Berço (legado)</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {BERTH_CARDS.map((berthKey) => {
@@ -1410,10 +1458,10 @@ export const PlanejamentoSplit: React.FC = () => {
                 onClick={() => entry && handleLoadBerth(berthKey)}
                 className={`rounded-xl border p-3 transition-all ${
                   isActive
-                    ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-950/30'
+                    ? 'border-cyan-500 bg-cyan-50 dark:bg-tc-accent-soft/30'
                     : entry
-                    ? 'border-slate-200 dark:border-slate-700 hover:border-cyan-400 cursor-pointer'
-                    : 'border-dashed border-slate-200 dark:border-slate-700 opacity-60'
+                    ? 'border-slate-200 dark:border-tc-border hover:border-cyan-400 cursor-pointer'
+                    : 'border-dashed border-slate-200 dark:border-tc-border opacity-60'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -1432,8 +1480,8 @@ export const PlanejamentoSplit: React.FC = () => {
                   )}
                 </div>
                 {entry ? (
-                  <div className="space-y-0.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                    <p className="font-black text-slate-800 dark:text-slate-100 truncate">
+                  <div className="space-y-0.5 text-[11px] font-semibold text-slate-600 dark:text-tc-ink-2">
+                    <p className="font-black text-slate-800 dark:text-tc-ink-1 truncate">
                       {entry.analysis?.shipName || 'Navio não identificado'}
                     </p>
                     <p>{bayCount} bays · {containerCount} mov.</p>
@@ -1449,19 +1497,19 @@ export const PlanejamentoSplit: React.FC = () => {
       </div>
 
       <div
-        className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800"
+        className="bg-white dark:bg-tc-surface-2 rounded-2xl p-5 border border-slate-200 dark:border-tc-border"
         onDragOver={(e) => e.preventDefault()}
         onDrop={onDrop}
       >
-        <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-8 text-center space-y-4">
+        <div className="border-2 border-dashed border-slate-300 dark:border-tc-border rounded-2xl p-8 text-center space-y-4">
           <UploadCloud className="w-12 h-12 text-cyan-700 mx-auto" />
-          <p className="text-sm font-black text-slate-700 dark:text-slate-200">Arraste o PDF de Split aqui</p>
+          <p className="text-sm font-black text-slate-700 dark:text-tc-ink-1">Arraste o PDF de Split aqui</p>
           <p className="text-xs text-slate-400">ou selecione manualmente</p>
 
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <button
               onClick={() => fileRef.current?.click()}
-              className="px-4 py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white font-black text-xs rounded-xl transition-all"
+              className="px-4 py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white font-black text-xs rounded-xl transition-all dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
             >
               Selecionar Arquivo
             </button>
@@ -1475,7 +1523,7 @@ export const PlanejamentoSplit: React.FC = () => {
             <button
               disabled={!summary}
               onClick={() => setShowDeveloper((v) => !v)}
-              className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-60 text-white font-black text-xs rounded-xl transition-all flex items-center gap-1.5"
+              className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-60 text-white font-black text-xs rounded-xl transition-all flex items-center gap-1.5 dark:bg-tc-warning dark:text-tc-bg dark:hover:opacity-90"
             >
               <Wrench className="w-3.5 h-3.5" /> {showDeveloper ? 'Ocultar Modo Dev' : 'Modo Dev'}
             </button>
@@ -1494,9 +1542,9 @@ export const PlanejamentoSplit: React.FC = () => {
       </div>
 
       {parsing && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 space-y-2">
-          <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-            <div className="h-full bg-cyan-700 transition-all" style={{ width: `${progress}%` }} />
+        <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-4 border border-slate-200 dark:border-tc-border space-y-2">
+          <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-tc-surface-1 overflow-hidden">
+            <div className="h-full bg-cyan-700 transition-all dark:bg-tc-accent" style={{ width: `${progress}%` }} />
           </div>
           <p className="text-xs font-black text-slate-500">Pipeline em execucao... {progress}%</p>
 
@@ -1557,9 +1605,9 @@ export const PlanejamentoSplit: React.FC = () => {
 
       {summary && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+          <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-5 border border-slate-200 dark:border-tc-border">
             <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Resumo do Documento</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs font-semibold text-slate-700 dark:text-tc-ink-2">
               <p><span className="text-slate-400">Navio:</span> {displayValue(summary.shipName, summary.shipNameSource)}</p>
               <p><span className="text-slate-400">Viagem:</span> {displayValue(summary.voyage, summary.voyageSource)}</p>
               <p><span className="text-slate-400">Berco:</span> {displayValue(summary.berth, summary.berthSource)}</p>
@@ -1569,11 +1617,11 @@ export const PlanejamentoSplit: React.FC = () => {
               <p><span className="text-slate-400">Deck:</span> {qcPlanSummary?.deckTotal !== null && qcPlanSummary?.deckTotal !== undefined ? qcPlanSummary.deckTotal : 'Analisando...'}</p>
               <p><span className="text-slate-400">Hold:</span> {qcPlanSummary?.holdTotal !== null && qcPlanSummary?.holdTotal !== undefined ? qcPlanSummary.holdTotal : 'Analisando...'}</p>
             </div>
-            <p className="text-xs mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">{summary.smartSummary}</p>
+            <p className="text-xs mt-3 text-slate-600 dark:text-tc-ink-2 leading-relaxed">{summary.smartSummary}</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+            <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-5 border border-slate-200 dark:border-tc-border">
               <h3 className="text-sm font-black mb-3">Mapa Operacional</h3>
               <div className="space-y-2 text-xs font-semibold">
                 <div className="flex justify-between"><span>Resumo Geral</span><span>{summary?.operationalMap?.resumoGeral?.total || 0}</span></div>
@@ -1581,25 +1629,25 @@ export const PlanejamentoSplit: React.FC = () => {
                 <div className="flex justify-between"><span>Porao</span><span>{summary?.operationalMap?.porao || 0}</span></div>
                 <div className="flex justify-between"><span>Descarga</span><span>{summary?.operationalMap?.descarga || 0}</span></div>
                 <div className="flex justify-between"><span>Embarque</span><span>{summary?.operationalMap?.embarque || 0}</span></div>
-                <div className="flex justify-between border-t border-slate-200 dark:border-slate-700 pt-2 font-black"><span>Total</span><span>{summary?.operationalMap?.total || 0}</span></div>
+                <div className="flex justify-between border-t border-slate-200 dark:border-tc-border pt-2 font-black"><span>Total</span><span>{summary?.operationalMap?.total || 0}</span></div>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+            <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-5 border border-slate-200 dark:border-tc-border">
               <h3 className="text-sm font-black mb-3">Métricas de Pipeline</h3>
               <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
-                <div className="rounded-lg bg-slate-100 dark:bg-slate-800 p-2">OCR: {summary?.pipelineMetrics?.ocrTimeMs || 0}ms</div>
-                <div className="rounded-lg bg-slate-100 dark:bg-slate-800 p-2">Visao: {summary?.pipelineMetrics?.visionTimeMs || 0}ms</div>
-                <div className="rounded-lg bg-slate-100 dark:bg-slate-800 p-2">IA: {summary?.pipelineMetrics?.aiTimeMs || 0}ms</div>
-                <div className="rounded-lg bg-slate-100 dark:bg-slate-800 p-2">Bays: {summary?.pipelineMetrics?.baysCount || 0}</div>
-                <div className="rounded-lg bg-slate-100 dark:bg-slate-800 p-2">Containers: {summary?.pipelineMetrics?.containersCount || 0}</div>
-                <div className="rounded-lg bg-slate-100 dark:bg-slate-800 p-2">Confianca: {Math.round((summary?.pipelineMetrics?.confidence || 0) * 100)}%</div>
+                <div className="rounded-lg bg-slate-100 dark:bg-tc-surface-1 p-2">OCR: {summary?.pipelineMetrics?.ocrTimeMs || 0}ms</div>
+                <div className="rounded-lg bg-slate-100 dark:bg-tc-surface-1 p-2">Visao: {summary?.pipelineMetrics?.visionTimeMs || 0}ms</div>
+                <div className="rounded-lg bg-slate-100 dark:bg-tc-surface-1 p-2">IA: {summary?.pipelineMetrics?.aiTimeMs || 0}ms</div>
+                <div className="rounded-lg bg-slate-100 dark:bg-tc-surface-1 p-2">Bays: {summary?.pipelineMetrics?.baysCount || 0}</div>
+                <div className="rounded-lg bg-slate-100 dark:bg-tc-surface-1 p-2">Containers: {summary?.pipelineMetrics?.containersCount || 0}</div>
+                <div className="rounded-lg bg-slate-100 dark:bg-tc-surface-1 p-2">Confianca: {Math.round((summary?.pipelineMetrics?.confidence || 0) * 100)}%</div>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+            <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-5 border border-slate-200 dark:border-tc-border">
               <h3 className="text-sm font-black mb-3">Containers por Bay</h3>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1615,7 +1663,7 @@ export const PlanejamentoSplit: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+            <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-5 border border-slate-200 dark:border-tc-border">
               <h3 className="text-sm font-black mb-3">Conves x Porao</h3>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1632,7 +1680,7 @@ export const PlanejamentoSplit: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+            <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-5 border border-slate-200 dark:border-tc-border">
               <h3 className="text-sm font-black mb-3">Descarga x Embarque por Bay</h3>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1649,7 +1697,7 @@ export const PlanejamentoSplit: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+            <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-5 border border-slate-200 dark:border-tc-border">
               <h3 className="text-sm font-black mb-3">Reefer e DG por Bay</h3>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1667,12 +1715,12 @@ export const PlanejamentoSplit: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+          <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-5 border border-slate-200 dark:border-tc-border">
             <h3 className="text-sm font-black mb-3">Tabela Operacional por Bay</h3>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1100px] text-xs">
                 <thead>
-                  <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                  <tr className="bg-slate-100 dark:bg-tc-surface-1 text-slate-600 dark:text-tc-ink-2">
                     <th className="text-left p-2">Bay</th>
                     <th className="text-right p-2">Conves</th>
                     <th className="text-right p-2">Porao</th>
@@ -1692,7 +1740,7 @@ export const PlanejamentoSplit: React.FC = () => {
                   {bayTable.map((row: any) => (
                     <tr
                       key={row.bay}
-                      className="border-b border-slate-200 dark:border-slate-700 hover:bg-cyan-50/70 dark:hover:bg-slate-800 cursor-pointer"
+                      className="border-b border-slate-200 dark:border-tc-border hover:bg-cyan-50/70 dark:hover:bg-tc-surface-3 cursor-pointer"
                       onClick={() => setSelectedBay(summary?.bays?.find((b: any) => b.id === row.bay) || null)}
                     >
                       <td className="p-2 font-black">{row.bay}</td>
@@ -1715,20 +1763,20 @@ export const PlanejamentoSplit: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+          <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-5 border border-slate-200 dark:border-tc-border">
             <h3 className="text-sm font-black mb-3">Bays Detectadas</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {(summary.bays || []).map((b: any) => (
                 <div
                   key={b.id}
-                  className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 hover:border-cyan-400 cursor-pointer"
+                  className="rounded-xl border border-slate-200 dark:border-tc-border p-3 hover:border-cyan-400 cursor-pointer"
                   onClick={() => setSelectedBay(b)}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-black text-xs">BAY {b.id}</h4>
                     <span className="text-xs font-black text-cyan-700">{b.containerCount} cont.</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                  <div className="grid grid-cols-3 gap-1 text-[11px] font-semibold text-slate-600 dark:text-tc-ink-2">
                     <p>Dk: {b.deck || 0}</p>
                     <p>Hd: {b.hold || 0}</p>
                     <p>Rf: {b.reefer || 0}</p>
@@ -1745,8 +1793,8 @@ export const PlanejamentoSplit: React.FC = () => {
 
       {selectedBay && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs p-4 flex items-center justify-center">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div className="bg-white dark:bg-tc-surface-2 rounded-2xl border border-slate-200 dark:border-tc-border shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-4 border-b border-slate-200 dark:border-tc-border flex items-center justify-between">
               <div>
                 <h3 className="font-black text-slate-900 dark:text-white text-sm">BAY {selectedBay.id} - detalhe operacional</h3>
                 <p className="text-[11px] text-slate-500">Total {selectedBay.containerCount} | Conves {selectedBay.deck || 0} | Porao {selectedBay.hold || 0}</p>
@@ -1757,23 +1805,23 @@ export const PlanejamentoSplit: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 p-4 overflow-auto max-h-[76vh]">
-              <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+              <div className="rounded-xl border border-slate-200 dark:border-tc-border p-3">
                 <h4 className="text-xs font-black mb-2">Imagem ampliada da pagina</h4>
                 {selectedBayPage?.image ? (
-                  <img src={selectedBayPage.image} alt={`Bay ${selectedBay.id}`} className="w-full rounded-lg border border-slate-200 dark:border-slate-700" />
+                  <img src={selectedBayPage.image} alt={`Bay ${selectedBay.id}`} className="w-full rounded-lg border border-slate-200 dark:border-tc-border" />
                 ) : (
                   <p className="text-xs text-slate-500">Nao foi possivel associar imagem desta bay.</p>
                 )}
               </div>
 
-              <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+              <div className="rounded-xl border border-slate-200 dark:border-tc-border p-3">
                 <h4 className="text-xs font-black mb-2">Containers detectados</h4>
                 <div className="space-y-1 max-h-[55vh] overflow-auto">
                   {(selectedBay.containers || []).map((c: any, idx: number) => (
                     <button
                       key={`${c.number || c.position}-${idx}`}
                       onClick={() => setSelectedContainer(c)}
-                      className="w-full text-left rounded-lg border border-slate-200 dark:border-slate-700 p-2 text-[11px] hover:bg-cyan-50 dark:hover:bg-slate-800"
+                      className="w-full text-left rounded-lg border border-slate-200 dark:border-tc-border p-2 text-[11px] hover:bg-cyan-50 dark:hover:bg-tc-surface-3"
                     >
                       {c.position} - {c.number || 's/ numero'} {c.iso ? `(${c.iso})` : ''}
                     </button>
@@ -1787,8 +1835,8 @@ export const PlanejamentoSplit: React.FC = () => {
 
       {selectedContainer && (
         <div className="fixed inset-0 z-[60] bg-slate-900/60 p-4 flex items-center justify-center">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-xl">
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div className="bg-white dark:bg-tc-surface-2 rounded-2xl border border-slate-200 dark:border-tc-border shadow-2xl w-full max-w-xl">
+            <div className="p-4 border-b border-slate-200 dark:border-tc-border flex items-center justify-between">
               <h3 className="text-sm font-black">Container {selectedContainer.number || 's/ numero'}</h3>
               <button onClick={() => setSelectedContainer(null)} className="text-slate-500 hover:text-slate-700">
                 <X className="w-4 h-4" />
@@ -1814,8 +1862,8 @@ export const PlanejamentoSplit: React.FC = () => {
 
       {showTextViewer && extractedText && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs p-4 flex items-center justify-center">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-5xl w-full max-h-[85vh] overflow-hidden">
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div className="bg-white dark:bg-tc-surface-2 rounded-2xl border border-slate-200 dark:border-tc-border shadow-2xl max-w-5xl w-full max-h-[85vh] overflow-hidden">
+            <div className="p-4 border-b border-slate-200 dark:border-tc-border flex items-center justify-between">
               <div>
                 <h3 className="font-black text-slate-900 dark:text-white text-sm">Texto extraido do PDF</h3>
                 <p className="text-[11px] text-slate-400">
@@ -1828,7 +1876,7 @@ export const PlanejamentoSplit: React.FC = () => {
             </div>
 
             <div className="p-4 overflow-auto max-h-[60vh]">
-              <pre className="text-[11px] whitespace-pre-wrap break-words bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
+              <pre className="text-[11px] whitespace-pre-wrap break-words bg-slate-50 dark:bg-tc-surface-1 rounded-xl p-3 border border-slate-200 dark:border-tc-border">
                 {extractedText}
               </pre>
             </div>
@@ -1905,39 +1953,39 @@ export const PlanejamentoSplit: React.FC = () => {
       )}
 
       {!summary && !parsing && (
-        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 p-4 text-xs text-slate-500 dark:text-slate-400">
+        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-tc-border bg-white/70 dark:bg-tc-surface-2/70 p-4 text-xs text-slate-500 dark:text-tc-ink-3">
           O sistema popula automaticamente o painel quando voce seleciona o PDF.
         </div>
       )}
 
-      <div className="fixed right-4 bottom-4 w-[330px] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl p-3 space-y-2">
+      <div className="fixed right-4 bottom-4 w-[330px] bg-white dark:bg-tc-surface-2 rounded-2xl border border-slate-200 dark:border-tc-border shadow-xl p-3 space-y-2">
         <div className="flex gap-2">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Pesquisar bay"
-            className="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-semibold"
+            className="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs font-semibold"
           />
           <button
             onClick={onSearch}
-            className="px-2.5 py-2 rounded-xl bg-cyan-700 hover:bg-cyan-600 text-white"
+            className="px-2.5 py-2 rounded-xl bg-cyan-700 hover:bg-cyan-600 text-white dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
           >
             <Search className="w-4 h-4" />
           </button>
         </div>
 
         {searchResult && (
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-2 text-xs">
+          <div className="rounded-xl border border-slate-200 dark:border-tc-border p-2 text-xs">
             {searchResult.message ? (
-              <p className="font-semibold text-slate-600 dark:text-slate-300">{searchResult.message}</p>
+              <p className="font-semibold text-slate-600 dark:text-tc-ink-2">{searchResult.message}</p>
             ) : (
-              <div className="space-y-1 text-slate-700 dark:text-slate-200 font-semibold">
+              <div className="space-y-1 text-slate-700 dark:text-tc-ink-1 font-semibold">
                 <p>BAY {searchResult.id}</p>
                 <p>Total: {searchResult.containerCount}</p>
                 <p>Conves: {searchResult.deck || 0} | Porao: {searchResult.hold || 0}</p>
                 <button
                   onClick={() => setSelectedBay(searchResult)}
-                  className="mt-1 px-2 py-1 rounded-md bg-cyan-700 text-white text-[11px] font-black"
+                  className="mt-1 px-2 py-1 rounded-md bg-cyan-700 text-white text-[11px] font-black dark:bg-tc-accent dark:text-tc-bg"
                 >
                   Abrir detalhe
                 </button>
@@ -1954,7 +2002,7 @@ export const PlanejamentoSplit: React.FC = () => {
         )}
 
         {!summary && (
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-2 text-[11px] text-slate-500 font-semibold flex items-center gap-1.5">
+          <div className="rounded-xl border border-slate-200 dark:border-tc-border p-2 text-[11px] text-slate-500 font-semibold flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5" />
             Aguardando analise de PDF
           </div>

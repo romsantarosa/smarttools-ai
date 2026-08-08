@@ -963,12 +963,154 @@ export async function detectShipProfileBoundingBox(
   return lastResult as ShipProfileBoundingBoxResult;
 }
 
+export interface DecoyGridBoundaryResult {
+  hasDecoyGrid: boolean;
+  /** Fração (0-1) da altura da imagem recebida onde a tabela de guindaste/turno COMEÇA. Só presente se hasDecoyGrid=true. */
+  boundaryY: number | null;
+  confidence: number;
+  error?: string;
+}
+
+/**
+ * Verificação dedicada e estreita (uma única pergunta de sim/não + posição),
+ * rodada DEPOIS do recorte inicial de `detectShipProfileBoundingBox`. Pedir
+ * pra IA "não incluir" a tabela de guindaste/turno como parte de uma tarefa
+ * de localização maior (ver prompt de `detectShipProfileBoundingBoxOnce`) não
+ * é suficiente na prática — o recorte devolvido continua incluindo essa
+ * segunda tabela em alguns documentos, mesmo com a instrução explícita.
+ * Perguntar isoladamente "essa tabela específica está presente, e onde ela
+ * começa" é uma tarefa de identificação positiva, bem mais confiável do que
+ * uma instrução negativa dentro de um prompt maior. Se detectada, o chamador
+ * deve recortar a imagem em `boundaryY` antes de mandar pra leitura.
+ */
+async function detectDecoyGridBoundaryOnce(
+  imageBase64: string,
+  mimeType: string
+): Promise<DecoyGridBoundaryResult> {
+  try {
+    const apiKey = validateGeminiApiKey();
+
+    const prompt = `Esta imagem é um recorte de um documento operacional portuário (Split de plano de estiva),
+contendo o perfil longitudinal do navio: uma linha de caixas brancas com totais, DS-DECK, LD-DECK,
+a silhueta colorida do casco do navio, DS-HOLD, LD-HOLD, e uma linha de números de bay (ex: 70, 66,
+62... 02).
+
+Às vezes, colada logo ABAIXO da linha de números de bay, existe uma SEGUNDA tabela — de atribuição
+de guindaste/turno. Ela reusa os MESMOS rótulos (DS-DECK/DS-HOLD/LD-DECK/LD-HOLD, possivelmente em
+outra ordem), mas tem células CINZA com padrão de hachura em X, números pequenos de sequência
+(1, 2, 3...), e NÃO tem a silhueta do navio ao lado.
+
+Sua ÚNICA tarefa: dizer se essa segunda tabela (guindaste/turno) aparece nesta imagem e, se aparecer,
+em que altura ela começa.
+
+Retorne SOMENTE JSON válido, sem texto adicional:
+{
+  "hasDecoyGrid": boolean,
+  "boundaryY": number entre 0 e 1 (fração da ALTURA TOTAL desta imagem onde a segunda tabela
+    começa — o topo dela, logo abaixo da linha de números de bay da tabela correta) ou null se
+    hasDecoyGrid for false,
+  "confidence": number de 0 a 1
+}
+
+Se não tiver certeza se a segunda tabela está presente, retorne hasDecoyGrid: false.`;
+
+    const response = await fetch(GEMINI_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              { inlineData: { mimeType, data: imageBase64 } },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: 'application/json',
+          maxOutputTokens: 1024,
+          responseSchema: {
+            type: 'OBJECT',
+            properties: {
+              hasDecoyGrid: { type: 'BOOLEAN' },
+              boundaryY: { type: 'NUMBER', nullable: true },
+              confidence: { type: 'NUMBER' },
+            },
+            required: ['hasDecoyGrid', 'confidence'],
+          },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      return { hasDecoyGrid: false, boundaryY: null, confidence: 0, error: `Gemini API error: HTTP ${response.status}` };
+    }
+
+    const data = await response.json();
+    const parts = data?.candidates?.[0]?.content?.parts;
+    const text = Array.isArray(parts) ? parts.map((part: any) => part?.text || '').join('') : '';
+    if (!text) {
+      return { hasDecoyGrid: false, boundaryY: null, confidence: 0, error: 'Resposta vazia da IA ao verificar tabela de guindaste.' };
+    }
+
+    const parsed = JSON.parse(text);
+    const hasDecoyGrid = Boolean(parsed?.hasDecoyGrid);
+    const rawBoundary = parsed?.boundaryY;
+    const isValidBoundary = typeof rawBoundary === 'number' && rawBoundary > 0 && rawBoundary < 1;
+
+    return {
+      hasDecoyGrid: hasDecoyGrid && isValidBoundary,
+      boundaryY: hasDecoyGrid && isValidBoundary ? rawBoundary : null,
+      confidence: typeof parsed?.confidence === 'number' ? parsed.confidence : 0,
+    };
+  } catch (error) {
+    return {
+      hasDecoyGrid: false,
+      boundaryY: null,
+      confidence: 0,
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao verificar tabela de guindaste.',
+    };
+  }
+}
+
+/** Mesma política de retry das demais leituras de visão desta pipeline (falha intermitente é comum). */
+export async function detectDecoyGridBoundary(
+  imageBase64: string,
+  mimeType: string = 'image/png'
+): Promise<DecoyGridBoundaryResult> {
+  const maxAttempts = 2;
+  let lastResult: DecoyGridBoundaryResult | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const result = await detectDecoyGridBoundaryOnce(imageBase64, mimeType);
+    lastResult = result;
+
+    if (!result.error) {
+      return result;
+    }
+
+    console.warn(`[geminiService] detectDecoyGridBoundary: tentativa ${attempt}/${maxAttempts} falhou.`, result.error);
+
+    if (attempt < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, 1500 * attempt));
+    }
+  }
+
+  return lastResult as DecoyGridBoundaryResult;
+}
+
 export type SplitBayArea = 'DS-DECK' | 'LD-DECK' | 'DS-HOLD' | 'LD-HOLD';
 
 export interface SplitBayReading {
   columnIndex: number;
   area: SplitBayArea;
   quantidade: number | null;
+  /** Presente só quando a célula é "twin" (dois contêineres de 20' no mesmo slot) — os dois valores lado a lado, na ordem visual. `quantidade` já é a soma deles. */
+  parts?: number[] | null;
   confidence: number;
 }
 
@@ -1005,7 +1147,7 @@ async function extractBaySplitReadingsOnce(
     const apiKey = validateGeminiApiKey();
 
     const hintText = bayOrderHint.length > 0
-      ? `A lista de bays já identificada nesta imagem, da ESQUERDA para a DIREITA, é: ${bayOrderHint.join(', ')}. Use essa quantidade de colunas como referência, mas leia os números que realmente aparecem em cada coluna.`
+      ? `A lista de bays desta imagem, da ESQUERDA para a DIREITA, já foi confirmada como: ${bayOrderHint.join(', ')}. Use EXATAMENTE essas colunas, nessa ordem e quantidade — não pule, não adicione e não reordene colunas, mesmo que alguma pareça vazia. Leia os números que realmente aparecem em cada coluna.`
       : 'Identifique você mesmo os rótulos de bay na linha inferior, da esquerda para a direita.';
 
     const prompt = `Esta imagem é um recorte contendo o perfil longitudinal de um navio em um documento
@@ -1038,12 +1180,24 @@ de cada bay — esses são a ORDEM das etapas de operação daquela bay, não a 
 IGNORE esses números de sequência nesta tarefa; leia apenas a quantidade de contêineres de cada célula
 DS-DECK/LD-DECK/DS-HOLD/LD-HOLD.
 
+IMPORTANTE sobre células "TWIN" (dois números lado a lado DENTRO da mesma célula, ex.: "14 | 14",
+"24 | 24", "8 | 8"): isso representa dois contêineres de 20' dividindo o mesmo slot da bay
+(twin-lock) — cada metade é uma quantidade real e SEPARADA, não o mesmo valor duplicado por engano
+visual. Quando isso acontecer, retorne os dois números SEPARADAMENTE no campo "parts" (ex.: "parts":
+[14, 14]), na mesma ordem visual (esquerda para direita) — NÃO some os dois você mesmo; a soma é
+calculada depois, no código. Se a célula NÃO for twin (um valor só, ou vazia), não inclua "parts"
+(ou retorne null). Não confunda twin com os números de sequência de trabalho (ficam fora/abaixo da
+célula, isolados) nem com o número principal ao lado da letra "C" (um único valor, não duas partes).
+
 Regras OBRIGATÓRIAS:
 - NUNCA invente ou estime um número que não esteja visualmente presente.
 - Se a célula estiver GENUINAMENTE vazia (sem número, sem "C", sem nenhuma marca), retorne
   quantidade: 0 com confidence 0.95+.
 - Se houver um número mas ele estiver ilegível/ambíguo, retorne quantidade: null e confidence abaixo de 0.5.
-- NÃO calcule somas, totais ou médias. Apenas leia célula por célula.
+- Se a célula for "twin" (dois números lado a lado): preencha "parts" com os dois valores e deixe
+  "quantidade": null — NÃO some os dois valores você mesmo, isso é feito depois no código.
+- Se a célula NÃO for twin: preencha "quantidade" normalmente e NÃO inclua "parts" (ou retorne null).
+- NÃO calcule somas, totais ou médias ENTRE células ou áreas diferentes. Apenas leia célula por célula.
 - NÃO pule colunas: inclua todas as colunas visíveis na imagem, mesmo vazias.
 - NÃO leia a linha de caixas brancas do total — apenas as 4 faixas DS-DECK/LD-DECK/DS-HOLD/LD-HOLD.
 
@@ -1051,10 +1205,10 @@ Retorne SOMENTE JSON válido, sem texto adicional:
 {
   "bayLabelsDetected": ["70", "66", "62", ...],
   "readings": [
-    { "columnIndex": 0, "area": "DS-DECK", "quantidade": number|null, "confidence": number },
-    { "columnIndex": 0, "area": "LD-DECK", "quantidade": number|null, "confidence": number },
-    { "columnIndex": 0, "area": "DS-HOLD", "quantidade": number|null, "confidence": number },
-    { "columnIndex": 0, "area": "LD-HOLD", "quantidade": number|null, "confidence": number }
+    { "columnIndex": 0, "area": "DS-DECK", "quantidade": number|null, "parts": [number, number]|null, "confidence": number },
+    { "columnIndex": 0, "area": "LD-DECK", "quantidade": number|null, "parts": [number, number]|null, "confidence": number },
+    { "columnIndex": 0, "area": "DS-HOLD", "quantidade": number|null, "parts": [number, number]|null, "confidence": number },
+    { "columnIndex": 0, "area": "LD-HOLD", "quantidade": number|null, "parts": [number, number]|null, "confidence": number }
   ],
   "confidence": number de 0 a 1 (confiança geral da leitura)
 }`;
@@ -1090,6 +1244,7 @@ Retorne SOMENTE JSON válido, sem texto adicional:
                     columnIndex: { type: 'NUMBER' },
                     area: { type: 'STRING' },
                     quantidade: { type: 'NUMBER', nullable: true },
+                    parts: { type: 'ARRAY', items: { type: 'NUMBER' }, nullable: true },
                     confidence: { type: 'NUMBER' },
                   },
                   required: ['columnIndex', 'area', 'confidence'],
@@ -1163,13 +1318,21 @@ Retorne SOMENTE JSON válido, sem texto adicional:
       ? parsed.readings
           .filter((raw: any) => validAreas.has(raw?.area))
           .map((raw: any) => {
-            const quantidade = typeof raw?.quantidade === 'number' && Number.isFinite(raw.quantidade) && raw.quantidade >= 0
+            const rawParts = Array.isArray(raw?.parts)
+              ? raw.parts.filter((p: any) => typeof p === 'number' && Number.isFinite(p) && p >= 0).map((p: number) => Math.round(p))
+              : [];
+            // A soma de um par "twin" é sempre calculada aqui no código, nunca confiada à IA.
+            const parts = rawParts.length >= 2 ? rawParts : null;
+            const quantidade = parts
+              ? parts.reduce((sum: number, p: number) => sum + p, 0)
+              : typeof raw?.quantidade === 'number' && Number.isFinite(raw.quantidade) && raw.quantidade >= 0
               ? Math.round(raw.quantidade)
               : null;
             return {
               columnIndex: typeof raw?.columnIndex === 'number' ? raw.columnIndex : -1,
               area: raw.area as SplitBayArea,
               quantidade,
+              parts,
               confidence: typeof raw?.confidence === 'number' ? raw.confidence : 0,
             };
           })
@@ -1259,7 +1422,7 @@ async function extractBayTotalRowOnce(
     const apiKey = validateGeminiApiKey();
 
     const hintText = bayOrderHint.length > 0
-      ? `A lista de bays já identificada nesta imagem, da ESQUERDA para a DIREITA, é: ${bayOrderHint.join(', ')}. Use essa quantidade de colunas como referência.`
+      ? `A lista de bays desta imagem, da ESQUERDA para a DIREITA, já foi confirmada como: ${bayOrderHint.join(', ')}. Use EXATAMENTE essas colunas, nessa ordem e quantidade — não pule, não adicione e não reordene colunas, mesmo que alguma caixa pareça vazia. Cada coluna dessa lista corresponde a exatamente uma caixa branca, na mesma posição.`
       : 'Identifique você mesmo quantas colunas de bay existem, da esquerda para a direita.';
 
     const prompt = `Esta imagem é um recorte da página 1 de um documento operacional portuário (Split de plano de estiva).

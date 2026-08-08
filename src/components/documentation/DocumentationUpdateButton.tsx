@@ -55,7 +55,7 @@ export const DocumentationUpdateButton: React.FC = () => {
       <button
         onClick={handleUpdate}
         disabled={isRunning}
-        className="fixed left-3 bottom-3 sm:left-5 sm:bottom-5 z-40 px-3.5 sm:px-4 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-black shadow-lg border border-slate-700 dark:border-slate-300 flex items-center gap-2 transition-colors"
+        className="fixed left-3 bottom-3 sm:left-5 sm:bottom-5 z-40 px-3.5 sm:px-4 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-tc-surface-1 dark:hover:bg-white text-white dark:text-tc-ink-1 text-xs font-black shadow-lg border border-slate-700 dark:border-tc-ink-2 flex items-center gap-2 transition-colors"
         title="Atualizar documentação da tela atual"
       >
         {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookOpenCheck className="w-4 h-4" />}
@@ -63,16 +63,16 @@ export const DocumentationUpdateButton: React.FC = () => {
       </button>
 
       {showResult ? (
-        <div className="fixed left-3 right-3 sm:left-5 sm:right-auto sm:bottom-20 bottom-18 sm:max-w-sm z-40 rounded-2xl border border-blue-200 dark:border-blue-900 bg-white dark:bg-slate-900 shadow-xl p-3.5 animate-fade-in">
+        <div className="fixed left-3 right-3 sm:left-5 sm:right-auto sm:bottom-20 bottom-18 sm:max-w-sm z-40 rounded-2xl border border-blue-200 dark:border-tc-accent-line bg-white dark:bg-tc-surface-2 shadow-xl p-3.5 animate-fade-in">
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-1">
               <p className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <Sparkles className="w-4 h-4 text-blue-600 dark:text-tc-accent" />
                 Atualização da documentação
               </p>
-              <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300">{resultMessage}</p>
+              <p className="text-[11px] sm:text-xs text-slate-600 dark:text-tc-ink-2">{resultMessage}</p>
             </div>
-            <button onClick={() => setShowResult(false)} className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-200">
+            <button onClick={() => setShowResult(false)} className="text-slate-500 hover:text-slate-700 dark:hover:text-tc-ink-1">
               <X className="w-4 h-4" />
             </button>
           </div>

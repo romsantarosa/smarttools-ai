@@ -46,7 +46,7 @@ export const Documentacao: React.FC = () => {
 
   return (
     <div className="space-y-5 sm:space-y-6 animate-fade-in">
-      <section className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white shadow-xl overflow-hidden">
+      <section className="rounded-3xl border border-slate-200 dark:border-tc-border bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white shadow-xl overflow-hidden">
         <div className="p-6 sm:p-8 space-y-4">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 px-3 py-1 text-[11px] uppercase tracking-wider font-bold text-sky-200">
             <BookOpenText className="w-3.5 h-3.5" />
@@ -99,7 +99,7 @@ export const Documentacao: React.FC = () => {
                             ]}
                           />
                         ) : (
-                          <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300">Documentação em construção.</p>
+                          <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-tc-ink-2">Documentação em construção.</p>
                         )}
                       </DocumentationSection>
                     ))}
@@ -124,13 +124,13 @@ export const Documentacao: React.FC = () => {
                   return (
                     <div
                       key={action.label}
-                      className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 flex items-center justify-between"
+                      className="rounded-xl border border-slate-200 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-2 px-3 py-2.5 flex items-center justify-between"
                     >
-                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-700 dark:text-tc-ink-1 flex items-center gap-2">
                         <Icon className="w-4 h-4 text-slate-500" />
                         {action.label}
                       </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-tc-warning-soft dark:text-tc-warning border border-amber-200 dark:border-tc-warning-line">
                         Em breve
                       </span>
                     </div>

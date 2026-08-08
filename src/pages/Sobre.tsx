@@ -52,7 +52,7 @@ const platformBadges = [
 export const Sobre: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-8 sm:pb-12">
-      <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white shadow-xl">
+      <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 dark:border-tc-border bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white shadow-xl">
         <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top_right,_rgba(56,189,248,0.35),_transparent_35%),radial-gradient(circle_at_bottom_left,_rgba(250,204,21,0.18),_transparent_30%)]" />
         <div className="relative p-6 sm:p-8 md:p-10">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
@@ -75,20 +75,20 @@ export const Sobre: React.FC = () => {
       </section>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-5">
-        <M3Card className="xl:col-span-2 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <M3Card className="xl:col-span-2 border border-slate-200 dark:border-tc-border shadow-sm">
           <div className="flex items-start gap-3">
-            <div className="rounded-xl bg-blue-100 dark:bg-blue-950 p-2.5 text-blue-700 dark:text-blue-300 shrink-0">
+            <div className="rounded-xl bg-blue-100 dark:bg-tc-accent-soft p-2.5 text-blue-700 dark:text-tc-accent shrink-0">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div className="space-y-3 min-w-0">
               <h2 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
                 Sobre o Sistema
               </h2>
-              <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+              <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-tc-ink-2">
                 O BTP SmartTools AI é uma plataforma desenvolvida para otimizar a operação portuária através de Inteligência Artificial,
                 automação de processos e gerenciamento operacional.
               </p>
-              <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+              <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-tc-ink-2">
                 O sistema foi projetado para centralizar informações, facilitar a tomada de decisões e aumentar a produtividade das equipes
                 envolvidas nas operações de bordo.
               </p>
@@ -96,20 +96,20 @@ export const Sobre: React.FC = () => {
           </div>
         </M3Card>
 
-        <M3Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+        <M3Card className="border border-slate-200 dark:border-tc-border shadow-sm">
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <div className="rounded-xl bg-emerald-100 dark:bg-emerald-950 p-2.5 text-emerald-700 dark:text-emerald-300 shrink-0">
+              <div className="rounded-xl bg-emerald-100 dark:bg-tc-good-soft p-2.5 text-emerald-700 dark:text-tc-good shrink-0">
                 <Cpu className="w-5 h-5" />
               </div>
               <div>
                 <h2 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
                   Versão
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-semibold mt-1">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-tc-ink-2 font-semibold mt-1">
                   Versão 1.0.0
                 </p>
-                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-tc-ink-3 font-medium">
                   Build 2026
                 </p>
               </div>
@@ -133,10 +133,10 @@ export const Sobre: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
-        <M3Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+        <M3Card className="border border-slate-200 dark:border-tc-border shadow-sm">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-amber-100 dark:bg-amber-950 p-2.5 text-amber-700 dark:text-amber-300">
+              <div className="rounded-xl bg-amber-100 dark:bg-tc-warning-soft p-2.5 text-amber-700 dark:text-tc-warning">
                 <Sparkles className="w-5 h-5" />
               </div>
               <h2 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
@@ -150,12 +150,12 @@ export const Sobre: React.FC = () => {
                 return (
                   <div
                     key={feature.label}
-                    className="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 px-3 py-2.5"
+                    className="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-tc-border bg-slate-50/80 dark:bg-tc-surface-1/50 px-3 py-2.5"
                   >
-                    <div className="rounded-xl bg-white dark:bg-slate-900 p-2 text-slate-700 dark:text-slate-200 shadow-xs">
+                    <div className="rounded-xl bg-white dark:bg-tc-surface-2 p-2 text-slate-700 dark:text-tc-ink-1 shadow-xs">
                       <Icon className="w-4 h-4" />
                     </div>
-                    <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-tc-ink-1">
                       {feature.label}
                     </span>
                   </div>
@@ -165,10 +165,10 @@ export const Sobre: React.FC = () => {
           </div>
         </M3Card>
 
-        <M3Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+        <M3Card className="border border-slate-200 dark:border-tc-border shadow-sm">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-sky-100 dark:bg-sky-950 p-2.5 text-sky-700 dark:text-sky-300">
+              <div className="rounded-xl bg-sky-100 dark:bg-tc-accent-soft p-2.5 text-sky-700 dark:text-tc-accent">
                 <Code2 className="w-5 h-5" />
               </div>
               <h2 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
@@ -186,9 +186,9 @@ export const Sobre: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-        <M3Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+        <M3Card className="border border-slate-200 dark:border-tc-border shadow-sm">
           <div className="flex items-start gap-3">
-            <div className="rounded-xl bg-violet-100 dark:bg-violet-950 p-2.5 text-violet-700 dark:text-violet-300 shrink-0">
+            <div className="rounded-xl bg-violet-100 dark:bg-tc-accent-soft p-2.5 text-violet-700 dark:text-tc-accent shrink-0">
               <Bot className="w-5 h-5" />
             </div>
             <div className="space-y-1 min-w-0">
@@ -198,7 +198,7 @@ export const Sobre: React.FC = () => {
               <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
                 Rom Santa Rosa
               </p>
-              <div className="space-y-1 text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300">
+              <div className="space-y-1 text-xs sm:text-sm font-semibold text-slate-600 dark:text-tc-ink-2">
                 <p>Analista e Desenvolvedor de Sistemas</p>
                 <p>Especialista em Engenharia de Software</p>
                 <p>Especialista em Gestão Portuária</p>
@@ -207,22 +207,22 @@ export const Sobre: React.FC = () => {
           </div>
         </M3Card>
 
-        <M3Card className="border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-center text-center">
+        <M3Card className="border border-slate-200 dark:border-tc-border shadow-sm flex items-center justify-center text-center">
           <div className="space-y-2">
-            <p className="text-xs sm:text-sm font-bold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
+            <p className="text-xs sm:text-sm font-bold uppercase tracking-[0.28em] text-slate-500 dark:text-tc-ink-3">
               Marca do Aplicativo
             </p>
             <div className="mx-auto w-16 h-16 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg">
               <Info className="w-8 h-8 text-sky-300" />
             </div>
-            <p className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300">
+            <p className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-tc-ink-2">
               Experiência moderna, responsiva e focada em operações portuárias.
             </p>
           </div>
         </M3Card>
       </div>
 
-      <footer className="pt-2 text-center text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+      <footer className="pt-2 text-center text-[11px] sm:text-xs text-slate-500 dark:text-tc-ink-3 leading-relaxed">
         <p>© 2026 Rom Santa Rosa</p>
         <p>Todos os direitos reservados.</p>
       </footer>

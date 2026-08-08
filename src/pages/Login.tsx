@@ -201,12 +201,12 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-tc-bg text-slate-800 dark:text-tc-ink-1 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans transition-colors duration-200">
       {/* Top right theme toggle */}
       <div className="absolute top-4 right-4 z-20">
         <button
           onClick={toggleTheme}
-          className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 shadow-xs hover:scale-105 transition-all cursor-pointer flex items-center gap-2 text-xs font-bold"
+          className="p-3 rounded-2xl bg-white dark:bg-tc-surface-2 border border-slate-200 dark:border-tc-border text-slate-700 dark:text-tc-ink-2 shadow-xs hover:scale-105 transition-all cursor-pointer flex items-center gap-2 text-xs font-bold"
         >
           {config.themeMode === 'light' ? (
             <>
@@ -223,25 +223,25 @@ export const Login: React.FC = () => {
       </div>
 
       {/* Background Port Terminal Glow Effects */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/10 dark:bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-600/10 dark:bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/10 dark:bg-tc-accent/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-600/10 dark:bg-tc-accent/20 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 relative z-10 animate-fade-in">
+      <div className="w-full max-w-md bg-white dark:bg-tc-surface-2 border border-slate-200 dark:border-tc-border rounded-3xl shadow-2xl p-6 sm:p-8 relative z-10 animate-fade-in">
         {/* Terminal Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/30 mb-3">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/30 mb-3 dark:bg-tc-accent dark:text-tc-bg">
             <Container className="w-9 h-9 text-white" />
           </div>
           <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
             BTP <span className="text-blue-600 font-light">SmartTools AI</span>
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-semibold">
+          <p className="text-xs text-slate-500 dark:text-tc-ink-3 mt-1 font-semibold">
             {config.systemSubtitle} • Autenticação Firebase
           </p>
         </div>
 
         {/* Tab Switcher: Login vs Cadastrar no Firebase */}
-        <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl mb-6">
+        <div className="flex bg-slate-100 dark:bg-tc-surface-1/80 p-1 rounded-2xl mb-6">
           <button
             type="button"
             onClick={() => {
@@ -251,7 +251,7 @@ export const Login: React.FC = () => {
             }}
             className={`flex-1 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer ${
               mode === 'login'
-                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+                ? 'bg-white dark:bg-tc-surface-2 text-blue-600 dark:text-tc-accent shadow-xs'
                 : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -267,7 +267,7 @@ export const Login: React.FC = () => {
             }}
             className={`flex-1 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer ${
               mode === 'register'
-                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+                ? 'bg-white dark:bg-tc-surface-2 text-blue-600 dark:text-tc-accent shadow-xs'
                 : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -278,14 +278,14 @@ export const Login: React.FC = () => {
 
         {/* Status Alerts */}
         {errorMsg && (
-          <div className="mb-4 p-3.5 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs rounded-2xl flex items-start gap-2.5">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600 dark:text-red-400" />
+          <div className="mb-4 p-3.5 bg-red-50 dark:bg-tc-critical-soft/50 border border-red-200 dark:border-tc-critical-line text-red-700 dark:text-tc-critical text-xs rounded-2xl flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600 dark:text-tc-critical" />
             <div className="flex-1 space-y-2">
               <div>{errorMsg}</div>
               <button
                 type="button"
                 onClick={() => handleLocalLogin('Supervisor')}
-                className="mt-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[11px] rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-all"
+                className="mt-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[11px] rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-all dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Entrar como Supervisor (Modo Rápido / Local)</span>
@@ -295,8 +295,8 @@ export const Login: React.FC = () => {
         )}
 
         {successMsg && (
-          <div className="mb-4 p-3.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900 text-emerald-800 dark:text-emerald-300 text-xs rounded-2xl flex items-start gap-2.5">
-            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
+          <div className="mb-4 p-3.5 bg-emerald-50 dark:bg-tc-good-soft/50 border border-emerald-200 dark:border-tc-good-line text-emerald-800 dark:text-tc-good text-xs rounded-2xl flex items-start gap-2.5">
+            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600 dark:text-tc-good" />
             <div className="flex-1 font-semibold">{successMsg}</div>
           </div>
         )}
@@ -306,7 +306,7 @@ export const Login: React.FC = () => {
           {/* Full Name field (Register mode) */}
           {mode === 'register' && (
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+              <label className="block text-xs font-bold text-slate-700 dark:text-tc-ink-2 mb-1.5 uppercase tracking-wider">
                 Nome Completo
               </label>
               <div className="relative">
@@ -317,7 +317,7 @@ export const Login: React.FC = () => {
                   value={fullName}
                   onChange={e => setFullName(e.target.value)}
                   placeholder="Nome do colaborador"
-                  className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-600 focus:outline-hidden transition-all"
+                  className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-600 focus:outline-hidden transition-all"
                 />
               </div>
             </div>
@@ -325,7 +325,7 @@ export const Login: React.FC = () => {
 
           {/* Email / Username Input */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+            <label className="block text-xs font-bold text-slate-700 dark:text-tc-ink-2 mb-1.5 uppercase tracking-wider">
               Usuário / E-mail Corporativo
             </label>
             <div className="relative">
@@ -336,7 +336,7 @@ export const Login: React.FC = () => {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="operador@empresa.com"
-                className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-600 focus:outline-hidden transition-all"
+                className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-600 focus:outline-hidden transition-all"
               />
             </div>
           </div>
@@ -344,7 +344,7 @@ export const Login: React.FC = () => {
           {/* Password Input */}
           <div>
             <div className="flex justify-between items-center mb-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              <label className="block text-xs font-bold text-slate-700 dark:text-tc-ink-2 uppercase tracking-wider">
                 Senha
               </label>
               {mode === 'login' && (
@@ -370,7 +370,7 @@ export const Login: React.FC = () => {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-600 focus:outline-hidden transition-all"
+                className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-600 focus:outline-hidden transition-all"
               />
             </div>
           </div>
@@ -380,7 +380,7 @@ export const Login: React.FC = () => {
               (hoje, diretamente no Firestore/console; um painel de admin
               fica como próximo passo). */}
           {mode === 'register' && (
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 rounded-xl px-3 py-2">
+            <p className="text-[11px] text-slate-500 dark:text-tc-ink-3 bg-slate-50 dark:bg-tc-surface-1/60 rounded-xl px-3 py-2">
               Sua conta será criada com perfil <strong>Operador</strong>. Acesso de Supervisor precisa ser concedido por um administrador.
             </p>
           )}
@@ -389,7 +389,7 @@ export const Login: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm shadow-md shadow-blue-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+            className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm shadow-md shadow-blue-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
           >
             {loading ? (
               <>
@@ -411,7 +411,7 @@ export const Login: React.FC = () => {
         </form>
 
         {/* Social Login Options (Gmail & Facebook) */}
-        <div className="mt-6 pt-5 border-t border-slate-200 dark:border-slate-800">
+        <div className="mt-6 pt-5 border-t border-slate-200 dark:border-tc-border">
           <p className="text-[11px] font-bold text-slate-400 text-center uppercase tracking-wider mb-3">
             Ou acesse logado pelas redes
           </p>
@@ -422,7 +422,7 @@ export const Login: React.FC = () => {
               type="button"
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full py-2.5 px-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold text-xs shadow-xs flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 px-4 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 hover:bg-slate-50 dark:hover:bg-tc-surface-3 text-slate-800 dark:text-tc-ink-1 font-bold text-xs shadow-xs flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-50"
             >
               <GoogleLogo className="w-4 h-4" />
               <span>Entrar com Google / Gmail</span>
@@ -433,7 +433,7 @@ export const Login: React.FC = () => {
               type="button"
               onClick={handleFacebookLogin}
               disabled={loading}
-              className="w-full py-2.5 px-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold text-xs shadow-xs flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 px-4 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 hover:bg-slate-50 dark:hover:bg-tc-surface-3 text-slate-800 dark:text-tc-ink-1 font-bold text-xs shadow-xs flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-50"
             >
               <FacebookLogo className="w-4 h-4" />
               <span>Entrar com Facebook</span>
@@ -442,21 +442,21 @@ export const Login: React.FC = () => {
         </div>
 
         {/* Local access helper */}
-        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-tc-border">
           <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-wider mb-2">
             Acesso Local da Instalação
           </p>
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => handleLocalLogin('Supervisor')}
-              className="px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              className="px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-tc-ink-1 bg-slate-100 dark:bg-tc-surface-1 hover:bg-slate-200 dark:hover:bg-tc-surface-3 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Shield className="w-3.5 h-3.5 text-blue-600" />
               Supervisor
             </button>
             <button
               onClick={() => handleLocalLogin('Operador')}
-              className="px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              className="px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-tc-ink-1 bg-slate-100 dark:bg-tc-surface-1 hover:bg-slate-200 dark:hover:bg-tc-surface-3 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
               Operador
@@ -468,7 +468,7 @@ export const Login: React.FC = () => {
       {/* Forgot Password Modal (Sends Email via Firebase) */}
       {forgotOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-sm w-full border border-slate-200 dark:border-slate-800 shadow-2xl relative">
+          <div className="bg-white dark:bg-tc-surface-2 rounded-3xl p-6 max-w-sm w-full border border-slate-200 dark:border-tc-border shadow-2xl relative">
             <button
               onClick={() => setForgotOpen(false)}
               className="absolute top-4 right-4 p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white"
@@ -476,33 +476,33 @@ export const Login: React.FC = () => {
               <X className="w-4 h-4" />
             </button>
 
-            <div className="w-10 h-10 rounded-2xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-100 dark:bg-tc-accent-soft text-blue-600 dark:text-tc-accent flex items-center justify-center mb-3">
               <Mail className="w-5 h-5" />
             </div>
 
             <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-1">
               Esqueci Minha Senha
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+            <p className="text-xs text-slate-500 dark:text-tc-ink-3 mb-4">
               Informe seu e-mail cadastrado. Enviaremos um link direto do Firebase para redefinição segura de senha.
             </p>
 
             {resetError && (
-              <div className="mb-3 p-3 bg-red-50 text-red-800 dark:bg-red-950/50 dark:text-red-300 text-xs rounded-xl flex items-center gap-2">
+              <div className="mb-3 p-3 bg-red-50 text-red-800 dark:bg-tc-critical-soft/50 dark:text-tc-critical text-xs rounded-xl flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{resetError}</span>
               </div>
             )}
 
             {resetMsg ? (
-              <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-xs rounded-xl font-bold mb-4 flex items-center gap-2">
+              <div className="p-3.5 bg-emerald-50 dark:bg-tc-good-soft/50 text-emerald-800 dark:text-tc-good text-xs rounded-xl font-bold mb-4 flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
                 <span>{resetMsg}</span>
               </div>
             ) : (
               <form onSubmit={handleResetPassword} className="space-y-4">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 uppercase">
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-tc-ink-2 mb-1 uppercase">
                     Seu E-mail Cadastrado
                   </label>
                   <input
@@ -511,7 +511,7 @@ export const Login: React.FC = () => {
                     value={resetEmail}
                     onChange={e => setResetEmail(e.target.value)}
                     placeholder="seu.email@btp.com.br"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
                   />
                 </div>
 
@@ -519,14 +519,14 @@ export const Login: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setForgotOpen(false)}
-                    className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer"
+                    className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-tc-ink-2 cursor-pointer"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={resetLoading}
-                    className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                    className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl cursor-pointer flex items-center gap-1.5 disabled:opacity-50 dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
                   >
                     {resetLoading ? (
                       <>

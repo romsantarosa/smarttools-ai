@@ -158,7 +158,7 @@ export const Ferramentas: React.FC = () => {
             <Wrench className="w-7 h-7 text-blue-600" />
             Ferramentas Operacionais
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+          <p className="text-xs text-slate-500 dark:text-tc-ink-3 mt-1 font-medium">
             Controle automatizado por quantidade de estoque de travas e varas
           </p>
         </div>
@@ -166,7 +166,7 @@ export const Ferramentas: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setShowShiftModal(true)}
-            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all cursor-pointer dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
           >
             <Plus className="w-4 h-4" />
             <span>Registrar Movimentação de Turno</span>
@@ -174,7 +174,7 @@ export const Ferramentas: React.FC = () => {
 
           <button
             onClick={handleOpenNewToolModal}
-            className="px-4 py-2.5 rounded-xl bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white font-extrabold text-xs flex items-center gap-2 transition-all cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-slate-800 dark:bg-tc-surface-3 hover:bg-slate-900 text-white font-extrabold text-xs flex items-center gap-2 transition-all cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Adicionar Nova Ferramenta</span>
@@ -183,28 +183,28 @@ export const Ferramentas: React.FC = () => {
       </div>
 
       {/* Main Inventory Section - Encaixe perfeito sem scroll lateral */}
-      <M3Card className="p-0 overflow-hidden border border-slate-200 dark:border-slate-800">
-        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/50">
+      <M3Card className="p-0 overflow-hidden border border-slate-200 dark:border-tc-border">
+        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-tc-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50 dark:bg-tc-surface-2/50">
           <div>
             <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
               <span>Estoque Operacional Ativo</span>
-              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
+              <span className="text-[10px] font-bold text-blue-600 dark:text-tc-accent bg-blue-50 dark:bg-tc-accent-soft px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-tc-accent-line">
                 {tools.length} tipos
               </span>
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-tc-ink-3 mt-0.5">
               Edição direta de quantidades e parâmetros sem necessidade de rolar a tela lateralmente
             </p>
           </div>
 
           {/* View Mode Switcher */}
-          <div className="flex items-center gap-1.5 bg-slate-200/80 dark:bg-slate-800 p-1 rounded-xl self-start sm:self-auto">
+          <div className="flex items-center gap-1.5 bg-slate-200/80 dark:bg-tc-surface-1 p-1 rounded-xl self-start sm:self-auto">
             <button
               onClick={() => setViewMode('grid')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'grid'
-                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-white dark:bg-tc-surface-2 text-blue-600 dark:text-tc-accent shadow-xs'
+                  : 'text-slate-600 dark:text-tc-ink-3 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
@@ -214,8 +214,8 @@ export const Ferramentas: React.FC = () => {
               onClick={() => setViewMode('table')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-white dark:bg-tc-surface-2 text-blue-600 dark:text-tc-accent shadow-xs'
+                  : 'text-slate-600 dark:text-tc-ink-3 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <List className="w-3.5 h-3.5" />
@@ -226,29 +226,29 @@ export const Ferramentas: React.FC = () => {
 
         {/* MODE 1: GRID CARDS (Default - Fits 100% screen without horizontal scroll) */}
         {viewMode === 'grid' ? (
-          <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-slate-50/30 dark:bg-slate-950/20">
+          <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-slate-50/30 dark:bg-tc-bg/20">
             {tools.length === 0 ? (
-              <div className="md:col-span-2 lg:col-span-3 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 text-center">
-                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Nenhuma ferramenta cadastrada.</p>
+              <div className="md:col-span-2 lg:col-span-3 rounded-2xl border border-dashed border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-2 p-8 text-center">
+                <p className="text-sm font-bold text-slate-700 dark:text-tc-ink-1">Nenhuma ferramenta cadastrada.</p>
               </div>
             ) : (
               tools.map(tool => (
               <div
                 key={tool.id}
-                className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-blue-400 dark:hover:border-blue-600 transition-all space-y-4"
+                className="bg-white dark:bg-tc-surface-2 border border-slate-200/90 dark:border-tc-border rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-blue-400 dark:hover:border-tc-accent transition-all space-y-4"
               >
                 {/* Header info */}
                 <div>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-200/60 dark:border-blue-800/60">
+                      <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-tc-accent-soft/80 text-blue-600 dark:text-tc-accent flex items-center justify-center shrink-0 border border-blue-200/60 dark:border-tc-accent-line/60">
                         <Wrench className="w-4 h-4" />
                       </div>
                       <div>
                         <h4 className="font-extrabold text-sm text-slate-900 dark:text-white leading-tight">
                           {tool.name}
                         </h4>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
+                        <p className="text-[10px] text-slate-500 dark:text-tc-ink-3 font-mono mt-0.5">
                           {tool.qrCodePrefix} • {tool.category}
                         </p>
                       </div>
@@ -258,26 +258,26 @@ export const Ferramentas: React.FC = () => {
                 </div>
 
                 {/* Direct Quantity Adjusters */}
-                <div className="grid grid-cols-2 gap-2 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
+                <div className="grid grid-cols-2 gap-2 p-2.5 bg-slate-50 dark:bg-tc-surface-1/50 rounded-xl border border-slate-200/60 dark:border-tc-border/60">
                   {/* Disponível */}
                   <div className="space-y-1">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                    <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-tc-ink-3 block">
                       Disponível
                     </span>
-                    <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center justify-between bg-white dark:bg-tc-surface-2 rounded-lg p-1 border border-slate-200 dark:border-tc-border">
                       <button
                         onClick={() => handleQuickQtyChange(tool, 'available', -1)}
-                        className="w-6 h-6 rounded bg-slate-100 dark:bg-slate-800 hover:bg-red-100 dark:hover:bg-red-950/60 text-slate-700 dark:text-slate-300 hover:text-red-600 flex items-center justify-center transition-colors cursor-pointer"
+                        className="w-6 h-6 rounded bg-slate-100 dark:bg-tc-surface-1 hover:bg-red-100 dark:hover:bg-tc-critical-soft/60 text-slate-700 dark:text-tc-ink-2 hover:text-red-600 flex items-center justify-center transition-colors cursor-pointer"
                         title="Diminuir disponível"
                       >
                         <Minus className="w-3 h-3" />
                       </button>
-                      <span className="font-extrabold text-sm text-emerald-600 dark:text-emerald-400 px-1">
+                      <span className="font-extrabold text-sm text-emerald-600 dark:text-tc-good px-1">
                         {tool.available}
                       </span>
                       <button
                         onClick={() => handleQuickQtyChange(tool, 'available', 1)}
-                        className="w-6 h-6 rounded bg-slate-100 dark:bg-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 text-slate-700 dark:text-slate-300 hover:text-emerald-600 flex items-center justify-center transition-colors cursor-pointer"
+                        className="w-6 h-6 rounded bg-slate-100 dark:bg-tc-surface-1 hover:bg-emerald-100 dark:hover:bg-tc-good-soft/60 text-slate-700 dark:text-tc-ink-2 hover:text-emerald-600 flex items-center justify-center transition-colors cursor-pointer"
                         title="Aumentar disponível"
                       >
                         <Plus className="w-3 h-3" />
@@ -287,23 +287,23 @@ export const Ferramentas: React.FC = () => {
 
                   {/* Em Manutenção */}
                   <div className="space-y-1">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                    <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-tc-ink-3 block">
                       Em Manutenção
                     </span>
-                    <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center justify-between bg-white dark:bg-tc-surface-2 rounded-lg p-1 border border-slate-200 dark:border-tc-border">
                       <button
                         onClick={() => handleQuickQtyChange(tool, 'inMaintenance', -1)}
-                        className="w-6 h-6 rounded bg-slate-100 dark:bg-slate-800 hover:bg-red-100 dark:hover:bg-red-950/60 text-slate-700 dark:text-slate-300 hover:text-red-600 flex items-center justify-center transition-colors cursor-pointer"
+                        className="w-6 h-6 rounded bg-slate-100 dark:bg-tc-surface-1 hover:bg-red-100 dark:hover:bg-tc-critical-soft/60 text-slate-700 dark:text-tc-ink-2 hover:text-red-600 flex items-center justify-center transition-colors cursor-pointer"
                         title="Diminuir manutenção"
                       >
                         <Minus className="w-3 h-3" />
                       </button>
-                      <span className="font-extrabold text-sm text-amber-600 dark:text-amber-400 px-1">
+                      <span className="font-extrabold text-sm text-amber-600 dark:text-tc-warning px-1">
                         {tool.inMaintenance}
                       </span>
                       <button
                         onClick={() => handleQuickQtyChange(tool, 'inMaintenance', 1)}
-                        className="w-6 h-6 rounded bg-slate-100 dark:bg-slate-800 hover:bg-amber-100 dark:hover:bg-amber-950/60 text-slate-700 dark:text-slate-300 hover:text-amber-600 flex items-center justify-center transition-colors cursor-pointer"
+                        className="w-6 h-6 rounded bg-slate-100 dark:bg-tc-surface-1 hover:bg-amber-100 dark:hover:bg-tc-warning-soft/60 text-slate-700 dark:text-tc-ink-2 hover:text-amber-600 flex items-center justify-center transition-colors cursor-pointer"
                         title="Aumentar manutenção"
                       >
                         <Plus className="w-3 h-3" />
@@ -313,7 +313,7 @@ export const Ferramentas: React.FC = () => {
                 </div>
 
                 {/* Totals info */}
-                <div className="flex items-center justify-between text-xs px-1 text-slate-600 dark:text-slate-400">
+                <div className="flex items-center justify-between text-xs px-1 text-slate-600 dark:text-tc-ink-3">
                   <span>
                     Estoque Total: <strong className="text-slate-900 dark:text-white">{tool.available + tool.inMaintenance}</strong>
                   </span>
@@ -323,10 +323,10 @@ export const Ferramentas: React.FC = () => {
                 </div>
 
                 {/* Card Actions */}
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
+                <div className="pt-2 border-t border-slate-100 dark:border-tc-border/80 flex items-center justify-between gap-2">
                   <button
                     onClick={() => setQrModalTool(tool)}
-                    className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/50 rounded-xl transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+                    className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-tc-accent-soft/50 rounded-xl transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
                     title="Simulador de QR Code"
                   >
                     <QrCode className="w-4 h-4 text-blue-500" />
@@ -336,7 +336,7 @@ export const Ferramentas: React.FC = () => {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleOpenEditToolModal(tool)}
-                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Editar Ferramenta</span>
@@ -351,7 +351,7 @@ export const Ferramentas: React.FC = () => {
           /* MODE 2: COMPACT RESPONSIVE TABLE (No horizontal scroll) */
           <div className="w-full">
             <table className="w-full text-left text-xs table-fixed">
-              <thead className="bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-extrabold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-700">
+              <thead className="bg-slate-100 dark:bg-tc-surface-1/80 text-slate-700 dark:text-tc-ink-2 font-extrabold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-tc-border">
                 <tr>
                   <th className="p-3 w-[35%] sm:w-[30%]">Ferramenta</th>
                   <th className="p-3 text-center w-[22%] sm:w-[20%]">Disponível</th>
@@ -361,7 +361,7 @@ export const Ferramentas: React.FC = () => {
                   <th className="p-3 text-right w-[43%] sm:w-[32%] md:w-[20%]">Editar / Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-800 dark:text-slate-200 font-medium">
+              <tbody className="divide-y divide-slate-200 dark:divide-tc-border-soft text-slate-800 dark:text-tc-ink-1 font-medium">
                 {tools.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-6 text-center font-bold text-slate-500">
@@ -372,11 +372,11 @@ export const Ferramentas: React.FC = () => {
                   tools.map(tool => (
                   <tr
                     key={tool.id}
-                    className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
+                    className="hover:bg-slate-50/80 dark:hover:bg-tc-surface-3/50 transition-colors"
                   >
                     <td className="p-3 font-bold text-slate-900 dark:text-white truncate">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-600 shrink-0 flex items-center justify-center">
+                        <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-tc-accent-soft text-blue-600 shrink-0 flex items-center justify-center">
                           <Wrench className="w-3.5 h-3.5" />
                         </div>
                         <div className="truncate">
@@ -388,19 +388,19 @@ export const Ferramentas: React.FC = () => {
 
                     {/* Disponível com ajuste rápido */}
                     <td className="p-3 text-center">
-                      <div className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 p-1 rounded-lg border border-emerald-200 dark:border-emerald-800/60">
+                      <div className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-tc-good-soft/40 p-1 rounded-lg border border-emerald-200 dark:border-tc-good-line/60">
                         <button
                           onClick={() => handleQuickQtyChange(tool, 'available', -1)}
-                          className="w-5 h-5 rounded bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 flex items-center justify-center text-xs hover:bg-emerald-200 cursor-pointer"
+                          className="w-5 h-5 rounded bg-emerald-100 dark:bg-tc-good-soft text-emerald-800 dark:text-tc-good flex items-center justify-center text-xs hover:bg-emerald-200 cursor-pointer"
                         >
                           -
                         </button>
-                        <span className="font-black text-xs text-emerald-700 dark:text-emerald-300 min-w-[1.2rem]">
+                        <span className="font-black text-xs text-emerald-700 dark:text-tc-good min-w-[1.2rem]">
                           {tool.available}
                         </span>
                         <button
                           onClick={() => handleQuickQtyChange(tool, 'available', 1)}
-                          className="w-5 h-5 rounded bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 flex items-center justify-center text-xs hover:bg-emerald-200 cursor-pointer"
+                          className="w-5 h-5 rounded bg-emerald-100 dark:bg-tc-good-soft text-emerald-800 dark:text-tc-good flex items-center justify-center text-xs hover:bg-emerald-200 cursor-pointer"
                         >
                           +
                         </button>
@@ -409,19 +409,19 @@ export const Ferramentas: React.FC = () => {
 
                     {/* Em manutenção */}
                     <td className="p-3 text-center hidden sm:table-cell">
-                      <div className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 p-1 rounded-lg border border-amber-200 dark:border-amber-800/60">
+                      <div className="inline-flex items-center gap-1 bg-amber-50 dark:bg-tc-warning-soft/40 p-1 rounded-lg border border-amber-200 dark:border-tc-warning-line/60">
                         <button
                           onClick={() => handleQuickQtyChange(tool, 'inMaintenance', -1)}
-                          className="w-5 h-5 rounded bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 flex items-center justify-center text-xs hover:bg-amber-200 cursor-pointer"
+                          className="w-5 h-5 rounded bg-amber-100 dark:bg-tc-warning-soft text-amber-800 dark:text-tc-warning flex items-center justify-center text-xs hover:bg-amber-200 cursor-pointer"
                         >
                           -
                         </button>
-                        <span className="font-black text-xs text-amber-700 dark:text-amber-300 min-w-[1.2rem]">
+                        <span className="font-black text-xs text-amber-700 dark:text-tc-warning min-w-[1.2rem]">
                           {tool.inMaintenance}
                         </span>
                         <button
                           onClick={() => handleQuickQtyChange(tool, 'inMaintenance', 1)}
-                          className="w-5 h-5 rounded bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 flex items-center justify-center text-xs hover:bg-amber-200 cursor-pointer"
+                          className="w-5 h-5 rounded bg-amber-100 dark:bg-tc-warning-soft text-amber-800 dark:text-tc-warning flex items-center justify-center text-xs hover:bg-amber-200 cursor-pointer"
                         >
                           +
                         </button>
@@ -443,14 +443,14 @@ export const Ferramentas: React.FC = () => {
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => setQrModalTool(tool)}
-                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-lg cursor-pointer"
+                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-tc-accent-soft rounded-lg cursor-pointer"
                           title="QR Code"
                         >
                           <QrCode className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleOpenEditToolModal(tool)}
-                          className="px-2.5 py-1 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-1 cursor-pointer dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
                         >
                           <Edit3 className="w-3 h-3" />
                           <span>Editar</span>
@@ -469,17 +469,17 @@ export const Ferramentas: React.FC = () => {
       {/* SHIFT MOVEMENT REGISTRATION MODAL */}
       {showShiftModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 max-w-2xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6 my-8 animate-scale-in">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+          <div className="bg-white dark:bg-tc-surface-2 rounded-3xl p-6 md:p-8 max-w-2xl w-full border border-slate-200 dark:border-tc-border shadow-2xl space-y-6 my-8 animate-scale-in">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-tc-border pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold">
+                <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold dark:bg-tc-accent dark:text-tc-bg">
                   <Ship className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-slate-900 dark:text-white">
                     Registrar Movimentação de Turno
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-500 dark:text-tc-ink-3">
                     Log de desengate/engate e passagem de bastão operacional
                   </p>
                 </div>
@@ -493,14 +493,14 @@ export const Ferramentas: React.FC = () => {
             </div>
 
             {shiftSuccessMsg ? (
-              <div className="p-4 bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200 rounded-2xl flex items-center gap-3 font-bold text-sm">
+              <div className="p-4 bg-emerald-50 text-emerald-800 dark:bg-tc-good-soft dark:text-tc-good rounded-2xl flex items-center gap-3 font-bold text-sm">
                 <CheckCircle2 className="w-6 h-6 shrink-0 text-emerald-600" />
                 <span>{shiftSuccessMsg}</span>
               </div>
             ) : (
               <form onSubmit={handleRegisterShift} className="space-y-4">
                 {/* Auto Date & Time Banner */}
-                <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300">
+                <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-tc-surface-1/60 rounded-xl text-xs font-semibold text-slate-600 dark:text-tc-ink-2">
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-blue-600" />
                     <span>Data Automática: {new Date().toLocaleDateString('pt-BR')}</span>
@@ -514,13 +514,13 @@ export const Ferramentas: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Operador */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                       Operador Responsável
                     </label>
                     <select
                       value={operator}
                       onChange={e => setOperator(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium"
+                      className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 text-xs font-medium"
                     >
                       {config.operatorsList.length === 0 ? (
                         <option value="">Nenhum operador cadastrado</option>
@@ -536,13 +536,13 @@ export const Ferramentas: React.FC = () => {
 
                   {/* Supervisor */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                       Supervisor de Turno
                     </label>
                     <select
                       value={supervisor}
                       onChange={e => setSupervisor(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium"
+                      className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 text-xs font-medium"
                     >
                       {config.supervisorsList.length === 0 ? (
                         <option value="">Nenhum supervisor cadastrado</option>
@@ -558,13 +558,13 @@ export const Ferramentas: React.FC = () => {
 
                   {/* Turno */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                       Turno Operacional
                     </label>
                     <select
                       value={turn}
                       onChange={e => setTurn(e.target.value as ShiftTurn)}
-                      className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold"
+                      className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 text-xs font-bold"
                     >
                       <option value="07-13">Turno 1 (07:00 - 13:00)</option>
                       <option value="13-19">Turno 2 (13:00 - 19:00)</option>
@@ -575,13 +575,13 @@ export const Ferramentas: React.FC = () => {
 
                   {/* Berço */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                       Berço de Atracação
                     </label>
                     <select
                       value={berth}
                       onChange={e => setBerth(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium"
+                      className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 text-xs font-medium"
                     >
                       {config.activeBerths.length === 0 ? (
                         <option value="">Nenhum berço configurado</option>
@@ -597,7 +597,7 @@ export const Ferramentas: React.FC = () => {
 
                   {/* Navio */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                       Navio
                     </label>
                     <input
@@ -606,13 +606,13 @@ export const Ferramentas: React.FC = () => {
                       value={shipName}
                       onChange={e => setShipName(e.target.value)}
                       placeholder="Ex: Cap San Augustin"
-                      className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                      className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 text-xs"
                     />
                   </div>
 
                   {/* Viagem */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                       Viagem (Código BTP)
                     </label>
                     <input
@@ -621,14 +621,14 @@ export const Ferramentas: React.FC = () => {
                       value={voyage}
                       onChange={e => setVoyage(e.target.value)}
                       placeholder="Ex: COD-OPERACAO"
-                      className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                      className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 text-xs"
                     />
                   </div>
                 </div>
 
                 {/* Observações */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                     Observações Operacionais
                   </label>
                   <textarea
@@ -636,21 +636,21 @@ export const Ferramentas: React.FC = () => {
                     value={observations}
                     onChange={e => setObservations(e.target.value)}
                     placeholder="Especifique intercorrências, varas trocadas ou avarias observadas nas manobras..."
-                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-1 text-xs"
                   />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-tc-border">
                   <button
                     type="button"
                     onClick={() => setShowShiftModal(false)}
-                    className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400"
+                    className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-tc-ink-3"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-md"
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-md dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
                   >
                     Salvar Registro de Turno
                   </button>
@@ -664,8 +664,8 @@ export const Ferramentas: React.FC = () => {
       {/* EDIT / ADD TOOL MODAL */}
       {showToolModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-xs p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-scale-in">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+          <div className="bg-white dark:bg-tc-surface-2 rounded-3xl p-6 max-w-md w-full border border-slate-200 dark:border-tc-border shadow-2xl space-y-4 animate-scale-in">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-tc-border pb-3">
               <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
                 {editingTool ? 'Editar Cadastro de Ferramenta' : 'Nova Ferramenta Operacional'}
               </h3>
@@ -679,7 +679,7 @@ export const Ferramentas: React.FC = () => {
 
             <form onSubmit={handleSaveTool} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Nome da Ferramenta
                 </label>
                 <input
@@ -688,18 +688,18 @@ export const Ferramentas: React.FC = () => {
                   value={toolName}
                   onChange={e => setToolName(e.target.value)}
                   placeholder="Ex: Vara 12 metros"
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Categoria
                 </label>
                 <select
                   value={toolCategory}
                   onChange={e => setToolCategory(e.target.value as ToolItem['category'])}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs"
                 >
                   <option value="Varas de Destravamento">Varas de Destravamento</option>
                   <option value="Mão de Força & Trava">Mão de Força & Trava</option>
@@ -709,7 +709,7 @@ export const Ferramentas: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                     Quantidade Disponível
                   </label>
                   <input
@@ -728,12 +728,12 @@ export const Ferramentas: React.FC = () => {
                     onBlur={() => {
                       if (toolAvailable === '') setToolAvailable(0);
                     }}
-                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-emerald-600"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs font-bold text-emerald-600"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                     Em Manutenção
                   </label>
                   <input
@@ -752,13 +752,13 @@ export const Ferramentas: React.FC = () => {
                     onBlur={() => {
                       if (toolInMaint === '') setToolInMaint(0);
                     }}
-                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-amber-600"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs font-bold text-amber-600"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Estoque Mínimo de Segurança
                 </label>
                 <input
@@ -779,15 +779,15 @@ export const Ferramentas: React.FC = () => {
                       setToolMinStock(1);
                     }
                   }}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-red-600"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs font-bold text-red-600"
                 />
               </div>
 
-              <div className="p-3 bg-blue-50 dark:bg-blue-950/60 rounded-xl text-[11px] font-semibold text-blue-800 dark:text-blue-300">
+              <div className="p-3 bg-blue-50 dark:bg-tc-accent-soft/60 rounded-xl text-[11px] font-semibold text-blue-800 dark:text-tc-accent">
                 Estoque Total Calculado: <span className="font-extrabold">{(typeof toolAvailable === 'number' ? toolAvailable : 0) + (typeof toolInMaint === 'number' ? toolInMaint : 0)}</span> unidades
               </div>
 
-              <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-tc-border">
                 {editingTool ? (
                   <button
                     type="button"
@@ -797,7 +797,7 @@ export const Ferramentas: React.FC = () => {
                         setShowToolModal(false);
                       }
                     }}
-                    className="px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-tc-critical-soft/50 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Excluir</span>
@@ -808,13 +808,13 @@ export const Ferramentas: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowToolModal(false)}
-                    className="px-4 py-2 font-bold text-slate-600 dark:text-slate-400 cursor-pointer"
+                    className="px-4 py-2 font-bold text-slate-600 dark:text-tc-ink-3 cursor-pointer"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl cursor-pointer"
+                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl cursor-pointer dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
                   >
                     Salvar
                   </button>
@@ -828,8 +828,8 @@ export const Ferramentas: React.FC = () => {
       {/* QR CODE / FUTURE ASSET TRACKING READINESS MODAL */}
       {qrModalTool && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-xs p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-sm w-full border border-slate-200 dark:border-slate-800 shadow-2xl text-center space-y-4 animate-scale-in">
-            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2">
+          <div className="bg-white dark:bg-tc-surface-2 rounded-3xl p-6 max-w-sm w-full border border-slate-200 dark:border-tc-border shadow-2xl text-center space-y-4 animate-scale-in">
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-tc-border pb-2">
               <span className="text-xs font-extrabold text-blue-600 uppercase tracking-wider">
                 Controle Individual por Patrimônio (Módulo Futuro)
               </span>
@@ -838,7 +838,7 @@ export const Ferramentas: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl inline-block border-2 border-dashed border-blue-400">
+            <div className="p-4 bg-slate-50 dark:bg-tc-surface-1 rounded-2xl inline-block border-2 border-dashed border-blue-400">
               <QrCode className="w-28 h-28 text-slate-800 dark:text-white mx-auto" />
             </div>
 
@@ -852,13 +852,13 @@ export const Ferramentas: React.FC = () => {
               </p>
             </div>
 
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed bg-slate-100 dark:bg-slate-800 p-3 rounded-xl">
+            <p className="text-[11px] text-slate-500 dark:text-tc-ink-3 leading-relaxed bg-slate-100 dark:bg-tc-surface-1 p-3 rounded-xl">
               Este sistema foi desenhado para escalabilidade imediata. Quando o BTP implementar tags QR Code individuais em cada haste de vara, a leitura efetuará a baixa automatizada sem alterar a arquitetura atual.
             </p>
 
             <button
               onClick={() => setQrModalTool(null)}
-              className="w-full py-2 bg-slate-900 dark:bg-slate-800 text-white font-bold text-xs rounded-xl"
+              className="w-full py-2 bg-slate-900 dark:bg-tc-surface-1 text-white font-bold text-xs rounded-xl"
             >
               Fechar
             </button>

@@ -610,7 +610,7 @@ export const ProgramacaoBtp: React.FC = () => {
       <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-slate-800">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-bold uppercase tracking-wider">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-bold uppercase tracking-wider dark:bg-tc-accent">
               <Ship className="w-3.5 h-3.5" />
               Programação Operacional BTP
             </div>
@@ -623,7 +623,7 @@ export const ProgramacaoBtp: React.FC = () => {
           <button
             onClick={fetchData}
             disabled={loading}
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2"
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Atualizar
@@ -632,17 +632,17 @@ export const ProgramacaoBtp: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+        <div className="p-4 rounded-2xl bg-white dark:bg-tc-surface-2 border border-slate-200 dark:border-tc-border">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Registros</p>
           <p className="text-xl font-black text-slate-900 dark:text-white">{sortedData.length}</p>
         </div>
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+        <div className="p-4 rounded-2xl bg-white dark:bg-tc-surface-2 border border-slate-200 dark:border-tc-border">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Atualização</p>
           <p className="text-sm font-black text-slate-900 dark:text-white">
             {lastUpdate ? lastUpdate.toLocaleTimeString('pt-BR') : '--:--:--'}
           </p>
         </div>
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+        <div className="p-4 rounded-2xl bg-white dark:bg-tc-surface-2 border border-slate-200 dark:border-tc-border">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Auto Refresh</p>
           <p className="text-sm font-black text-slate-900 dark:text-white">A cada 5 minutos</p>
         </div>
@@ -661,8 +661,8 @@ export const ProgramacaoBtp: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 space-y-4">
-        <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+      <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-tc-border space-y-4">
+        <div className="flex items-center gap-2 text-slate-700 dark:text-tc-ink-2">
           <Filter className="w-4 h-4" />
           <span className="text-xs font-black uppercase tracking-wider">Filtros</span>
         </div>
@@ -674,39 +674,39 @@ export const ProgramacaoBtp: React.FC = () => {
               value={searchNavio}
               onChange={(e) => setSearchNavio(e.target.value)}
               placeholder="Pesquisar navio"
-              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-semibold"
+              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs font-semibold"
             />
           </div>
           <input
             value={searchBerco}
             onChange={(e) => setSearchBerco(e.target.value)}
             placeholder="Pesquisar berço"
-            className="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-semibold"
+            className="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs font-semibold"
           />
           <input
             value={searchData}
             onChange={(e) => setSearchData(e.target.value)}
             placeholder="Pesquisar data"
-            className="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-semibold"
+            className="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-tc-border bg-slate-50 dark:bg-tc-surface-1 text-xs font-semibold"
           />
         </div>
 
         <div className="flex flex-wrap gap-2">
           <button
             onClick={handleCopyTable}
-            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-tc-surface-1 dark:hover:bg-tc-surface-3 text-slate-700 dark:text-tc-ink-1 text-xs font-bold flex items-center gap-1.5"
           >
             <Copy className="w-3.5 h-3.5" /> Copiar
           </button>
           <button
             onClick={handleExportCSV}
-            className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
           >
             <Download className="w-3.5 h-3.5" /> CSV
           </button>
           <button
             onClick={handleExportExcel}
-            className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
           >
             <Download className="w-3.5 h-3.5" /> Excel
           </button>
@@ -714,17 +714,17 @@ export const ProgramacaoBtp: React.FC = () => {
       </div>
 
       {loading && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-10 border border-slate-200 dark:border-slate-800 text-center">
+        <div className="bg-white dark:bg-tc-surface-2 rounded-2xl p-10 border border-slate-200 dark:border-tc-border text-center">
           <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-xs font-bold text-slate-500">Carregando programação...</p>
         </div>
       )}
 
       {!loading && sortedData.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div className="bg-white dark:bg-tc-surface-2 rounded-2xl border border-slate-200 dark:border-tc-border overflow-hidden">
           <div className="overflow-auto max-h-[70vh]">
             <table className="w-full text-xs">
-              <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 uppercase tracking-wide">
+              <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-tc-surface-1 border-b border-slate-200 dark:border-tc-border text-slate-600 dark:text-tc-ink-2 uppercase tracking-wide">
                 <tr>
                   <th className="p-3 w-12" />
                   {columns.map((column) => (
@@ -742,7 +742,7 @@ export const ProgramacaoBtp: React.FC = () => {
                             <ChevronDown className="w-3.5 h-3.5" />
                           </button>
                           {statusMenuOpen && (
-                            <div className="absolute z-20 top-full left-0 mt-1 w-52 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg py-1 normal-case">
+                            <div className="absolute z-20 top-full left-0 mt-1 w-52 rounded-xl border border-slate-200 dark:border-tc-border bg-white dark:bg-tc-surface-2 shadow-lg py-1 normal-case">
                               <p className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400">
                                 Mostrar primeiro
                               </p>
@@ -753,8 +753,8 @@ export const ProgramacaoBtp: React.FC = () => {
                                     setStatusPriority(option);
                                     setStatusMenuOpen(false);
                                   }}
-                                  className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-xs font-bold text-left hover:bg-slate-100 dark:hover:bg-slate-800 ${
-                                    statusPriority === option ? 'text-blue-600' : 'text-slate-700 dark:text-slate-200'
+                                  className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-xs font-bold text-left hover:bg-slate-100 dark:hover:bg-tc-surface-3 ${
+                                    statusPriority === option ? 'text-blue-600' : 'text-slate-700 dark:text-tc-ink-1'
                                   }`}
                                 >
                                   {option}
@@ -767,7 +767,7 @@ export const ProgramacaoBtp: React.FC = () => {
                                     setStatusPriority(null);
                                     setStatusMenuOpen(false);
                                   }}
-                                  className="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-left text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border-t border-slate-200 dark:border-slate-700"
+                                  className="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-left text-slate-400 hover:bg-slate-100 dark:hover:bg-tc-surface-3 border-t border-slate-200 dark:border-tc-border"
                                 >
                                   <X className="w-3.5 h-3.5" /> Limpar (ordem padrão)
                                 </button>
@@ -792,7 +792,7 @@ export const ProgramacaoBtp: React.FC = () => {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-800 dark:text-slate-200 font-medium">
+              <tbody className="divide-y divide-slate-200 dark:divide-tc-border-soft text-slate-800 dark:text-tc-ink-1 font-medium">
                 {sortedData.map((record, index) => {
                   const statusLabel = getPortalStatusLabel(record);
                   const previstoProgress = statusLabel === 'Previsto' ? getPrevistoArrivalProgress(record) : null;
@@ -800,11 +800,11 @@ export const ProgramacaoBtp: React.FC = () => {
 
                   return (
                   <React.Fragment key={`${record.navio}-${record.viagem}-${index}`}>
-                    <tr className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                    <tr className="hover:bg-slate-50/80 dark:hover:bg-tc-surface-3/50 transition-colors">
                       <td className="p-2 text-center">
                         <button
                           onClick={() => setExpandedRow(expandedRow === index ? null : index)}
-                          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-tc-surface-3"
                         >
                           {expandedRow === index ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </button>
@@ -821,27 +821,27 @@ export const ProgramacaoBtp: React.FC = () => {
                             {statusLabel}
                           </span>
                           {(statusLabel === 'Manobra em Andamento' || statusLabel === 'Manobra confirmada pela Praticagem') && record.pilotDateTime && (
-                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                            <span className="text-[10px] font-bold text-slate-500 dark:text-tc-ink-3">
                               Prático: {record.pilotDateTime}
                             </span>
                           )}
                           {statusLabel === 'Na Barra' && record.pilotDateTime && (
-                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                            <span className="text-[10px] font-bold text-slate-500 dark:text-tc-ink-3">
                               Fundeado desde: {record.pilotDateTime}
                             </span>
                           )}
                           {statusLabel === 'Previsto' && previstoProgress !== null && (
                             <>
                               <div
-                                className="h-1.5 w-full rounded-full bg-red-100 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 overflow-hidden"
+                                className="h-1.5 w-full rounded-full bg-red-100 dark:bg-tc-critical-soft/40 border border-red-200 dark:border-tc-critical-line/60 overflow-hidden"
                                 title={`Proximidade da chegada: ${previstoProgress}%`}
                               >
                                 <div
-                                  className="h-full bg-red-500 dark:bg-red-400 transition-all duration-500"
+                                  className="h-full bg-red-500 dark:bg-tc-critical transition-all duration-500"
                                   style={{ width: `${previstoProgress}%` }}
                                 />
                               </div>
-                              <div className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 dark:text-red-300">
+                              <div className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 dark:text-tc-critical">
                                 <ArrowRight className="w-3 h-3" />
                                 <span>{previstoProgress}% para atracar</span>
                               </div>
@@ -850,15 +850,15 @@ export const ProgramacaoBtp: React.FC = () => {
                           {statusLabel === 'Atracado' && atracadoProgress !== null && (
                             <>
                               <div
-                                className="h-1.5 w-full rounded-full bg-yellow-100 dark:bg-yellow-950/40 border border-yellow-200 dark:border-yellow-900/60 overflow-hidden"
+                                className="h-1.5 w-full rounded-full bg-yellow-100 dark:bg-tc-warning-soft/40 border border-yellow-200 dark:border-tc-warning-line/60 overflow-hidden"
                                 title={`Tempo restante até saída prevista: ${atracadoProgress}%`}
                               >
                                 <div
-                                  className="h-full bg-yellow-500 dark:bg-yellow-400 transition-all duration-500"
+                                  className="h-full bg-yellow-500 dark:bg-tc-warning transition-all duration-500"
                                   style={{ width: `${atracadoProgress}%` }}
                                 />
                               </div>
-                              <div className="inline-flex items-center gap-1 text-[10px] font-bold text-yellow-700 dark:text-yellow-300">
+                              <div className="inline-flex items-center gap-1 text-[10px] font-bold text-yellow-700 dark:text-tc-warning">
                                 <ArrowLeft className="w-3 h-3" />
                                 <span>{atracadoProgress}% para terminar</span>
                               </div>
@@ -873,7 +873,7 @@ export const ProgramacaoBtp: React.FC = () => {
                     </tr>
 
                     {expandedRow === index && (
-                      <tr className="bg-slate-50 dark:bg-slate-800/40">
+                      <tr className="bg-slate-50 dark:bg-tc-surface-1/40">
                         <td colSpan={9} className="p-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                             <div>
@@ -966,9 +966,9 @@ export const ProgramacaoBtp: React.FC = () => {
       )}
 
       {!loading && sortedData.length === 0 && (
-        <div className="p-10 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+        <div className="p-10 text-center bg-white dark:bg-tc-surface-2 rounded-2xl border border-slate-200 dark:border-tc-border space-y-3">
           <AlertTriangle className="w-12 h-12 text-slate-300 mx-auto" />
-          <h4 className="font-bold text-slate-700 dark:text-slate-300 text-base">Nenhuma programação disponível.</h4>
+          <h4 className="font-bold text-slate-700 dark:text-tc-ink-2 text-base">Nenhuma programação disponível.</h4>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
             Faça uma atualização para buscar novos registros do portal BTP.
           </p>

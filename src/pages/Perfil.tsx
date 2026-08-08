@@ -77,7 +77,7 @@ export const Perfil: React.FC = () => {
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 pb-20">
       {/* Header Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-6 sm:p-8 shadow-xl border border-slate-800">
-        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl pointer-events-none dark:bg-tc-accent" />
         
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4 sm:gap-6">
@@ -169,24 +169,24 @@ export const Perfil: React.FC = () => {
       </div>
 
       {saveSuccess && (
-        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold text-xs flex items-center gap-2 shadow-xs">
+        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-tc-good-soft/50 border border-emerald-300 dark:border-tc-good-line text-emerald-800 dark:text-tc-good font-bold text-xs flex items-center gap-2 shadow-xs">
           <Check className="w-5 h-5 text-emerald-600 shrink-0" />
           <span>Informações do perfil atualizadas com sucesso!</span>
         </div>
       )}
 
       {/* Permissions & Rules Matrix Card (Critical User Requirement) */}
-      <M3Card className="p-5 sm:p-6 space-y-4 border-2 border-blue-200 dark:border-blue-900/60 bg-gradient-to-br from-white to-blue-50/30 dark:from-slate-900 dark:to-slate-800/90">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+      <M3Card className="p-5 sm:p-6 space-y-4 border-2 border-blue-200 dark:border-tc-accent-line/60 bg-gradient-to-br from-white to-blue-50/30 dark:from-tc-ink-1 dark:to-tc-ink-2/90">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-tc-border pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-xl bg-blue-600 text-white shadow-xs">
+            <div className="p-2.5 rounded-xl bg-blue-600 text-white shadow-xs dark:bg-tc-accent dark:text-tc-bg">
               <Shield className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-base font-black text-slate-900 dark:text-white">
                 Direitos e Permissões de Acesso por Perfil
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <p className="text-xs text-slate-500 dark:text-tc-ink-3 font-medium">
                 Regras vigentes para Operadores e Supervisores no BTP SmartTools AI
               </p>
             </div>
@@ -195,8 +195,8 @@ export const Perfil: React.FC = () => {
           <span
             className={`px-3 py-1 rounded-full text-xs font-extrabold flex items-center gap-1.5 ${
               isSupervisor
-                ? 'bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-800'
-                : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                ? 'bg-purple-100 dark:bg-tc-accent-soft text-purple-800 dark:text-tc-accent border border-purple-300 dark:border-tc-accent-line'
+                : 'bg-emerald-100 dark:bg-tc-good-soft text-emerald-800 dark:text-tc-good border border-emerald-300 dark:border-tc-good-line'
             }`}
           >
             <span>Seu perfil ativo: <strong>{user.role}</strong></span>
@@ -208,25 +208,25 @@ export const Perfil: React.FC = () => {
           <div
             className={`p-4 sm:p-5 rounded-2xl border-2 transition-all space-y-3 ${
               isOperator
-                ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-400 dark:border-emerald-700 shadow-md ring-1 ring-emerald-400/50'
-                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/80 opacity-90'
+                ? 'bg-emerald-50/80 dark:bg-tc-good-soft/30 border-emerald-400 dark:border-tc-good-line shadow-md ring-1 ring-emerald-400/50'
+                : 'bg-slate-50 dark:bg-tc-surface-1/60 border-slate-200 dark:border-tc-border/80 opacity-90'
             }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <BadgeCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <BadgeCheck className="w-5 h-5 text-emerald-600 dark:text-tc-good" />
                 <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">
                   Perfil Operador
                 </h4>
               </div>
               {isOperator && (
-                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-600 text-white">
+                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-600 text-white dark:bg-tc-good dark:text-tc-bg">
                   Seu Perfil Atual
                 </span>
               )}
             </div>
 
-            <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+            <ul className="space-y-2 text-xs text-slate-700 dark:text-tc-ink-2">
               <li className="flex items-start gap-2">
                 <Eye className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                 <span>
@@ -258,25 +258,25 @@ export const Perfil: React.FC = () => {
           <div
             className={`p-4 sm:p-5 rounded-2xl border-2 transition-all space-y-3 ${
               isSupervisor
-                ? 'bg-purple-50/80 dark:bg-purple-950/30 border-purple-400 dark:border-purple-700 shadow-md ring-1 ring-purple-400/50'
-                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/80 opacity-90'
+                ? 'bg-purple-50/80 dark:bg-tc-accent-soft/30 border-purple-400 dark:border-tc-accent-line shadow-md ring-1 ring-purple-400/50'
+                : 'bg-slate-50 dark:bg-tc-surface-1/60 border-slate-200 dark:border-tc-border/80 opacity-90'
             }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                <ShieldCheck className="w-5 h-5 text-purple-600 dark:text-tc-accent" />
                 <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">
                   Perfil Supervisor
                 </h4>
               </div>
               {isSupervisor && (
-                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-purple-600 text-white">
+                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-purple-600 text-white dark:bg-tc-accent dark:text-tc-bg">
                   Seu Perfil Atual
                 </span>
               )}
             </div>
 
-            <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+            <ul className="space-y-2 text-xs text-slate-700 dark:text-tc-ink-2">
               <li className="flex items-start gap-2">
                 <Eye className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
                 <span>
@@ -310,7 +310,7 @@ export const Perfil: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Personal Data Form */}
         <M3Card className="lg:col-span-2 p-5 sm:p-6 space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-tc-border pb-3">
             <div className="flex items-center gap-2">
               <UserCircle className="w-5 h-5 text-blue-600" />
               <h3 className="text-base font-black text-slate-900 dark:text-white">
@@ -322,7 +322,7 @@ export const Perfil: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer dark:bg-tc-accent dark:text-tc-bg dark:hover:opacity-90"
               >
                 <Edit3 className="w-3.5 h-3.5" />
                 <span>Editar Dados</span>
@@ -331,7 +331,7 @@ export const Perfil: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
-                className="px-3.5 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer"
+                className="px-3.5 py-1.5 rounded-xl bg-slate-200 dark:bg-tc-surface-3 text-slate-700 dark:text-tc-ink-2 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Cancelar</span>
@@ -343,7 +343,7 @@ export const Perfil: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Nome */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Nome Completo
                 </label>
                 <input
@@ -351,14 +351,14 @@ export const Perfil: React.FC = () => {
                   disabled={!isEditing}
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-extrabold text-slate-900 dark:text-white disabled:opacity-75 disabled:bg-slate-100 dark:disabled:bg-slate-800/80"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-2 text-xs font-extrabold text-slate-900 dark:text-white disabled:opacity-75 disabled:bg-slate-100 dark:disabled:bg-tc-surface-1/80"
                   required
                 />
               </div>
 
               {/* Matrícula BTP */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Matrícula BTP
                 </label>
                 <input
@@ -367,13 +367,13 @@ export const Perfil: React.FC = () => {
                   value={formData.registrationNumber}
                   onChange={e => setFormData({ ...formData, registrationNumber: e.target.value })}
                   placeholder="Ex: BTP-3042"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-extrabold text-slate-900 dark:text-white disabled:opacity-75 disabled:bg-slate-100 dark:disabled:bg-slate-800/80"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-2 text-xs font-extrabold text-slate-900 dark:text-white disabled:opacity-75 disabled:bg-slate-100 dark:disabled:bg-tc-surface-1/80"
                 />
               </div>
 
               {/* Email */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   E-mail de Acesso
                 </label>
                 <input
@@ -381,14 +381,14 @@ export const Perfil: React.FC = () => {
                   disabled={!isEditing}
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-extrabold text-slate-900 dark:text-white disabled:opacity-75 disabled:bg-slate-100 dark:disabled:bg-slate-800/80"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-2 text-xs font-extrabold text-slate-900 dark:text-white disabled:opacity-75 disabled:bg-slate-100 dark:disabled:bg-tc-surface-1/80"
                   required
                 />
               </div>
 
               {/* Telefone */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Telefone / Ramal
                 </label>
                 <input
@@ -397,20 +397,20 @@ export const Perfil: React.FC = () => {
                   value={formData.phone}
                   onChange={e => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="(13) 99781-4200"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-extrabold text-slate-900 dark:text-white disabled:opacity-75 disabled:bg-slate-100 dark:disabled:bg-slate-800/80"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-2 text-xs font-extrabold text-slate-900 dark:text-white disabled:opacity-75 disabled:bg-slate-100 dark:disabled:bg-tc-surface-1/80"
                 />
               </div>
 
               {/* Perfil de Acesso */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Perfil de Acesso
                 </label>
                 <select
                   disabled={!isEditing}
                   value={formData.role}
                   onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-extrabold text-slate-900 dark:text-white disabled:opacity-75 disabled:bg-slate-100 dark:disabled:bg-slate-800/80"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-2 text-xs font-extrabold text-slate-900 dark:text-white disabled:opacity-75 disabled:bg-slate-100 dark:disabled:bg-tc-surface-1/80"
                 >
                   <option value="Operador">Operador (Acesso padrão operacional)</option>
                   <option value="Supervisor">Supervisor (Acesso total de gestão)</option>
@@ -419,14 +419,14 @@ export const Perfil: React.FC = () => {
 
               {/* Turno Habitual */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-tc-ink-2 mb-1">
                   Turno Habitual de Trabalho
                 </label>
                 <select
                   disabled={!isEditing}
                   value={formData.shiftTurn}
                   onChange={e => setFormData({ ...formData, shiftTurn: e.target.value as ShiftTurn })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-extrabold text-slate-900 dark:text-white disabled:opacity-75 disabled:bg-slate-100 dark:disabled:bg-slate-800/80"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-tc-border bg-white dark:bg-tc-surface-2 text-xs font-extrabold text-slate-900 dark:text-white disabled:opacity-75 disabled:bg-slate-100 dark:disabled:bg-tc-surface-1/80"
                 >
                   <option value="07-13">Turno 1º (07:00 às 13:00)</option>
                   <option value="13-19">Turno 2º (13:00 às 19:00)</option>
@@ -440,7 +440,7 @@ export const Perfil: React.FC = () => {
               <div className="flex justify-end pt-2">
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer dark:bg-tc-good dark:text-tc-bg dark:hover:opacity-90"
                 >
                   <Save className="w-4 h-4" />
                   <span>Salvar Alterações do Perfil</span>
@@ -452,7 +452,7 @@ export const Perfil: React.FC = () => {
 
         {/* Right Column: User Activity & Stats */}
         <M3Card className="p-5 space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-tc-border pb-3">
             <Briefcase className="w-5 h-5 text-blue-600" />
             <h3 className="text-base font-black text-slate-900 dark:text-white">
               Histórico do Seu Perfil
@@ -461,7 +461,7 @@ export const Perfil: React.FC = () => {
 
           <div className="space-y-3">
             {/* Stat 1: Lançamentos de Turno */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-tc-surface-1/80 border border-slate-200 dark:border-tc-border flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-extrabold uppercase text-slate-400 block">
                   Lançamentos de Turno / Berço
@@ -470,13 +470,13 @@ export const Perfil: React.FC = () => {
                   {myUpdates.length} registros
                 </span>
               </div>
-              <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-bold">
+              <div className="p-2 rounded-xl bg-blue-100 dark:bg-tc-accent-soft text-blue-600 dark:text-tc-accent font-bold">
                 <Check className="w-4 h-4" />
               </div>
             </div>
 
             {/* Stat 2: Chamados de Manutenção */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-tc-surface-1/80 border border-slate-200 dark:border-tc-border flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-extrabold uppercase text-slate-400 block">
                   Manutenções sob sua Autoria
@@ -485,13 +485,13 @@ export const Perfil: React.FC = () => {
                   {myMaintenances.length} itens
                 </span>
               </div>
-              <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 font-bold">
+              <div className="p-2 rounded-xl bg-amber-100 dark:bg-tc-warning-soft text-amber-600 dark:text-tc-warning font-bold">
                 <Clock className="w-4 h-4" />
               </div>
             </div>
 
             {/* Stat 3: Pedidos de Compras */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-tc-surface-1/80 border border-slate-200 dark:border-tc-border flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-extrabold uppercase text-slate-400 block">
                   Solicitações de Compras
@@ -500,13 +500,13 @@ export const Perfil: React.FC = () => {
                   {myPurchases.length} pedidos
                 </span>
               </div>
-              <div className="p-2 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 font-bold">
+              <div className="p-2 rounded-xl bg-purple-100 dark:bg-tc-accent-soft text-purple-600 dark:text-tc-accent font-bold">
                 <Sparkles className="w-4 h-4" />
               </div>
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-[11px] text-blue-800 dark:text-blue-300 font-medium space-y-1">
+          <div className="p-3 rounded-xl bg-blue-50 dark:bg-tc-accent-soft/40 border border-blue-200 dark:border-tc-accent-line text-[11px] text-blue-800 dark:text-tc-accent font-medium space-y-1">
             <span className="font-bold block flex items-center gap-1">
               <AlertCircle className="w-3.5 h-3.5 text-blue-600" />
               <span>Garantia de Integridade BTP:</span>

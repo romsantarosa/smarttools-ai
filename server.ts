@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
 import { getBtpData, getCacheTimeRemainingSeconds, setCustomBtpData, parseSppilotsRawText, buildPilotageStatusMap, normalizeShipName } from './src/services/btpService.js';
 import { fetchBtpSchedule } from './src/services/btpScheduleService.js';
+import { fetchBusSchedule } from './src/services/busScheduleService.js';
 
 dotenv.config();
 
@@ -120,6 +121,23 @@ app.get('/api/btp-schedule', async (req: express.Request, res: express.Response)
       totalRecords: 0,
       lastUpdate: new Date().toISOString(),
       error: err?.message || 'Erro ao buscar dados de programação BTP',
+    });
+  }
+});
+
+// Bus Schedule Endpoint - próxima saída de ônibus BTP (BTP Conecta)
+app.get('/api/bus-schedule', async (req: express.Request, res: express.Response) => {
+  try {
+    const forceRefresh = req.query.refresh === 'true';
+    const result = await fetchBusSchedule(forceRefresh);
+    return res.json(result);
+  } catch (err: any) {
+    console.error('[Server] Erro ao buscar horários de ônibus:', err);
+    return res.status(500).json({
+      success: false,
+      data: [],
+      lastUpdate: new Date().toISOString(),
+      error: err?.message || 'Erro ao buscar horários de ônibus.',
     });
   }
 });
